@@ -1,0 +1,367 @@
+(function () {
+  "use strict";
+
+  const root = document.documentElement;
+  const shell = document.getElementById("preview-shell");
+  const article = document.getElementById("preview-document");
+  const errorBox = document.getElementById("render-error");
+  const progress = document.getElementById("reading-progress");
+  let renderVersion = 0;
+  let activeSearchText = "";
+
+  const escapeHtml = (value) =>
+    value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+  const md = window.markdownit({
+    html: false,
+    linkify: true,
+    typographer: true,
+    breaks: false,
+    highlight: function (source, language) {
+      const normalized = (language || "").trim().toLowerCase();
+
+      if (normalized === "mermaid") {
+        return (
+          '<div class="diagram-card">' +
+          '<div class="diagram-label"><span>Mermaid diagram</span></div>' +
+          '<pre class="mermaid">' +
+          escapeHtml(source) +
+          "</pre></div>"
+        );
+      }
+
+      let highlighted = escapeHtml(source);
+      try {
+        if (normalized && window.hljs.getLanguage(normalized)) {
+          highlighted = window.hljs.highlight(source, {
+            language: normalized,
+            ignoreIllegals: true,
+          }).value;
+        } else {
+          highlighted = window.hljs.highlightAuto(source).value;
+        }
+      } catch (_) {}
+
+      const label = normalized || "code";
+      return (
+        '<div class="code-card">' +
+        '<div class="code-toolbar"><span>' +
+        escapeHtml(label) +
+        '</span><button class="copy-code" type="button" aria-label="Copy code">' +
+        '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 4V2.8C5 1.8 5.8 1 6.8 1h6.4c1 0 1.8.8 1.8 1.8v6.4c0 1-.8 1.8-1.8 1.8H12V9.5h1.2c.2 0 .3-.1.3-.3V2.8c0-.2-.1-.3-.3-.3H6.8c-.2 0-.3.1-.3.3V4H5Z"/><path d="M2.8 5h6.4c1 0 1.8.8 1.8 1.8v6.4c0 1-.8 1.8-1.8 1.8H2.8c-1 0-1.8-.8-1.8-1.8V6.8C1 5.8 1.8 5 2.8 5Zm0 1.5c-.2 0-.3.1-.3.3v6.4c0 .2.1.3.3.3h6.4c.2 0 .3-.1.3-.3V6.8c0-.2-.1-.3-.3-.3H2.8Z"/></svg>' +
+        "<span>Copy</span></button></div>" +
+        '<pre><code class="hljs language-' +
+        escapeHtml(normalized) +
+        '">' +
+        highlighted +
+        "</code></pre></div>"
+      );
+    },
+  });
+
+  if (window.markdownitFootnote) {
+    md.use(window.markdownitFootnote);
+  }
+
+  const defaultHeadingOpen =
+    md.renderer.rules.heading_open ||
+    function (tokens, index, options, env, self) {
+      return self.renderToken(tokens, index, options);
+    };
+
+  md.renderer.rules.heading_open = function (tokens, index, options, env, self) {
+    const headingIndex = env.headingIndex || 0;
+    tokens[index].attrSet("id", "heading-" + headingIndex);
+    env.headingIndex = headingIndex + 1;
+    return defaultHeadingOpen(tokens, index, options, env, self);
+  };
+
+  md.renderer.rules.table_open = function () {
+    return '<div class="table-scroll"><table>';
+  };
+  md.renderer.rules.table_close = function () {
+    return "</table></div>";
+  };
+
+  const defaultImage =
+    md.renderer.rules.image ||
+    function (tokens, index, options, env, self) {
+      return self.renderToken(tokens, index, options);
+    };
+  md.renderer.rules.image = function (tokens, index, options, env, self) {
+    tokens[index].attrSet("loading", "lazy");
+    tokens[index].attrSet("decoding", "async");
+    return defaultImage(tokens, index, options, env, self);
+  };
+
+  const defaultLinkOpen =
+    md.renderer.rules.link_open ||
+    function (tokens, index, options, env, self) {
+      return self.renderToken(tokens, index, options);
+    };
+  md.renderer.rules.link_open = function (tokens, index, options, env, self) {
+    const href = tokens[index].attrGet("href") || "";
+    if (/^(https?:|mailto:)/i.test(href)) {
+      tokens[index].attrSet("target", "_blank");
+      tokens[index].attrSet("rel", "noopener noreferrer");
+    }
+    return defaultLinkOpen(tokens, index, options, env, self);
+  };
+
+  function enhanceTaskLists() {
+    article.querySelectorAll("li").forEach((item) => {
+      const target = item.querySelector(":scope > p") || item;
+      const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT);
+      const textNode = walker.nextNode();
+      if (!textNode) return;
+      const match = textNode.nodeValue.match(/^\s*\[([ xX])\]\s+/);
+      if (!match) return;
+
+      textNode.nodeValue = textNode.nodeValue.slice(match[0].length);
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = match[1].toLowerCase() === "x";
+      checkbox.disabled = true;
+      checkbox.setAttribute("aria-label", checkbox.checked ? "Completed" : "Not completed");
+      target.insertBefore(checkbox, target.firstChild);
+      item.classList.add("task-list-item");
+      item.parentElement && item.parentElement.classList.add("task-list");
+    });
+  }
+
+  function enhanceAlerts() {
+    const labels = {
+      NOTE: ["Note", "info"],
+      TIP: ["Tip", "lightbulb"],
+      IMPORTANT: ["Important", "important"],
+      WARNING: ["Warning", "warning"],
+      CAUTION: ["Caution", "caution"],
+    };
+
+    article.querySelectorAll("blockquote").forEach((quote) => {
+      const firstParagraph = quote.querySelector(":scope > p:first-child");
+      if (!firstParagraph) return;
+      const match = firstParagraph.textContent.match(/^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i);
+      if (!match) return;
+
+      const key = match[1].toUpperCase();
+      const walker = document.createTreeWalker(firstParagraph, NodeFilter.SHOW_TEXT);
+      const textNode = walker.nextNode();
+      if (textNode) {
+        textNode.nodeValue = textNode.nodeValue.replace(
+          new RegExp("^\\s*\\[!" + key + "\\]\\s*", "i"),
+          ""
+        );
+      }
+
+      quote.classList.add("markdown-alert", "alert-" + key.toLowerCase());
+      const title = document.createElement("div");
+      title.className = "alert-title";
+      title.textContent = labels[key][0];
+      quote.insertBefore(title, quote.firstChild);
+    });
+  }
+
+  function addHeadingAnchors() {
+    article.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((heading) => {
+      const anchor = document.createElement("a");
+      anchor.className = "heading-anchor";
+      anchor.href = "#" + heading.id;
+      anchor.setAttribute("aria-label", "Link to this heading");
+      anchor.textContent = "#";
+      heading.appendChild(anchor);
+    });
+  }
+
+  function setCodeCopyHandlers() {
+    article.querySelectorAll(".copy-code").forEach((button) => {
+      button.addEventListener("click", () => {
+        const code = button.closest(".code-card").querySelector("code").textContent;
+        if (window.webkit && window.webkit.messageHandlers.copyText) {
+          window.webkit.messageHandlers.copyText.postMessage(code);
+        } else if (navigator.clipboard) {
+          navigator.clipboard.writeText(code);
+        }
+        const label = button.querySelector("span:last-child");
+        const old = label.textContent;
+        label.textContent = "Copied";
+        button.classList.add("copied");
+        window.setTimeout(() => {
+          label.textContent = old;
+          button.classList.remove("copied");
+        }, 1400);
+      });
+    });
+  }
+
+  async function renderDiagrams(version, isDark) {
+    if (!window.mermaid) return;
+
+    window.mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: isDark ? "dark" : "base",
+      suppressErrorRendering: true,
+      fontFamily:
+        '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif',
+      themeVariables: isDark
+        ? {
+            primaryColor: "#282b3f",
+            primaryTextColor: "#f1f2f7",
+            primaryBorderColor: "#747be8",
+            lineColor: "#8b91a8",
+            secondaryColor: "#242d38",
+            tertiaryColor: "#30293e",
+          }
+        : {
+            primaryColor: "#f0efff",
+            primaryTextColor: "#26263a",
+            primaryBorderColor: "#6966df",
+            lineColor: "#73788a",
+            secondaryColor: "#eef7ff",
+            tertiaryColor: "#fff4ec",
+          },
+    });
+
+    const diagrams = Array.from(article.querySelectorAll(".mermaid"));
+    for (let index = 0; index < diagrams.length; index += 1) {
+      if (version !== renderVersion) return;
+      const node = diagrams[index];
+      const source = node.textContent;
+      try {
+        const result = await window.mermaid.render(
+          "previewmd-diagram-" + version + "-" + index,
+          source
+        );
+        node.innerHTML = result.svg;
+        node.classList.add("rendered");
+      } catch (error) {
+        node.classList.add("diagram-error");
+        node.textContent = source;
+        const card = node.closest(".diagram-card");
+        if (card) {
+          const label = card.querySelector(".diagram-label span");
+          label.textContent = "Diagram syntax error";
+        }
+      }
+    }
+  }
+
+  function renderMath() {
+    if (!window.renderMathInElement) return;
+    window.renderMathInElement(article, {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "\\[", right: "\\]", display: true },
+        { left: "\\(", right: "\\)", display: false },
+        { left: "$", right: "$", display: false },
+      ],
+      ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"],
+      throwOnError: false,
+      strict: false,
+    });
+  }
+
+  function findInDocument(query) {
+    activeSearchText = query || "";
+    if (window.CSS && CSS.highlights) {
+      CSS.highlights.delete("search-result");
+    }
+    const normalized = activeSearchText.trim();
+    if (!normalized) return;
+
+    if (!(window.CSS && CSS.highlights && window.Highlight)) {
+      window.find(normalized, false, false, true, false, true, false);
+      return;
+    }
+
+    const ranges = [];
+    const needle = normalized.toLocaleLowerCase();
+    const walker = document.createTreeWalker(article, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (node) {
+        if (!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        if (node.parentElement.closest("pre, code, script, style")) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      const haystack = node.nodeValue.toLocaleLowerCase();
+      let start = 0;
+      while ((start = haystack.indexOf(needle, start)) !== -1) {
+        const range = new Range();
+        range.setStart(node, start);
+        range.setEnd(node, start + needle.length);
+        ranges.push(range);
+        start += needle.length;
+      }
+    }
+
+    if (ranges.length) {
+      CSS.highlights.set("search-result", new Highlight(...ranges));
+      const marker = document.createElement("span");
+      marker.style.position = "absolute";
+      marker.style.pointerEvents = "none";
+      ranges[0].insertNode(marker);
+      marker.scrollIntoView({ behavior: "smooth", block: "center" });
+      marker.remove();
+    }
+  }
+
+  function updateProgress() {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+    progress.style.transform = "scaleX(" + ratio + ")";
+  }
+
+  window.addEventListener("scroll", updateProgress, { passive: true });
+
+  window.previewmdFind = findInDocument;
+  window.previewmdScrollTo = function (targetID) {
+    const target = document.getElementById(targetID);
+    target && target.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  window.previewmdSetLayout = function (readingWidth, paperCanvas) {
+    root.dataset.paper = paperCanvas ? "true" : "false";
+    root.style.setProperty("--reading-width", readingWidth + "px");
+  };
+
+  window.previewmdRender = async function (options) {
+    const version = ++renderVersion;
+    const isDark =
+      options.theme === "dark" ||
+      (options.theme === "system" && options.systemDark === true);
+
+    root.dataset.theme = isDark ? "dark" : "light";
+    window.previewmdSetLayout(options.readingWidth, options.paperCanvas);
+    activeSearchText = options.searchText || "";
+    errorBox.hidden = true;
+
+    try {
+      article.innerHTML = md.render(options.markdown || "", { headingIndex: 0 });
+      enhanceTaskLists();
+      enhanceAlerts();
+      addHeadingAnchors();
+      setCodeCopyHandlers();
+      renderMath();
+      await renderDiagrams(version, isDark);
+
+      if (version !== renderVersion) return;
+      findInDocument(activeSearchText);
+      if (options.outlineTarget) {
+        window.previewmdScrollTo(options.outlineTarget);
+      }
+      updateProgress();
+    } catch (error) {
+      errorBox.hidden = false;
+      errorBox.textContent = "Preview couldn’t be rendered: " + error.message;
+    }
+  };
+})();
