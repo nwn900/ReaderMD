@@ -25,6 +25,11 @@ Preserve these behaviors unless the user explicitly requests a change:
   existing main window rather than creating unnecessary windows.
 - Drag and drop works across the main window.
 - The left sidebar is collapsed by default.
+- The document inspector is collapsed by default.
+- Use the regular unified macOS toolbar, with a height comparable to Preview;
+  do not switch the main window back to the compact toolbar style.
+- Let the system own the sidebar and inspector surfaces. Do not stack custom
+  translucent materials on top of `NavigationSplitView` or `.inspector`.
 - Paper canvas is disabled by default.
 - Documents open immediately with the current saved appearance settings; do
   not briefly render with paper canvas or another default layout first.

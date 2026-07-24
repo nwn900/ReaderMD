@@ -6,20 +6,26 @@ struct WorkspaceView: View {
     @EnvironmentObject private var state: AppState
     @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
     @State private var isDropTargeted = false
-    @FocusState private var isSearchFocused: Bool
+    @State private var isSearchPresented = false
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             SidebarView()
-                .navigationSplitViewColumnWidth(min: 210, ideal: 248, max: 320)
+                .navigationSplitViewColumnWidth(min: 210, ideal: 238, max: 286)
         } detail: {
             detail
         }
         .navigationSplitViewStyle(.balanced)
         .inspector(isPresented: inspectorPresentation) {
             OutlineInspector()
-                .inspectorColumnWidth(min: 220, ideal: 260, max: 340)
+                .inspectorColumnWidth(min: 232, ideal: 268, max: 320)
         }
+        .searchable(
+            text: $state.searchText,
+            isPresented: $isSearchPresented,
+            placement: .toolbar,
+            prompt: "Find"
+        )
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button {
@@ -40,100 +46,17 @@ struct WorkspaceView: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .frame(width: 142)
+                .frame(width: 136)
                 .disabled(state.currentDocument == nil)
             }
 
-            ToolbarItemGroup(placement: .primaryAction) {
-                SearchField(text: $state.searchText, isFocused: $isSearchFocused)
-                    .disabled(state.currentDocument == nil)
-
-                Menu {
-                    Picker("Theme", selection: $state.theme) {
-                        ForEach(PreviewTheme.allCases) { theme in
-                            Label(theme.title, systemImage: theme.symbol).tag(theme)
-                        }
-                    }
-
-                    Divider()
-
-                    Picker("Reading width", selection: $state.readingWidth) {
-                        ForEach(ReadingWidth.allCases) { width in
-                            Label(
-                                width == .custom
-                                    ? "Custom — \(Int(state.customReadingWidth)) px"
-                                    : width.title,
-                                systemImage: width.symbol
-                            )
-                            .tag(width)
-                        }
-                    }
-
-                    Toggle("Paper canvas", isOn: $state.usesPaperCanvas)
-
-                    Divider()
-
-                    Button("Actual Size") {
-                        state.zoom = 1
-                    }
-                    Button("Zoom In") {
-                        state.zoomIn()
-                    }
-                    Button("Zoom Out") {
-                        state.zoomOut()
-                    }
-                } label: {
-                    Label("Reading appearance", systemImage: "textformat.size")
-                }
-                .help("Reading appearance")
-
-                Button {
-                    state.reloadCurrent()
-                } label: {
-                    Label("Reload", systemImage: "arrow.clockwise")
-                }
-                .disabled(state.currentDocument?.url == nil)
-                .help("Reload from disk")
-
-                Menu {
-                    Button {
-                        state.exportPDF()
-                    } label: {
-                        Label("Export as PDF…", systemImage: "doc.richtext")
-                    }
-                    .disabled(state.displayMode == .source)
-
-                    if let url = state.currentDocument?.url {
-                        Divider()
-                        Button {
-                            NSWorkspace.shared.activateFileViewerSelecting([url])
-                        } label: {
-                            Label("Show in Finder", systemImage: "folder")
-                        }
-
-                        Button {
-                            NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(url.path, forType: .string)
-                        } label: {
-                            Label("Copy Path", systemImage: "doc.on.doc")
-                        }
-                    }
-                } label: {
-                    Label("Share", systemImage: "square.and.arrow.up")
-                }
-                .disabled(state.currentDocument == nil)
-
-                Button {
-                    state.isInspectorVisible.toggle()
-                } label: {
-                    Label("Outline", systemImage: "sidebar.right")
-                }
-                .disabled(state.currentDocument == nil)
-                .help(state.isInspectorVisible ? "Hide outline" : "Show outline")
+            ToolbarItem(placement: .primaryAction) {
+                ToolbarUtilities()
             }
         }
         .onChange(of: state.searchFieldFocusToken) {
-            isSearchFocused = true
+            guard state.currentDocument != nil else { return }
+            isSearchPresented = true
         }
         .onChange(of: state.theme) {
             state.updatePreferences()
@@ -149,14 +72,16 @@ struct WorkspaceView: View {
         }
         .onChange(of: state.selectedDocumentID) {
             NSApplication.shared.mainWindow?.title = state.currentDocument?.title ?? "PreviewMD"
+            if state.currentDocument == nil {
+                isSearchPresented = false
+            }
         }
     }
 
     @ViewBuilder
     private var detail: some View {
         ZStack {
-            Color(nsColor: .windowBackgroundColor)
-                .ignoresSafeArea()
+            DetailBackground()
 
             VStack(spacing: 0) {
                 if !state.documents.isEmpty {
@@ -199,34 +124,108 @@ struct WorkspaceView: View {
     }
 }
 
-private struct SearchField: View {
-    @Binding var text: String
-    var isFocused: FocusState<Bool>.Binding
+private struct DetailBackground: View {
+    var body: some View {
+        if #available(macOS 26.0, *) {
+            Color(nsColor: .windowBackgroundColor)
+                .backgroundExtensionEffect()
+                .ignoresSafeArea()
+        } else {
+            Color(nsColor: .windowBackgroundColor)
+                .ignoresSafeArea()
+        }
+    }
+}
+
+private struct ToolbarUtilities: View {
+    @EnvironmentObject private var state: AppState
 
     var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
-
-            TextField("Find", text: $text)
-                .textFieldStyle(.plain)
-                .focused(isFocused)
-                .frame(minWidth: 74)
-
-            if !text.isEmpty {
-                Button {
-                    text = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.tertiary)
+        ControlGroup {
+            Menu {
+                Picker("Theme", selection: $state.theme) {
+                    ForEach(PreviewTheme.allCases) { theme in
+                        Label(theme.title, systemImage: theme.symbol).tag(theme)
+                    }
                 }
-                .buttonStyle(.plain)
+
+                Divider()
+
+                Picker("Reading width", selection: $state.readingWidth) {
+                    ForEach(ReadingWidth.allCases) { width in
+                        Label(
+                            width == .custom
+                                ? "Custom — \(Int(state.customReadingWidth)) px"
+                                : width.title,
+                            systemImage: width.symbol
+                        )
+                        .tag(width)
+                    }
+                }
+
+                Toggle("Paper canvas", isOn: $state.usesPaperCanvas)
+
+                Divider()
+
+                Button("Actual Size") {
+                    state.zoom = 1
+                }
+                Button("Zoom In") {
+                    state.zoomIn()
+                }
+                Button("Zoom Out") {
+                    state.zoomOut()
+                }
+            } label: {
+                Label("Reading appearance", systemImage: "textformat.size")
             }
+            .help("Reading appearance")
+
+            Button {
+                state.reloadCurrent()
+            } label: {
+                Label("Reload", systemImage: "arrow.clockwise")
+            }
+            .disabled(state.currentDocument?.url == nil)
+            .help("Reload from disk")
+
+            Menu {
+                Button {
+                    state.exportPDF()
+                } label: {
+                    Label("Export as PDF…", systemImage: "doc.richtext")
+                }
+                .disabled(state.displayMode == .source)
+
+                if let url = state.currentDocument?.url {
+                    Divider()
+                    Button {
+                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                    } label: {
+                        Label("Show in Finder", systemImage: "folder")
+                    }
+
+                    Button {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(url.path, forType: .string)
+                    } label: {
+                        Label("Copy Path", systemImage: "doc.on.doc")
+                    }
+                }
+            } label: {
+                Label("Share", systemImage: "square.and.arrow.up")
+            }
+            .disabled(state.currentDocument == nil)
+
+            Button {
+                state.isInspectorVisible.toggle()
+            } label: {
+                Label("Outline", systemImage: "sidebar.right")
+            }
+            .disabled(state.currentDocument == nil)
+            .help(state.isInspectorVisible ? "Hide outline" : "Show outline")
         }
-        .padding(.horizontal, 8)
-        .frame(width: 156, height: 26)
-        .background(.quaternary.opacity(0.65), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+        .controlGroupStyle(.navigation)
     }
 }
 
@@ -290,7 +289,6 @@ private struct SidebarView: View {
             .padding(.vertical, 12)
             .foregroundStyle(.secondary)
         }
-        .background(.ultraThinMaterial)
     }
 }
 
@@ -403,9 +401,9 @@ private struct DocumentTabBar: View {
                 }
             }
             .padding(.horizontal, 8)
-            .padding(.vertical, 6)
+            .padding(.vertical, 5)
         }
-        .background(.bar)
+        .background(Color(nsColor: .windowBackgroundColor))
         .overlay(alignment: .bottom) {
             Divider()
         }
@@ -605,19 +603,21 @@ private struct ReadingWidthRuler: View {
             .help("Use a wide layout for large tables and diagrams")
         }
         .padding(.leading, 10)
-        .padding(.trailing, 6)
+        .padding(.trailing, 7)
         .padding(.vertical, 6)
-        .background(.regularMaterial, in: Capsule())
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.96))
+        }
         .overlay {
-            Capsule()
-                .strokeBorder(.quaternary, lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color(nsColor: .separatorColor).opacity(0.55), lineWidth: 0.75)
         }
         .shadow(
-            color: .black.opacity(isHovering ? 0.16 : 0.09),
-            radius: isHovering ? 14 : 9,
-            y: 4
+            color: .black.opacity(isHovering ? 0.15 : 0.10),
+            radius: isHovering ? 12 : 8,
+            y: 3
         )
-        .scaleEffect(isHovering ? 1.015 : 1)
         .animation(.easeOut(duration: 0.14), value: isHovering)
         .onHover { isHovering = $0 }
     }
@@ -758,7 +758,6 @@ private struct OutlineInspector: View {
                 .padding(15)
             }
         }
-        .background(.ultraThinMaterial)
     }
 }
 

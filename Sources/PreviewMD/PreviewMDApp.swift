@@ -10,14 +10,14 @@ struct PreviewMDApp: App {
         Window("PreviewMD", id: "main") {
             WorkspaceView()
                 .environmentObject(state)
-                .frame(minWidth: 920, minHeight: 620)
+                .frame(minWidth: 980, minHeight: 640)
                 .onAppear {
                     appDelegate.state = state
                 }
         }
-        .defaultSize(width: 1320, height: 840)
+        .defaultSize(width: 1360, height: 860)
         .windowStyle(.automatic)
-        .windowToolbarStyle(.unifiedCompact(showsTitle: true))
+        .windowToolbarStyle(.unified(showsTitle: true))
         .commands {
             PreviewMDCommands(state: state)
         }

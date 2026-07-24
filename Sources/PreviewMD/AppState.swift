@@ -13,7 +13,7 @@ final class AppState: ObservableObject {
     @Published var readingWidth: ReadingWidth = .comfortable
     @Published var customReadingWidth: Double = 820
     @Published var usesPaperCanvas = false
-    @Published var isInspectorVisible = true
+    @Published var isInspectorVisible = false
     @Published var searchText = ""
     @Published var zoom: Double = 1
     @Published var outlineTarget: String?
