@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PreviewMD — Plain text, properly typeset.</title>
+  <meta name="description" content="PreviewMD is a free, native macOS Markdown reader with a print-inspired preview — tables, Mermaid diagrams, KaTeX math and highlighted code, rendered entirely offline. macOS 14+, notarized, ~3.5 MB.">
+  <meta property="og:title" content="PreviewMD — Plain text, properly typeset.">
+  <meta property="og:description" content="A native macOS reader for Markdown — tables, diagrams, math and code rendered like a printed page. Everything happens on your Mac; nothing leaves it. Free download.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PreviewMD">
+  <!-- og:image intentionally omitted until launch: scrapers require an absolute
+       URL and do not render SVG. Export a 1200×630 PNG (icon on Desk #EEF1F7)
+       and add: <meta property="og:image" content="https://YOUR-DOMAIN/og.png"> -->
+  <meta name="theme-color" content="#EEF1F7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0C101B" media="(prefers-color-scheme: dark)">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20width=%221024%22%20height=%221024%22%20viewBox=%220%200%201024%201024%22%20fill=%22none%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cdefs%3E%3ClinearGradient%20id=%22background%22%20x1=%22132%22%20y1=%2284%22%20x2=%22908%22%20y2=%22944%22%20gradientUnits=%22userSpaceOnUse%22%3E%3Cstop%20stop-color=%22%236757F6%22/%3E%3Cstop%20offset=%220.52%22%20stop-color=%22%23477DEE%22/%3E%3Cstop%20offset=%221%22%20stop-color=%22%2335B9EA%22/%3E%3C/linearGradient%3E%3ClinearGradient%20id=%22paper%22%20x1=%22355%22%20y1=%22218%22%20x2=%22693%22%20y2=%22844%22%20gradientUnits=%22userSpaceOnUse%22%3E%3Cstop%20stop-color=%22white%22/%3E%3Cstop%20offset=%221%22%20stop-color=%22%23EEF1FF%22/%3E%3C/linearGradient%3E%3Cfilter%20id=%22shadow%22%20x=%22147%22%20y=%22113%22%20width=%22742%22%20height=%22829%22%20filterUnits=%22userSpaceOnUse%22%20color-interpolation-filters=%22sRGB%22%3E%3CfeDropShadow%20dx=%220%22%20dy=%2238%22%20stdDeviation=%2236%22%20flood-color=%22%2326316A%22%20flood-opacity=%220.34%22/%3E%3C/filter%3E%3C/defs%3E%3Crect%20x=%2256%22%20y=%2256%22%20width=%22912%22%20height=%22912%22%20rx=%22226%22%20fill=%22url(%23background)%22/%3E%3Ccircle%20cx=%22838%22%20cy=%22192%22%20r=%22272%22%20fill=%22white%22%20fill-opacity=%220.09%22/%3E%3Ccircle%20cx=%22204%22%20cy=%22846%22%20r=%22326%22%20fill=%22%23243BC7%22%20fill-opacity=%220.12%22/%3E%3Cg%20filter=%22url(%23shadow)%22%3E%3Cpath%20d=%22M258%20236C258%20207.281%20281.281%20184%20310%20184H643L786%20327V788C786%20816.719%20762.719%20840%20734%20840H310C281.281%20840%20258%20816.719%20258%20788V236Z%22%20fill=%22url(%23paper)%22/%3E%3Cpath%20d=%22M643%20184L786%20327H695C666.281%20327%20643%20303.719%20643%20275V184Z%22%20fill=%22%23D8DCF3%22/%3E%3Cpath%20d=%22M643%20184L786%20327H695C666.281%20327%20643%20303.719%20643%20275V184Z%22%20fill=%22white%22%20fill-opacity=%220.22%22/%3E%3C/g%3E%3Cpath%20d=%22M348%20635V438H421L512%20542L603%20438H676V635H597V530L512%20620L427%20530V635H348Z%22%20fill=%22url(%23background)%22/%3E%3Crect%20x=%22348%22%20y=%22697%22%20width=%22328%22%20height=%2222%22%20rx=%2211%22%20fill=%22%23BBC2E2%22/%3E%3Crect%20x=%22348%22%20y=%22749%22%20width=%22218%22%20height=%2222%22%20rx=%2211%22%20fill=%22%23D4D8EA%22/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="main.js" defer></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <span class="brand">
+      <img src="AppIcon.svg" alt="" width="28" height="28">
+      <span class="brand-name">PreviewMD</span>
+    </span>
+    <span class="mono topbar-meta">Free&nbsp;&middot;&nbsp;macOS&nbsp;14+</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero wrap" id="hero">
+
+    <div class="cta-block" id="ctaBlock">
+      <p class="kicker">A native Markdown reader for&nbsp;the&nbsp;Mac.</p>
+      <a class="btn btn-prism" href="PreviewMD-1.0-6-macOS.zip" download data-download>Download for macOS — free</a>
+      <p class="mono meta">v1.0&nbsp;&middot;&nbsp;3.5&nbsp;MB&nbsp;&middot;&nbsp;Universal&nbsp;2&nbsp;&middot;&nbsp;notarized</p>
+    </div>
+
+    <!-- Reading-width ruler: a working control, like the app's -->
+    <div class="ruler" id="ruler">
+      <div class="ruler-track" id="rulerTrack">
+        <div class="ruler-ticks" aria-hidden="true"></div>
+        <button class="ruler-stop" data-measure="560"  style="--x:0%"      type="button"><span class="stop-num">560</span><span class="stop-name">narrow</span></button>
+        <button class="ruler-stop" data-measure="800"  style="--x:23.08%" type="button"><span class="stop-num">800</span><span class="stop-name">comfortable</span></button>
+        <button class="ruler-stop" data-measure="1120" style="--x:53.85%" type="button"><span class="stop-num">1120</span><span class="stop-name">wide</span></button>
+        <button class="ruler-stop" data-measure="1600" style="--x:100%"   type="button"><span class="stop-num">1600</span><span class="stop-name">table</span></button>
+        <div class="ruler-handle" id="rulerHandle" role="slider" tabindex="0"
+             aria-label="Reading width" aria-valuemin="560" aria-valuemax="1600"
+             aria-valuenow="800" aria-valuetext="800 px" aria-orientation="horizontal">
+          <span class="mono ruler-readout" id="rulerReadout">800&hairsp;px</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- The galley: one document, source ⇢ typeset -->
+    <div class="window" id="galley">
+      <div class="titlebar">
+        <div class="lights" aria-hidden="true">
+          <span class="light l-close"><i>&times;</i></span>
+          <span class="light l-min"><i>&ndash;</i></span>
+          <span class="light l-zoom"><i>+</i></span>
+        </div>
+        <div class="segments" role="group" aria-label="View mode" id="segments">
+          <button type="button" data-mode="preview" aria-pressed="false">Preview</button>
+          <button type="button" data-mode="split" aria-pressed="true" class="active">Split</button>
+          <button type="button" data-mode="source" aria-pressed="false">Source</button>
+        </div>
+        <div class="titlebar-spacer" aria-hidden="true"></div>
+      </div>
+
+      <div class="galley-body" id="galleyBody">
+
+        <!-- Rendered layer (in flow, defines height) -->
+        <div class="pane pane-rendered">
+          <div class="doc doc-rendered">
+            <div class="row" data-row="0">
+              <h1 class="doc-h1">Plain text, properly&nbsp;typeset.</h1>
+            </div>
+            <div class="row" data-row="1">
+              <p class="doc-p">PreviewMD is a native macOS reader for Markdown — tables, diagrams, math and code rendered like a printed page. Everything happens on your Mac; nothing leaves&nbsp;it.</p>
+            </div>
+            <div class="row" data-row="2">
+              <table class="doc-table">
+                <thead><tr><th>Spec</th><th>Value</th></tr></thead>
+                <tbody>
+                  <tr><td>macOS</td><td>14 or later</td></tr>
+                  <tr><td>Binary</td><td>Universal 2</td></tr>
+                  <tr><td>Size</td><td>~3.5 MB</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="row" data-row="3">
+              <ul class="doc-tasks">
+                <li class="done"><span class="checkbox" aria-hidden="true"></span>Tables &amp; task lists</li>
+                <li class="done"><span class="checkbox" aria-hidden="true"></span>Mermaid diagrams</li>
+                <li class="done"><span class="checkbox" aria-hidden="true"></span>KaTeX math</li>
+              </ul>
+            </div>
+            <div class="row" data-row="4">
+              <p class="doc-math"><em>E&nbsp;=&nbsp;mc</em><sup>2</sup></p>
+            </div>
+            <div class="row" data-row="5">
+              <p class="doc-p"><a class="doc-link" href="PreviewMD-1.0-6-macOS.zip" download data-download>Download for macOS — free</a></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Source layer (absolute overlay, clipped left of the seam) -->
+        <div class="pane pane-source" aria-hidden="true">
+          <div class="doc doc-source">
+            <div class="row" data-row="0"><pre class="src"><span class="mk">#</span> Plain text,
+<span class="mk">**</span>properly typeset.<span class="mk">**</span></pre></div>
+            <div class="row" data-row="1"><pre class="src">PreviewMD is a native macOS
+reader for Markdown — tables,
+diagrams, math and code
+rendered like a printed page.
+Everything happens on your
+Mac; nothing leaves it.</pre></div>
+            <div class="row" data-row="2"><pre class="src"><span class="mk">|</span> Spec   <span class="mk">|</span> Value       <span class="mk">|</span>
+<span class="mk">|--------|-------------|</span>
+<span class="mk">|</span> macOS  <span class="mk">|</span> 14 or later <span class="mk">|</span>
+<span class="mk">|</span> Binary <span class="mk">|</span> Universal 2 <span class="mk">|</span>
+<span class="mk">|</span> Size   <span class="mk">|</span> ~3.5 MB     <span class="mk">|</span></pre></div>
+            <div class="row" data-row="3"><pre class="src"><span class="mk">- [x]</span> Tables &amp; task lists
+<span class="mk">- [x]</span> Mermaid diagrams
+<span class="mk">- [x]</span> KaTeX math</pre></div>
+            <div class="row" data-row="4"><pre class="src"><span class="mk">$</span>E = mc^2<span class="mk">$</span></pre></div>
+            <div class="row" data-row="5"><pre class="src"><span class="mk">[</span><a class="src-link" href="PreviewMD-1.0-6-macOS.zip" download data-download tabindex="-1">Download for macOS — free</a><span class="mk">](</span><span class="src-target" data-filename>PreviewMD-1.0-6-macOS.zip</span><span class="mk">)</span></pre></div>
+          </div>
+        </div>
+
+        <div class="seam" aria-hidden="true"></div>
+        <div class="seam-handle" id="seamHandle" role="slider" tabindex="0"
+             aria-label="Seam between Markdown source and typeset preview" aria-orientation="horizontal"
+             aria-valuemin="0" aria-valuemax="100" aria-valuenow="46" aria-valuetext="46%">
+          <span class="seam-grip" aria-hidden="true"></span>
+          <span class="mono seam-readout" id="seamReadout">46%</span>
+        </div>
+
+      </div>
+    </div>
+
+    <p class="hero-hint mono" aria-hidden="true">drag the seam — source&nbsp;&#8674;&nbsp;typeset</p>
+  </section>
+
+  <!-- ============ WHAT IT RENDERS ============ -->
+  <section class="wrap section" id="renders">
+    <h2>What it renders</h2>
+    <p class="section-lede">Everything GitHub Flavored Markdown can say — set the way print would say it. Each clipping below is captioned with its own source.</p>
+
+    <div class="clippings">
+
+      <figure class="clipping">
+        <p class="clip-label">GFM tables</p>
+        <div class="clip-body">
+          <table class="doc-table">
+            <thead><tr><th>Renderer</th><th>Bundled</th></tr></thead>
+            <tbody>
+              <tr><td>markdown-it</td><td>yes</td></tr>
+              <tr><td>Mermaid</td><td>yes</td></tr>
+              <tr><td>KaTeX</td><td>yes</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <figcaption class="mono"><pre>| Renderer    | Bundled |
+|-------------|---------|
+| markdown-it | yes     |
+| Mermaid     | yes     |
+| KaTeX       | yes     |</pre></figcaption>
+      </figure>
+
+      <figure class="clipping">
+        <p class="clip-label">Mermaid diagrams</p>
+        <div class="clip-body clip-mermaid">
+          <svg viewBox="0 0 352 88" role="img" aria-label="Flowchart: a Markdown file flows into PreviewMD, which flows into a typeset page.">
+            <defs>
+              <marker id="mmArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <g class="mm-node"><rect x="6" y="26" width="66" height="36" rx="8"/><text x="39" y="49">.md</text></g>
+            <path class="mm-edge" d="M74 44h40" marker-end="url(#mmArrow)"/>
+            <g class="mm-node mm-app"><rect x="120" y="26" width="116" height="36" rx="18"/><text x="178" y="49">PreviewMD</text></g>
+            <path class="mm-edge" d="M238 44h40" marker-end="url(#mmArrow)"/>
+            <g class="mm-node"><rect x="284" y="26" width="62" height="36" rx="8"/><text x="315" y="49">page</text></g>
+          </svg>
+        </div>
+        <figcaption class="mono"><pre>graph LR
+  md[.md] --> app(PreviewMD)
+  app --> page[page]</pre></figcaption>
+      </figure>
+
+      <figure class="clipping">
+        <p class="clip-label">KaTeX math</p>
+        <div class="clip-body clip-math">
+          <p class="math-display"><span class="int" aria-hidden="true">&int;</span><span class="int-limits"><sup>&infin;</sup><sub>&minus;&infin;</sub></span><em>&thinsp;e</em><sup>&minus;<em>x</em>&sup2;</sup><em>&nbsp;dx</em>&nbsp;=&nbsp;&radic;<span class="sqrt-arg">&pi;</span></p>
+        </div>
+        <figcaption class="mono"><pre>$$\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}$$</pre></figcaption>
+      </figure>
+
+      <figure class="clipping">
+        <p class="clip-label">Code, one-click copy</p>
+        <div class="clip-body clip-code">
+          <button class="copy-btn" type="button" data-copy>Copy</button>
+          <pre><code><span class="tok-kw">let</span> doc = <span class="tok-kw">try</span> <span class="tok-type">MarkdownDocument</span>(named: <span class="tok-str">"README.md"</span>)
+render(doc, mode: <span class="tok-enum">.split</span>)</code></pre>
+        </div>
+        <figcaption class="mono"><pre>```swift &hellip; ```</pre></figcaption>
+      </figure>
+
+      <figure class="clipping">
+        <p class="clip-label">Task lists &amp; alerts</p>
+        <div class="clip-body">
+          <ul class="doc-tasks">
+            <li class="done"><span class="checkbox" aria-hidden="true"></span>Ship a native reader</li>
+            <li><span class="checkbox" aria-hidden="true"></span>Miss the terminal</li>
+          </ul>
+          <div class="doc-alert">
+            <p class="alert-title">Note</p>
+            <p>Alerts render in GitHub&rsquo;s style.</p>
+          </div>
+        </div>
+        <figcaption class="mono"><pre>- [x] Ship a native reader
+- [ ] Miss the terminal
+> [!NOTE]</pre></figcaption>
+      </figure>
+
+      <figure class="clipping">
+        <p class="clip-label">Footnotes</p>
+        <div class="clip-body clip-footnote">
+          <p class="doc-p">Typeset like a book, on your&nbsp;Mac.<sup>1</sup></p>
+          <hr class="fn-rule">
+          <p class="fn-text"><span class="mono">1.</span>&ensp;As documents deserve.</p>
+        </div>
+        <figcaption class="mono"><pre>Typeset like a book, on your Mac.[^1]
+[^1]: As documents deserve.</pre></figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <!-- ============ READER, NOT EDITOR ============ -->
+  <section class="wrap section" id="styles">
+    <h2>Three ways to set a page</h2>
+    <p class="section-lede">New in PreviewMD: reading styles. One click in the toolbar re-sets the whole document &mdash; typefaces, page tone and accents &mdash; and every style carries its own dark grade.</p>
+
+    <div class="specimens">
+
+      <figure class="specimen">
+        <div class="spec-page spec-modern">
+          <p class="spec-h">Modern</p>
+          <p class="spec-p">The same document, re-set in one click &mdash; <span class="spec-link">down to the links</span>.</p>
+        </div>
+        <figcaption class="spec-cap">
+          <span class="spec-sub">Clean system typography</span>
+          <span class="mono spec-stack">SF Pro</span>
+        </figcaption>
+      </figure>
+
+      <figure class="specimen">
+        <div class="spec-page spec-classic">
+          <p class="spec-h">Classic</p>
+          <p class="spec-p">The same document, re-set in one click &mdash; <span class="spec-link">down to the links</span>.</p>
+        </div>
+        <figcaption class="spec-cap">
+          <span class="spec-sub">Warm, literary serif</span>
+          <span class="mono spec-stack">New York &middot; Palatino</span>
+        </figcaption>
+      </figure>
+
+      <figure class="specimen">
+        <div class="spec-page spec-editorial">
+          <p class="spec-h">Editorial</p>
+          <p class="spec-p">The same document, re-set in one click &mdash; <span class="spec-link">down to the links</span>.</p>
+        </div>
+        <figcaption class="spec-cap">
+          <span class="spec-sub">Serif headlines, crisp body</span>
+          <span class="mono spec-stack">New York + Avenir</span>
+        </figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <section class="wrap section" id="reader">
+    <h2>Reader, not editor</h2>
+    <p class="section-lede">PreviewMD does one job: it shows Markdown at its best. The chrome stays out of the way.</p>
+    <ul class="reader-list">
+      <li><strong>Preview&nbsp;· Split&nbsp;· Source</strong><span>One document, three ways to look at it.</span></li>
+      <li><strong>Tabs, recents &amp; pinning</strong><span>Your working set stays where you left it.</span></li>
+      <li><strong>Drag &amp; drop</strong><span>Drop a file on the window and read.</span></li>
+      <li><strong>Reading-width ruler</strong><span>A live 560–1600&nbsp;px measure, with narrow, comfortable, wide and table presets.</span></li>
+      <li><strong>Outline navigation</strong><span>Move through the document by its headings.</span></li>
+      <li><strong>Search</strong><span>Find anything in the document, fast.</span></li>
+      <li><strong>PDF export</strong><span>The page you see is the page you print.</span></li>
+      <li><strong>Full dark mode</strong><span>Follows the system — like everything else here.</span></li>
+    </ul>
+  </section>
+
+  <!-- ============ COLOPHON ============ -->
+  <section class="wrap section" id="colophon">
+    <p class="smallcaps" aria-hidden="true">Colophon</p>
+    <h2 class="sr-only">How PreviewMD is made</h2>
+    <div class="colophon-cols">
+      <div class="colophon-col">
+        <h3>Native, all the way down</h3>
+        <p>The shell is 100% SwiftUI — a real macOS toolbar, a real sidebar, real keyboard shortcuts. On this Mac, this very page is set in the same system face as the app&rsquo;s chrome, because the app <em>is</em> the system&rsquo;s chrome. It launches fast, weighs ~3.5&nbsp;MB, and behaves the way Mac software should.</p>
+      </div>
+      <div class="colophon-col">
+        <h3>Sealed like a document</h3>
+        <p>Rendering is fully offline. The engines that set your text are pinned, vendored copies embedded in the app itself:</p>
+        <p class="mono libs">markdown-it&nbsp;&middot; Mermaid&nbsp;&middot; KaTeX&nbsp;&middot; Highlight.js — embedded, offline</p>
+        <p class="never-title">What it never does:</p>
+        <ul class="never">
+          <li>No network access</li>
+          <li>No telemetry</li>
+          <li>No account</li>
+          <li>Documents never leave the Mac</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER CTA ============ -->
+  <section class="wrap section footer-cta" id="download">
+    <p class="kicker">Set your documents properly.</p>
+    <a class="btn btn-prism" href="PreviewMD-1.0-6-macOS.zip" download data-download>Download for macOS — free</a>
+    <p class="mono meta"><span data-filename>PreviewMD-1.0-6-macOS.zip</span>&nbsp;&middot; v1.0 (build 6)&nbsp;&middot; ~3.5&nbsp;MB&nbsp;&middot; macOS 14+&nbsp;&middot; Apple&nbsp;Silicon &amp; Intel</p>
+    <p class="assure">Developer ID signed and notarized — opens cleanly, no warnings.</p>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <p>Made by <a href="mailto:adam@jesion.pl">Adam Jesionkiewicz</a></p>
+    <p class="mono">&copy; 2026 Astrography Sp.&nbsp;z&nbsp;o.o.</p>
+  </div>
+</footer>
+
+<!-- ============ EMAIL FOOTNOTE CARD ============ -->
+<p class="sr-only" role="status" id="liveStatus"></p>
+<aside class="email-card" id="emailCard" aria-label="Download note and optional updates signup" tabindex="-1" hidden>
+  <div class="card-inner">
+    <hr class="fn-rule" aria-hidden="true">
+    <p class="fn-line"><span class="fn-mark mono">&sup1;</span><span class="fn-text mono">Downloading <span data-filename>PreviewMD-1.0-6-macOS.zip</span> — when it opens, drag PreviewMD to Applications.</span></p>
+    <div class="fn-line" id="cardMain">
+      <span class="fn-mark mono">&sup2;</span>
+      <div class="fn-body">
+        <form class="fn-form" id="notifyForm" novalidate>
+          <label class="fn-label" for="emailInput">Occasional notes on updates and new apps&nbsp;&mdash;</label>
+          <input type="email" id="emailInput" name="email" required placeholder="you@example.com" autocomplete="email" inputmode="email">
+          <button class="fn-submit" type="submit">Notify me</button>
+          <span class="fn-sep" aria-hidden="true">&middot;</span>
+          <button class="fn-dismiss" id="cardClose" type="button">No thanks</button>
+        </form>
+        <p class="card-error" id="cardError" hidden>Couldn&rsquo;t sign you up &mdash; try again.</p>
+      </div>
+    </div>
+    <p class="fn-line card-success" id="cardSuccess" role="status" hidden><span class="fn-mark mono">&sup2;</span><span>Noted &mdash; thank you.</span></p>
+  </div>
+</aside>
+
+</body>
+</html>
