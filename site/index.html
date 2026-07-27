@@ -348,26 +348,23 @@ render(doc, mode: <span class="tok-enum">.split</span>)</code></pre>
 
 <!-- ============ EMAIL FOOTNOTE CARD ============ -->
 <p class="sr-only" role="status" id="liveStatus"></p>
-<aside class="email-card" id="emailCard" aria-label="Download note and optional updates signup" tabindex="-1" hidden>
-  <div class="card-inner">
-    <hr class="fn-rule" aria-hidden="true">
-    <p class="fn-line"><span class="fn-mark mono">&sup1;</span><span class="fn-text mono">Downloading <span data-filename>PreviewMD-1.0-6-macOS.zip</span> — when it opens, drag PreviewMD to Applications.</span></p>
-    <div class="fn-line" id="cardMain">
-      <span class="fn-mark mono">&sup2;</span>
-      <div class="fn-body">
-        <form class="fn-form" id="notifyForm" novalidate>
-          <label class="fn-label" for="emailInput">Occasional notes on updates and new apps&nbsp;&mdash;</label>
-          <input type="email" id="emailInput" name="email" required placeholder="you@example.com" autocomplete="email" inputmode="email">
-          <button class="fn-submit" type="submit">Notify me</button>
-          <span class="fn-sep" aria-hidden="true">&middot;</span>
-          <button class="fn-dismiss" id="cardClose" type="button">No thanks</button>
-        </form>
-        <p class="card-error" id="cardError" hidden>Couldn&rsquo;t sign you up &mdash; try again.</p>
+<dialog class="email-modal" id="emailCard" aria-label="Download note and optional updates signup" tabindex="-1">
+  <hr class="fn-rule" aria-hidden="true">
+  <p class="fn-line"><span class="fn-mark mono">&sup1;</span><span class="fn-text mono">Downloading <span data-filename>PreviewMD-1.0-6-macOS.zip</span> — when it opens, drag PreviewMD to Applications.</span></p>
+  <div id="cardMain">
+    <label class="modal-lead" for="emailInput">Occasional notes on updates and new apps&nbsp;&mdash;</label>
+    <form class="modal-form" id="notifyForm" novalidate>
+      <input type="email" id="emailInput" name="email" required placeholder="you@example.com" autocomplete="email" inputmode="email">
+      <div class="modal-actions">
+        <button class="fn-submit" type="submit">Notify me</button>
+        <span class="fn-sep" aria-hidden="true">&middot;</span>
+        <button class="fn-dismiss" id="cardClose" type="button">No thanks</button>
       </div>
-    </div>
-    <p class="fn-line card-success" id="cardSuccess" role="status" hidden><span class="fn-mark mono">&sup2;</span><span>Noted &mdash; thank you.</span></p>
+    </form>
+    <p class="card-error" id="cardError" hidden>Couldn&rsquo;t sign you up &mdash; try again.</p>
   </div>
-</aside>
+  <p class="card-success" id="cardSuccess" role="status" hidden>Noted &mdash; thank you.</p>
+</dialog>
 
 </body>
 </html>

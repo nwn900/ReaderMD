@@ -988,37 +988,38 @@ h1, h2, h3, p, ul, pre, figure { margin: 0; }
 /* ============================================================
    Email footnote card
    ============================================================ */
-/* The signup is set as the page's own footnote area: a sheet docked to
-   the bottom edge, a short printer's separator rule, two footnote lines.
-   No card chrome — the typography is the design. */
-.email-card {
-  position: fixed;
-  inset-inline: 0;
-  bottom: 0;
-  z-index: 50;
+/* The signup is a classic centered modal, kept in the page's printed
+   voice: a small slip of the sheet with the book-composition footnote
+   rule, an underline input and text-link actions. Native <dialog>
+   supplies the focus trap, Escape and the backdrop. */
+.email-modal {
+  width: min(440px, calc(100vw - 32px));
+  margin: auto;
   background: var(--sheet);
-  border-top: 1px solid var(--edge);
-  box-shadow: 0 -10px 30px rgba(22, 27, 44, 0.08);
-  opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 0.24s ease, transform 0.24s ease;
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-radius: 14px;
+  box-shadow: 0 28px 80px rgba(22, 27, 44, 0.22);
+  padding: 22px 24px 20px;
 }
-.email-card.show {
-  opacity: 1;
-  transform: translateY(0);
+.email-modal::backdrop { background: rgba(22, 27, 44, 0.34); }
+@media (prefers-color-scheme: dark) {
+  .email-modal { box-shadow: none; }
+  .email-modal::backdrop { background: rgba(0, 0, 0, 0.52); }
 }
-
-.card-inner {
-  max-width: 1040px;
-  margin-inline: auto;
-  padding: 12px 24px 14px;
+.email-modal[open] { animation: modal-in 0.22s ease; }
+/* the dialog receives programmatic focus after signup so the status is
+   announced; the ring on the whole sheet is noise, not navigation */
+.email-modal:focus-visible { outline: none; }
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
 }
 
 /* the short left-aligned rule that separates footnotes from the text
    block in book composition */
 .fn-rule {
   width: 64px;
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   border: 0;
   border-top: 1px solid var(--slate);
 }
@@ -1031,7 +1032,6 @@ h1, h2, h3, p, ul, pre, figure { margin: 0; }
   font-size: 13px;
   color: var(--slate-deep);
 }
-.fn-line + .fn-line { margin-top: 7px; }
 
 .fn-mark {
   flex: none;
@@ -1043,32 +1043,37 @@ h1, h2, h3, p, ul, pre, figure { margin: 0; }
   overflow-wrap: anywhere;
 }
 
-.fn-body { min-width: 0; }
-
-.fn-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  align-items: baseline;
+.modal-lead {
+  display: block;
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--prose);
 }
-.fn-label { color: var(--prose); }
 
-.fn-form input {
-  width: 210px;
-  max-width: 100%;
-  padding: 1px 2px 3px;
+.modal-form input {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 1px 2px 5px;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink);
   background: none;
   border: 0;
   border-bottom: 1px solid var(--slate);
   border-radius: 0;
 }
-.fn-form input::placeholder { color: var(--slate-deep); }
-.fn-form input:focus-visible {
+.modal-form input::placeholder { color: var(--slate-deep); }
+.modal-form input:focus-visible {
   outline-offset: 3px;
   border-bottom-color: var(--accent-text);
+}
+
+.modal-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
 }
 
 .fn-submit,
@@ -1098,7 +1103,11 @@ h1, h2, h3, p, ul, pre, figure { margin: 0; }
   .card-error { color: #F0857D; }
 }
 
-.card-success span:last-child { color: var(--prose); }
+.card-success {
+  margin: 16px 0 0;
+  font-size: 14px;
+  color: var(--prose);
+}
 
 /* ============================================================
    Responsive
@@ -1117,8 +1126,7 @@ h1, h2, h3, p, ul, pre, figure { margin: 0; }
   .doc-rendered { font-size: 15px; }
   .doc-p { font-size: 15px; }
   .doc-table { font-size: 14px; }
-  .card-inner { padding: 10px 16px 12px; }
-  .fn-form input { flex: 1 1 140px; width: auto; }
+  .email-modal { padding: 20px 18px 18px; }
 }
 
 @media (max-width: 400px) {

@@ -281,44 +281,49 @@ const liveStatus = $("#liveStatus");
 const CARD_KEY = "previewmd-card-done";
 
 let cardTimer;
-let cardTrigger = null; // the download link that summoned the card
 
 $$("[data-download]").forEach((a) => {
   a.addEventListener("click", () => {
     /* the download itself is a plain anchor — the browser handles it */
-    if (store.get(CARD_KEY) || card.classList.contains("show")) return;
-    cardTrigger = a;
+    if (store.get(CARD_KEY) || card.open) return;
     clearTimeout(cardTimer);
     cardTimer = setTimeout(showCard, 700);
   });
 });
 
 function showCard() {
-  card.hidden = false;
+  if (card.open) return;
+  card.showModal(); // native <dialog>: focus trap, Escape and backdrop for free
   liveStatus.textContent = "Downloading " + DOWNLOAD_FILE
-    + ". An optional updates-signup footnote appeared.";
-  requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add("show")));
+    + ". An optional updates-signup dialog appeared.";
 }
 
 function dismissCard() {
-  store.set(CARD_KEY, "1");
-  card.classList.remove("show");
-  const hadFocus = card.contains(document.activeElement);
-  setTimeout(() => { card.hidden = true; }, reduceMotion ? 0 : 260);
-  if (hadFocus && cardTrigger) cardTrigger.focus();
-  liveStatus.textContent = "";
+  if (card.open) card.close();
 }
 
-$("#cardClose").addEventListener("click", dismissCard);
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !card.hidden) dismissCard();
+/* any close — No thanks, Escape (native cancel), backdrop click or the
+   post-signup auto-close — counts as "asked and answered" this visit.
+   The dialog returns focus to the triggering link by itself. */
+card.addEventListener("close", () => {
+  store.set(CARD_KEY, "1");
+  liveStatus.textContent = "";
 });
+
+/* classic modal affordance: clicking the dimmed backdrop closes it
+   (the backdrop is the dialog element itself outside its padding box) */
+card.addEventListener("click", (e) => {
+  if (e.target === card) dismissCard();
+});
+
+$("#cardClose").addEventListener("click", dismissCard);
 
 const showSignupSuccess = () => {
   store.set(CARD_KEY, "1");
   cardMain.hidden = true;
   cardSuccess.hidden = false; // role="status" announces it
   card.focus({ preventScroll: true }); // focus was on the hidden button
+  setTimeout(dismissCard, 1800); // linger, then let the reader go
 };
 
 notifyForm.addEventListener("submit", (e) => {
