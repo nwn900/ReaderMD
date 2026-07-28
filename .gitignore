@@ -3,3 +3,4 @@
 .swiftpm/
 dist/
 site/*.zip
+.previewmd-data/

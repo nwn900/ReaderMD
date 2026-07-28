@@ -986,116 +986,179 @@ h1, h2, h3, p, ul, pre, figure { margin: 0; }
 }
 
 /* ============================================================
-   Email footnote card
+   Email updates modal
    ============================================================ */
-/* The signup is a classic centered modal, kept in the page's printed
-   voice: a small slip of the sheet with the book-composition footnote
-   rule, an underline input and text-link actions. Native <dialog>
-   supplies the focus trap, Escape and the backdrop. */
+/* A small native sheet: the app icon and quiet editorial typography
+   keep it in the same visual language as the landing page. */
 .email-modal {
-  width: min(440px, calc(100vw - 32px));
+  width: min(510px, calc(100vw - 32px));
   margin: auto;
   background: var(--sheet);
   color: var(--ink);
   border: 1px solid var(--edge);
-  border-radius: 14px;
-  box-shadow: 0 28px 80px rgba(22, 27, 44, 0.22);
-  padding: 22px 24px 20px;
+  border-radius: 20px;
+  box-shadow: 0 36px 100px rgba(22, 27, 44, 0.28);
+  padding: 34px 36px 30px;
+  overflow: hidden;
 }
-.email-modal::backdrop { background: rgba(22, 27, 44, 0.34); }
+.email-modal::backdrop {
+  background: rgba(22, 27, 44, 0.42);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
 @media (prefers-color-scheme: dark) {
-  .email-modal { box-shadow: none; }
-  .email-modal::backdrop { background: rgba(0, 0, 0, 0.52); }
+  .email-modal {
+    border-color: #30384f;
+    box-shadow: 0 36px 100px rgba(0, 0, 0, 0.42);
+  }
+  .email-modal::backdrop { background: rgba(3, 6, 13, 0.68); }
 }
-.email-modal[open] { animation: modal-in 0.22s ease; }
+.email-modal[open] { animation: modal-in 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
 /* the dialog receives programmatic focus after signup so the status is
    announced; the ring on the whole sheet is noise, not navigation */
 .email-modal:focus-visible { outline: none; }
 @keyframes modal-in {
-  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+  from { opacity: 0; transform: translateY(12px) scale(0.975); }
 }
 
-/* the short left-aligned rule that separates footnotes from the text
-   block in book composition */
-.fn-rule {
-  width: 64px;
-  margin: 0 0 12px;
-  border: 0;
-  border-top: 1px solid var(--slate);
+.modal-prism {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: var(--prism);
 }
 
-.fn-line {
-  display: flex;
-  gap: 9px;
-  align-items: baseline;
-  margin: 0;
-  font-size: 13px;
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0 0 2px;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
   color: var(--slate-deep);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.modal-close:hover {
+  background: var(--code-bg);
+  color: var(--ink);
 }
 
-.fn-mark {
-  flex: none;
+.modal-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 28px;
+  color: var(--slate-deep);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.modal-brand img {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  box-shadow: 0 5px 14px rgba(71, 125, 238, 0.2);
+}
+
+.modal-kicker {
+  margin-bottom: 9px;
   color: var(--accent-text);
-  font-size: 12px;
-}
-.fn-text {
-  font-size: 12px;
-  overflow-wrap: anywhere;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.modal-lead {
-  display: block;
+.modal-title {
+  max-width: 390px;
+  font-family: var(--font-serif);
+  font-size: clamp(32px, 7vw, 42px);
+  font-weight: 500;
+  line-height: 1.03;
+  letter-spacing: -0.025em;
+}
+
+.modal-description {
+  max-width: 410px;
   margin-top: 16px;
-  font-size: 14px;
+  font-size: 15px;
+  line-height: 1.6;
   color: var(--prose);
 }
 
+.modal-form {
+  margin-top: 24px;
+}
+
+.modal-field {
+  display: flex;
+  align-items: stretch;
+  padding: 5px;
+  background: var(--code-bg);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.modal-field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(71, 125, 238, 0.14);
+}
+
 .modal-form input {
-  display: block;
-  width: 100%;
-  margin-top: 12px;
-  padding: 1px 2px 5px;
+  min-width: 0;
+  flex: 1;
+  padding: 10px 11px;
   font: inherit;
   font-size: 14px;
   color: var(--ink);
-  background: none;
+  background: transparent;
   border: 0;
-  border-bottom: 1px solid var(--slate);
-  border-radius: 0;
+  border-radius: 8px;
 }
 .modal-form input::placeholder { color: var(--slate-deep); }
-.modal-form input:focus-visible {
-  outline-offset: 3px;
-  border-bottom-color: var(--accent-text);
-}
+.modal-form input:focus-visible { outline: 0; }
 
-.modal-actions {
-  margin-top: 16px;
-  display: flex;
-  gap: 12px;
-  align-items: baseline;
-}
-
-.fn-submit,
-.fn-dismiss {
+.fn-submit {
+  flex: none;
   border: 0;
-  background: none;
-  padding: 0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: var(--prism);
+  color: #fff;
   cursor: pointer;
   font-size: 13px;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
+  font-weight: 590;
+  box-shadow: 0 5px 14px rgba(71, 125, 238, 0.2);
 }
-.fn-submit { color: var(--accent-text); }
-.fn-dismiss { color: var(--slate-deep); }
-.fn-submit:hover,
-.fn-dismiss:hover { text-decoration-thickness: 2px; }
+.fn-submit:hover { filter: brightness(1.06); }
+.fn-submit:disabled {
+  cursor: wait;
+  filter: saturate(0.65);
+  opacity: 0.72;
+}
 
-.fn-sep { color: var(--slate); }
+.fn-dismiss {
+  display: block;
+  margin: 13px auto 0;
+  padding: 3px 8px;
+  border: 0;
+  background: none;
+  color: var(--slate-deep);
+  cursor: pointer;
+  font-size: 12.5px;
+}
+.fn-dismiss:hover { color: var(--ink); }
 
 .card-error {
-  margin: 6px 0 0;
+  margin: 10px 0 0;
+  text-align: center;
   font-size: 12px;
   color: #B42318;
 }
@@ -1104,9 +1167,11 @@ h1, h2, h3, p, ul, pre, figure { margin: 0; }
 }
 
 .card-success {
-  margin: 16px 0 0;
-  font-size: 14px;
-  color: var(--prose);
+  padding: 30px 0 26px;
+  text-align: center;
+  font-family: var(--font-serif);
+  font-size: 27px;
+  color: var(--ink);
 }
 
 /* ============================================================
@@ -1126,7 +1191,10 @@ h1, h2, h3, p, ul, pre, figure { margin: 0; }
   .doc-rendered { font-size: 15px; }
   .doc-p { font-size: 15px; }
   .doc-table { font-size: 14px; }
-  .email-modal { padding: 20px 18px 18px; }
+  .email-modal { padding: 28px 22px 24px; }
+  .modal-brand { margin-bottom: 22px; }
+  .modal-field { display: block; }
+  .fn-submit { width: 100%; margin-top: 4px; }
 }
 
 @media (max-width: 400px) {

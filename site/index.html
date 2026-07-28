@@ -18,8 +18,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-  <script src="main.js" defer></script>
+  <link rel="stylesheet" href="styles.css?v=db-3">
+  <script src="main.js?v=db-3" defer></script>
 </head>
 <body>
 
@@ -346,24 +346,30 @@ render(doc, mode: <span class="tok-enum">.split</span>)</code></pre>
   </div>
 </footer>
 
-<!-- ============ EMAIL FOOTNOTE CARD ============ -->
+<!-- ============ EMAIL UPDATES MODAL ============ -->
 <p class="sr-only" role="status" id="liveStatus"></p>
-<dialog class="email-modal" id="emailCard" aria-label="Download note and optional updates signup" tabindex="-1">
-  <hr class="fn-rule" aria-hidden="true">
-  <p class="fn-line"><span class="fn-mark mono">&sup1;</span><span class="fn-text mono">Downloading <span data-filename>PreviewMD-1.0-6-macOS.zip</span> — when it opens, drag PreviewMD to Applications.</span></p>
-  <div id="cardMain">
-    <label class="modal-lead" for="emailInput">Occasional notes on updates and new apps&nbsp;&mdash;</label>
-    <form class="modal-form" id="notifyForm" novalidate>
-      <input type="email" id="emailInput" name="email" required placeholder="you@example.com" autocomplete="email" inputmode="email">
-      <div class="modal-actions">
-        <button class="fn-submit" type="submit">Notify me</button>
-        <span class="fn-sep" aria-hidden="true">&middot;</span>
-        <button class="fn-dismiss" id="cardClose" type="button">No thanks</button>
-      </div>
-    </form>
-    <p class="card-error" id="cardError" hidden>Couldn&rsquo;t sign you up &mdash; try again.</p>
+<dialog class="email-modal" id="emailCard" aria-labelledby="emailTitle" aria-describedby="emailDescription" tabindex="-1">
+  <div class="modal-prism" aria-hidden="true"></div>
+  <button class="modal-close" id="cardClose" type="button" aria-label="Close updates signup">&times;</button>
+  <div class="modal-brand">
+    <img src="AppIcon.svg" alt="" width="38" height="38">
+    <span class="mono">PreviewMD updates</span>
   </div>
-  <p class="card-success" id="cardSuccess" role="status" hidden>Noted &mdash; thank you.</p>
+  <div id="cardMain">
+    <p class="modal-kicker mono">A quiet mailing list</p>
+    <h2 class="modal-title" id="emailTitle">The next page,<br>properly announced.</h2>
+    <p class="modal-description" id="emailDescription">Hear about meaningful PreviewMD updates and the occasional new app from Astrography. No noise, no tracking.</p>
+    <form class="modal-form" id="notifyForm" novalidate>
+      <label class="sr-only" for="emailInput">Email address</label>
+      <div class="modal-field">
+        <input type="email" id="emailInput" name="email" required placeholder="you@example.com" autocomplete="email" inputmode="email">
+        <button class="fn-submit" type="submit">Keep me posted</button>
+      </div>
+      <button class="fn-dismiss" id="cardDismiss" type="button">Not now</button>
+    </form>
+    <p class="card-error" id="cardError" role="alert" hidden>Couldn&rsquo;t save your address &mdash; please try again.</p>
+  </div>
+  <p class="card-success" id="cardSuccess" role="status" hidden>You&rsquo;re on the list. Thank you.</p>
 </dialog>
 
 </body>

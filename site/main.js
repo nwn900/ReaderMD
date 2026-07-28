@@ -8,19 +8,11 @@
    and the pre-JS paint read index.html as shipped.
    ============================================================ */
 const DOWNLOAD_FILE = "PreviewMD-1.0-6-macOS.zip";
-const NEWSLETTER_ENDPOINT = ""; // e.g. "https://example.com/api/subscribe" — while empty, submits are NOT stored (console.warn) but the visitor still sees the thanks state
+const NEWSLETTER_ENDPOINT = "/api/subscribe";
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = (sel, root) => (root || document).querySelector(sel);
 const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
-
-/* per-visit flag — sessionStorage, so a dismissal lasts for this visit
-   but a fresh visit may see the footnote again (guarded for
-   private-mode Safari) */
-const store = {
-  get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
-  set(k, v) { try { sessionStorage.setItem(k, v); } catch (e) { /* fine */ } }
-};
 
 /* keep the live DOM in sync with DOWNLOAD_FILE (see header note) */
 $$("[data-download]").forEach((a) => { a.href = DOWNLOAD_FILE; a.setAttribute("download", ""); });
@@ -269,7 +261,7 @@ $$("[data-copy]").forEach((btn) => {
 });
 
 /* ============================================================
-   Email footnote card — strictly optional, never gates the zip
+   Email updates modal — shown after every download click
    ============================================================ */
 const card = $("#emailCard");
 const cardMain = $("#cardMain");
@@ -277,37 +269,29 @@ const cardSuccess = $("#cardSuccess");
 const cardError = $("#cardError");
 const notifyForm = $("#notifyForm");
 const emailInput = $("#emailInput");
+const signupButton = notifyForm.querySelector('[type="submit"]');
 const liveStatus = $("#liveStatus");
-const CARD_KEY = "previewmd-card-done";
-
-let cardTimer;
-
-$$("[data-download]").forEach((a) => {
-  a.addEventListener("click", () => {
-    /* the download itself is a plain anchor — the browser handles it */
-    if (store.get(CARD_KEY) || card.open) return;
-    clearTimeout(cardTimer);
-    cardTimer = setTimeout(showCard, 700);
-  });
-});
 
 function showCard() {
   if (card.open) return;
   card.showModal(); // native <dialog>: focus trap, Escape and backdrop for free
-  liveStatus.textContent = "Downloading " + DOWNLOAD_FILE
-    + ". An optional updates-signup dialog appeared.";
+  liveStatus.textContent = "An optional PreviewMD updates signup appeared.";
 }
 
 function dismissCard() {
   if (card.open) card.close();
 }
 
-/* any close — No thanks, Escape (native cancel), backdrop click or the
-   post-signup auto-close — counts as "asked and answered" this visit.
+/* Reset the form after every close so the modal is ready to open again.
    The dialog returns focus to the triggering link by itself. */
 card.addEventListener("close", () => {
-  store.set(CARD_KEY, "1");
   liveStatus.textContent = "";
+  cardMain.hidden = false;
+  cardSuccess.hidden = true;
+  cardError.hidden = true;
+  notifyForm.reset();
+  signupButton.disabled = false;
+  signupButton.textContent = "Keep me posted";
 });
 
 /* classic modal affordance: clicking the dimmed backdrop closes it
@@ -317,9 +301,15 @@ card.addEventListener("click", (e) => {
 });
 
 $("#cardClose").addEventListener("click", dismissCard);
+$("#cardDismiss").addEventListener("click", dismissCard);
+
+/* Let the native download start, then open the signup on every click.
+   Dismissing it never suppresses a future download-triggered opening. */
+$$("[data-download]").forEach((link) => {
+  link.addEventListener("click", () => setTimeout(showCard, 0));
+});
 
 const showSignupSuccess = () => {
-  store.set(CARD_KEY, "1");
   cardMain.hidden = true;
   cardSuccess.hidden = false; // role="status" announces it
   card.focus({ preventScroll: true }); // focus was on the hidden button
@@ -331,18 +321,13 @@ notifyForm.addEventListener("submit", (e) => {
   const email = emailInput.value.trim();
   if (!email || !emailInput.checkValidity()) { emailInput.reportValidity(); return; }
   cardError.hidden = true;
-
-  if (!NEWSLETTER_ENDPOINT) {
-    /* endpoint not wired up yet — don't break the visitor's flow, but
-       make the misconfiguration loud for the site owner */
-    console.warn("PreviewMD: NEWSLETTER_ENDPOINT is empty — this address was NOT stored:", email);
-    showSignupSuccess();
-    return;
-  }
+  signupButton.disabled = true;
+  signupButton.textContent = "Saving…";
 
   fetch(NEWSLETTER_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
     body: JSON.stringify({ email })
   })
     .then((r) => {
@@ -352,5 +337,9 @@ notifyForm.addEventListener("submit", (e) => {
     .catch((err) => {
       console.warn("PreviewMD: newsletter signup failed —", err);
       cardError.hidden = false; // keep the form so retry is possible
+    })
+    .finally(() => {
+      signupButton.disabled = false;
+      signupButton.textContent = "Keep me posted";
     });
 });

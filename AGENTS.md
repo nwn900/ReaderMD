@@ -39,6 +39,64 @@ Preserve these behaviors unless the user explicitly requests a change:
 - Tables, Mermaid diagrams, KaTeX, code highlighting, local images, and
   relative links must continue to render offline.
 
+## Landing page and mailing list
+
+The landing page lives in `site/`. Run it with the dependency-free application
+server:
+
+```bash
+python3 site/server.py
+```
+
+Do not use `python3 -m http.server` for normal landing-page development or
+production because it does not provide the mailing-list endpoint.
+
+Preserve these landing-page behaviors unless the user explicitly requests a
+change:
+
+- The email signup modal opens only after a visitor clicks any
+  `[data-download]` link. It must not open automatically when the page loads.
+- The modal opens after every download click, even if the visitor previously
+  dismissed it. Do not suppress it with `sessionStorage`, `localStorage`, or a
+  cookie.
+- Clicking Download must still start the native ZIP download; the signup modal
+  must not gate the download.
+- Closing the modal resets its form, error, and success states so it is ready
+  for the next download click.
+
+The form posts same-origin JSON (`{"email":"..."}`) to
+`POST /api/subscribe`. `site/server.py` stores signups in SQLite. The default
+database location is:
+
+```text
+.previewmd-data/subscribers.sqlite3
+```
+
+This directory is a sibling of `site/`, outside the server's public document
+root, and is ignored by Git. Keep it outside `site/`; the database and mailing
+list must never be downloadable through the frontend. Do not commit a database
+containing subscriber addresses.
+
+The database is created automatically on first server startup. It stores only
+the normalized email address and UTC signup time, treats addresses
+case-insensitively, and ignores duplicates. Production hosting must provide a
+persistent filesystem or volume for `.previewmd-data/` and must back it up;
+static-only or ephemeral serverless hosting will not preserve this SQLite
+database across deployments.
+
+The landing server supports:
+
+- `PORT` for the listening port (default `4173`).
+- `PREVIEWMD_SITE_HOST` for the bind address (default `127.0.0.1`).
+- `PREVIEWMD_SUBSCRIBERS_DB` for an alternate persistent database path.
+
+When changing landing JavaScript or CSS, bump the corresponding asset query
+version in `site/index.html` so deployed browsers do not retain stale behavior.
+When changing the released app version, update `DOWNLOAD_FILE` in
+`site/main.js`, every literal ZIP filename and version string in
+`site/index.html`, and the distributable ZIP in `site/`. See `site/README.md`
+for operational details.
+
 ## Building
 
 For a local application bundle:
