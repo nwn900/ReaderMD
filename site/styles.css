@@ -213,6 +213,14 @@ h1, h2, h3, p, ul, pre, figure { margin: 0; }
     repeating-linear-gradient(to right, var(--tickc) 0 1px, transparent 1px 26px);
 }
 
+/* Stop positions live here rather than in a style attribute so the page needs
+   no 'unsafe-inline' in its Content-Security-Policy. Each value is the measure's
+   fraction of the 560–1600 px track. */
+.ruler-stop[data-measure="560"]  { --x: 0%; }
+.ruler-stop[data-measure="800"]  { --x: 23.08%; }
+.ruler-stop[data-measure="1120"] { --x: 53.85%; }
+.ruler-stop[data-measure="1600"] { --x: 100%; }
+
 .ruler-stop {
   position: absolute;
   top: 11px;
