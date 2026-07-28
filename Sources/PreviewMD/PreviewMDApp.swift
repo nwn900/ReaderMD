@@ -27,7 +27,21 @@ struct PreviewMDApp: App {
                 .environmentObject(state)
                 .frame(width: 520, height: 360)
         }
+
+        // Replaces the standard About panel, which cannot show the bundled
+        // renderers' license texts. `.commandsRemoved` keeps it out of the
+        // Window menu; it is reached only from the app menu.
+        Window("About PreviewMD", id: AboutWindow.id) {
+            AboutView()
+        }
+        .defaultSize(width: 560, height: 620)
+        .windowResizability(.contentMinSize)
+        .commandsRemoved()
     }
+}
+
+enum AboutWindow {
+    static let id = "about"
 }
 
 @MainActor
@@ -70,8 +84,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 struct PreviewMDCommands: Commands {
     @ObservedObject var state: AppState
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
+        CommandGroup(replacing: .appInfo) {
+            Button("About PreviewMD") {
+                openWindow(id: AboutWindow.id)
+                NSApp.activate(ignoringOtherApps: true)
+            }
+        }
+
         CommandGroup(replacing: .newItem) {
             Button("Open…") {
                 state.presentOpenPanel()

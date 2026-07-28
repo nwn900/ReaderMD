@@ -11,6 +11,12 @@ Sp. z o.o. and authored by Adam Jesionkiewicz (`adam@jesion.pl`).
 - The bundle identifier is `pl.jesion.previewmd`.
 - The exported Markdown UTI is `pl.jesion.previewmd.markdown`.
 - The About window must show the author, email, and copyright year 2026.
+- The About window must also carry the bundled renderers' full license texts
+  and copyright lines. The MIT and BSD licenses require those notices to ship
+  with every copy, so they are compiled into the binary
+  (`Acknowledgements.swift`), never left to a resource file or a repo-level
+  Markdown file that packaging can silently drop. Upgrading a vendored library
+  means updating its version and license text there in the same commit.
 
 ## Product invariants
 
