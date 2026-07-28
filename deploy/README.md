@@ -71,6 +71,15 @@ proxies exactly one path to it.
 | `deploy/nginx-previewmd.conf` | spliced into `/etc/nginx/sites-available/experiments.frontierslab.ai` |
 | rate-limit zone | `/etc/nginx/conf.d/previewmd-ratelimit.conf` |
 
+These are copied into place rather than `include`d from the working tree on
+purpose: an `include` would let anything that can write to the clone rewrite the
+web server's configuration on the next reload.
+
+The page is served under a strict Content-Security-Policy, which is only
+possible because it has no inline `<script>`, no inline `<style>` and no `style`
+attributes. Keep it that way — see the ruler-stop rules in `site/styles.css` for
+the pattern to follow when something needs a computed position.
+
 ```bash
 sudo systemctl status previewmd-signup
 sudo journalctl -u previewmd-signup -n 50
