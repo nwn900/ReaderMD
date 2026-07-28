@@ -796,7 +796,7 @@ private struct FeatureSummary: View {
     private var features: [(String, String)] {
         var result: [(String, String)] = []
         if markdown.contains("|") { result.append(("Tables", "tablecells")) }
-        if markdown.contains("```mermaid") { result.append(("Mermaid", "point.3.connected.trianglepath.dotted")) }
+        if markdown.contains("```mermaid") { result.append(("Diagrams", "point.3.connected.trianglepath.dotted")) }
         if markdown.contains("$$") || markdown.contains("\\[") { result.append(("Math", "sum")) }
         if markdown.contains("```") { result.append(("Code", "chevron.left.forwardslash.chevron.right")) }
         if markdown.contains("- [") { result.append(("Tasks", "checkmark.square")) }
@@ -1048,11 +1048,14 @@ struct SettingsView: View {
                 Toggle("Show document as a paper canvas", isOn: $state.usesPaperCanvas)
             }
 
+            // Describes what the renderer can set, not which engines set it.
+            // The engines are named only where their licenses require it —
+            // see Acknowledgements.swift and the About window.
             Section("Rendering") {
                 LabeledContent("Markdown", value: "GitHub Flavored")
-                LabeledContent("Diagrams", value: "Mermaid")
-                LabeledContent("Math", value: "KaTeX")
-                LabeledContent("Code", value: "Highlight.js")
+                LabeledContent("Diagrams", value: "Flowcharts & charts")
+                LabeledContent("Math", value: "Inline & display")
+                LabeledContent("Code", value: "Syntax highlighted")
             }
         }
         .formStyle(.grouped)

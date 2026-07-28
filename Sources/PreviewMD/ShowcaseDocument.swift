@@ -13,7 +13,7 @@ enum ShowcaseDocument {
     | :--- | :---: | :--- | ---: |
     | Native macOS shell | ✅ Ready | Design | 100% |
     | GFM renderer | ✅ Ready | Platform | 100% |
-    | Mermaid diagrams | ✅ Ready | Data | 100% |
+    | Diagrams and charts | ✅ Ready | Data | 100% |
     | PDF export | 🟣 Polishing | Product | 92% |
 
     ## Workflow at a glance
@@ -40,7 +40,7 @@ enum ShowcaseDocument {
 
     ### Mathematics, typeset properly
 
-    The Gaussian integral is rendered by KaTeX:
+    The Gaussian integral, set the way print would set it:
 
     $$
     \int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}

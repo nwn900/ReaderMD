@@ -62,6 +62,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         false
     }
 
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // The menu bar finishes assembling a runloop turn after launch.
+        DispatchQueue.main.async {
+            self.adoptSidebarToggle()
+        }
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        // Cheap insurance: if a slow cold start had AppKit insert its item after
+        // the pass above, this catches it. The move is idempotent — once the
+        // item is in the View menu there is nothing left to find.
+        adoptSidebarToggle()
+    }
+
+    /// Moves AppKit's automatic "Toggle Sidebar" item into the View menu.
+    ///
+    /// AppKit inserts that item itself whenever the main menu has nothing wired
+    /// to `toggleSidebar:`. Every SwiftUI command routes through a private
+    /// `menuAction:` instead, so AppKit never finds one, and appends its item to
+    /// the last menu in the bar — which is Help.
+    ///
+    /// Adopting AppKit's own item is better than declaring a SwiftUI button that
+    /// forwards the selector: this one keeps the standard shortcut and, more
+    /// importantly, the standard validation, so it greys out when the front
+    /// window has no sidebar to toggle.
+    private func adoptSidebarToggle() {
+        let toggleSidebar = #selector(NSSplitViewController.toggleSidebar(_:))
+
+        guard let mainMenu = NSApp.mainMenu,
+              let viewMenu = mainMenu.items.first(where: { $0.title == "View" })?.submenu
+        else { return }
+
+        let menus = mainMenu.items.compactMap(\.submenu)
+        guard let stray = menus.lazy
+            .filter({ $0 !== viewMenu })
+            .compactMap({ menu in menu.items.first { $0.action == toggleSidebar } })
+            .first
+        else { return }
+
+        stray.menu?.removeItem(stray)
+        viewMenu.insertItem(stray, at: 0)
+        viewMenu.insertItem(.separator(), at: 1)
+    }
+
     private func openOrQueue(_ urls: [URL]) {
         let supportedURLs = urls.filter(MarkdownFileSupport.accepts)
         guard !supportedURLs.isEmpty else { return }
@@ -131,7 +175,14 @@ struct PreviewMDCommands: Commands {
             .disabled(state.currentDocument == nil)
         }
 
-        CommandMenu("View") {
+        // Everything here belongs to the View menu, so it has to be a
+        // CommandGroup in the `.sidebar` placement rather than a
+        // CommandMenu("View"): SwiftUI already builds a View menu for the split
+        // view, so a second menu of the same name sat beside it in the menu bar.
+        //
+        // AppKit's own Toggle Sidebar item is not declared here — see
+        // AppDelegate.adoptSidebarToggle().
+        CommandGroup(replacing: .sidebar) {
             Picker("Display Mode", selection: $state.displayMode) {
                 ForEach(DisplayMode.allCases) { mode in
                     Label(mode.title, systemImage: mode.symbol).tag(mode)
