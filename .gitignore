@@ -3,3 +3,4 @@
 .swiftpm/
 dist/
 .previewmd-data/
+.playwright-mcp/
