@@ -11,14 +11,14 @@ struct WorkspaceView: View {
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             SidebarView()
-                .navigationSplitViewColumnWidth(min: 210, ideal: 238, max: 286)
+                .navigationSplitViewColumnWidth(min: 160, ideal: 176, max: 192)
         } detail: {
             detail
         }
         .navigationSplitViewStyle(.balanced)
         .inspector(isPresented: inspectorPresentation) {
             OutlineInspector()
-                .inspectorColumnWidth(min: 232, ideal: 268, max: 320)
+                .inspectorColumnWidth(min: 180, ideal: 200, max: 232)
         }
         .searchable(
             text: $state.searchText,
@@ -59,6 +59,9 @@ struct WorkspaceView: View {
             isSearchPresented = true
         }
         .onChange(of: state.theme) {
+            state.updatePreferences()
+        }
+        .onChange(of: state.readingStyle) {
             state.updatePreferences()
         }
         .onChange(of: state.readingWidth) {
@@ -143,6 +146,14 @@ private struct ToolbarUtilities: View {
     var body: some View {
         ControlGroup {
             Menu {
+                Picker("Style", selection: $state.readingStyle) {
+                    ForEach(ReadingStyle.allCases) { style in
+                        Label(style.title, systemImage: style.symbol).tag(style)
+                    }
+                }
+
+                Divider()
+
                 Picker("Theme", selection: $state.theme) {
                     ForEach(PreviewTheme.allCases) { theme in
                         Label(theme.title, systemImage: theme.symbol).tag(theme)
@@ -245,7 +256,7 @@ private struct SidebarView: View {
             List {
                 Section {
                     SidebarRow(
-                        title: "PreviewMD Showcase",
+                        title: "Showcase",
                         subtitle: "Explore every renderer",
                         symbol: "sparkles.rectangle.stack",
                         isSelected: state.sidebarSelection == "welcome"
@@ -509,6 +520,7 @@ private struct PreviewPane: View {
                 markdown: document.content,
                 documentURL: document.url,
                 theme: state.theme,
+                readingStyle: state.readingStyle,
                 readingWidth: state.effectiveReadingWidth,
                 usesPaperCanvas: state.usesPaperCanvas,
                 zoom: state.zoom,
@@ -1005,6 +1017,16 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Appearance") {
+                Picker("Style", selection: $state.readingStyle) {
+                    ForEach(ReadingStyle.allCases) { style in
+                        Label(style.title, systemImage: style.symbol).tag(style)
+                    }
+                }
+
+                Text(state.readingStyle.subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 Picker("Theme", selection: $state.theme) {
                     ForEach(PreviewTheme.allCases) { theme in
                         Label(theme.title, systemImage: theme.symbol).tag(theme)
@@ -1036,6 +1058,7 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .padding()
         .onChange(of: state.theme) { state.updatePreferences() }
+        .onChange(of: state.readingStyle) { state.updatePreferences() }
         .onChange(of: state.readingWidth) { state.updatePreferences() }
         .onChange(of: state.customReadingWidth) { state.updatePreferences() }
         .onChange(of: state.usesPaperCanvas) { state.updatePreferences() }

@@ -62,6 +62,7 @@ struct MarkdownWebView: NSViewRepresentable {
     let markdown: String
     let documentURL: URL?
     let theme: PreviewTheme
+    let readingStyle: ReadingStyle
     let readingWidth: Int
     let usesPaperCanvas: Bool
     let zoom: Double
@@ -82,6 +83,7 @@ struct MarkdownWebView: NSViewRepresentable {
         RenderPayload(
             markdown: markdown,
             theme: theme.rawValue,
+            readingStyle: readingStyle.rawValue,
             systemDark: colorScheme == .dark,
             readingWidth: readingWidth,
             paperCanvas: usesPaperCanvas,
@@ -154,6 +156,7 @@ struct MarkdownWebView: NSViewRepresentable {
     struct RenderPayload: Codable, Equatable {
         let markdown: String
         let theme: String
+        let readingStyle: String
         let systemDark: Bool
         let readingWidth: Int
         let paperCanvas: Bool
@@ -164,6 +167,7 @@ struct MarkdownWebView: NSViewRepresentable {
         func requiresFullRender(comparedTo other: Self) -> Bool {
             markdown != other.markdown
                 || theme != other.theme
+                || readingStyle != other.readingStyle
                 || systemDark != other.systemDark
         }
 
@@ -178,7 +182,7 @@ struct MarkdownWebView: NSViewRepresentable {
         var rootHTMLAttributes: String {
             let paperValue = paperCanvas ? "true" : "false"
             return """
-            data-theme="\(initialTheme)" data-paper="\(paperValue)" \
+            data-theme="\(initialTheme)" data-style="\(readingStyle)" data-paper="\(paperValue)" \
             style="--reading-width: \(readingWidth)px"
             """
         }

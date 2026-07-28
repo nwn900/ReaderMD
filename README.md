@@ -11,6 +11,7 @@ A native macOS Markdown reader with a print-inspired preview, editing, tabs, out
 - Preview, source, and live split modes
 - Tabs, recent files, pinning, drag and drop, local images and relative links
 - A live 560–1600 px reading-width ruler with a one-click table/data layout
+- Modern, Classic, and Editorial reading styles with offline system typography
 - Native macOS sidebar, toolbar, menus, keyboard shortcuts, and dark mode
 - Narrow, comfortable, wide, and table presets, plus optional paper canvas
 - Fully offline rendering

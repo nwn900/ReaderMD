@@ -340,6 +340,7 @@
       (options.theme === "system" && options.systemDark === true);
 
     root.dataset.theme = isDark ? "dark" : "light";
+    root.dataset.style = options.readingStyle || "modern";
     window.previewmdSetLayout(options.readingWidth, options.paperCanvas);
     activeSearchText = options.searchText || "";
     errorBox.hidden = true;

@@ -34,6 +34,26 @@ final class AppStateTests: XCTestCase {
         XCTAssertFalse(state.usesPaperCanvas)
     }
 
+    func testReadingStyleDefaultsToModern() throws {
+        let state = try makeState()
+
+        XCTAssertEqual(state.readingStyle, .modern)
+    }
+
+    func testReadingStylePersists() throws {
+        let suiteName = "PreviewMDTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let state = AppState(defaults: defaults)
+        state.readingStyle = .classic
+        state.updatePreferences()
+
+        let restoredState = AppState(defaults: defaults)
+        XCTAssertEqual(restoredState.readingStyle, .classic)
+    }
+
     func testShowcaseDocumentIsEmbeddedInTheExecutable() throws {
         let state = try makeState()
 
@@ -87,6 +107,7 @@ final class AppStateTests: XCTestCase {
         let payload = MarkdownWebView.RenderPayload(
             markdown: "# Current settings",
             theme: PreviewTheme.dark.rawValue,
+            readingStyle: ReadingStyle.classic.rawValue,
             systemDark: false,
             readingWidth: 1_440,
             paperCanvas: false,
@@ -99,7 +120,7 @@ final class AppStateTests: XCTestCase {
 
         XCTAssertTrue(
             html.contains(
-                #"<html lang="en" data-theme="dark" data-paper="false" style="--reading-width: 1440px">"#
+                #"<html lang="en" data-theme="dark" data-style="classic" data-paper="false" style="--reading-width: 1440px">"#
             )
         )
     }

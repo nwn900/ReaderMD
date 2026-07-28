@@ -10,6 +10,7 @@ final class AppState: ObservableObject {
     @Published var recentDocuments: [RecentDocument] = []
     @Published var displayMode: DisplayMode = .preview
     @Published var theme: PreviewTheme = .system
+    @Published var readingStyle: ReadingStyle = .modern
     @Published var readingWidth: ReadingWidth = .comfortable
     @Published var customReadingWidth: Double = 820
     @Published var usesPaperCanvas = false
@@ -26,6 +27,7 @@ final class AppState: ObservableObject {
     private let defaults: UserDefaults
     private let recentKey = "recentDocuments.v1"
     private let themeKey = "previewTheme"
+    private let styleKey = "readingStyle"
     private let widthKey = "readingWidth"
     private let customWidthKey = "customReadingWidth"
     private let paperKey = "usesPaperCanvas"
@@ -315,6 +317,7 @@ final class AppState: ObservableObject {
 
     func updatePreferences() {
         defaults.set(theme.rawValue, forKey: themeKey)
+        defaults.set(readingStyle.rawValue, forKey: styleKey)
         defaults.set(readingWidth.rawValue, forKey: widthKey)
         defaults.set(customReadingWidth, forKey: customWidthKey)
         defaults.set(usesPaperCanvas, forKey: paperKey)
@@ -324,6 +327,10 @@ final class AppState: ObservableObject {
         if let rawTheme = defaults.string(forKey: themeKey),
            let savedTheme = PreviewTheme(rawValue: rawTheme) {
             theme = savedTheme
+        }
+        if let rawStyle = defaults.string(forKey: styleKey),
+           let savedStyle = ReadingStyle(rawValue: rawStyle) {
+            readingStyle = savedStyle
         }
         if let rawWidth = defaults.string(forKey: widthKey),
            let savedWidth = ReadingWidth(rawValue: rawWidth) {

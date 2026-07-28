@@ -25,11 +25,19 @@ Preserve these behaviors unless the user explicitly requests a change:
   existing main window rather than creating unnecessary windows.
 - Drag and drop works across the main window.
 - The left sidebar is collapsed by default.
+- When opened, the left sidebar should start near 200 pt and remain compact
+  like the sidebar in Preview rather than consuming document-reading space.
+- The document inspector should also open near 200 pt, expanding only enough
+  to keep outline and insight content usable.
 - The document inspector is collapsed by default.
 - Use the regular unified macOS toolbar, with a height comparable to Preview;
   do not switch the main window back to the compact toolbar style.
 - Let the system own the sidebar and inspector surfaces. Do not stack custom
   translucent materials on top of `NavigationSplitView` or `.inspector`.
+- Do not force a single opaque background across the window toolbar; the
+  sidebar surface must continue through the title bar like system macOS apps.
+- On macOS 26 and newer, keep the neutral detail background eligible for
+  `backgroundExtensionEffect()` so the system sidebar can sample content.
 - Paper canvas is disabled by default.
 - Documents open immediately with the current saved appearance settings; do
   not briefly render with paper canvas or another default layout first.
@@ -169,9 +177,8 @@ xcrun stapler validate dist/PreviewMD.app
 spctl --assess --type execute --verbose=4 dist/PreviewMD.app
 ```
 
-The most recently accepted release at the time this file was created was
-PreviewMD `1.0 (5)`, notarization submission
-`49c173da-2c44-464f-93ea-35130bd6d2c4`.
+The most recently accepted release is PreviewMD `1.0 (6)`, notarization
+submission `2da326ef-f24d-4437-b793-6a86ed171de0`.
 
 ## Versioning
 

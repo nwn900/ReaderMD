@@ -20,6 +20,8 @@
   --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, sans-serif;
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, sans-serif;
   --font-mono: "SFMono-Regular", "SF Mono", ui-monospace, Menlo, Monaco, monospace;
+  --body-size: 16px;
+  --body-leading: 1.72;
 }
 
 :root[data-theme="dark"] {
@@ -40,6 +42,88 @@
   --shadow: 0 24px 75px rgba(0, 0, 0, 0.32), 0 2px 12px rgba(0, 0, 0, 0.25);
 }
 
+:root[data-style="classic"] {
+  --page: #fcfbf6;
+  --canvas: #eae6dd;
+  --canvas-glow: rgba(255, 253, 246, 0.86);
+  --ink: #28241e;
+  --muted: #686057;
+  --faint: #91877b;
+  --line: #ded8cd;
+  --line-strong: #c8beaf;
+  --accent: #8f5037;
+  --accent-soft: #f3e7dc;
+  --link: #7e4935;
+  --code-bg: #f4f0e8;
+  --code-ink: #352f29;
+  --quote: #f7f2e9;
+  --shadow: 0 22px 68px rgba(58, 48, 35, 0.12), 0 2px 8px rgba(58, 48, 35, 0.05);
+  --radius: 3px;
+  --font-body: "New York", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, ui-serif, serif;
+  --font-display: "New York", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, ui-serif, serif;
+  --body-size: 18px;
+  --body-leading: 1.7;
+}
+
+:root[data-theme="dark"][data-style="classic"] {
+  --page: #211f1b;
+  --canvas: #151411;
+  --canvas-glow: rgba(59, 54, 45, 0.52);
+  --ink: #eee9df;
+  --muted: #c0b7aa;
+  --faint: #91897e;
+  --line: #3d3932;
+  --line-strong: #565046;
+  --accent: #d69778;
+  --accent-soft: #432e25;
+  --link: #e2a88b;
+  --code-bg: #191815;
+  --code-ink: #ebe4da;
+  --quote: #292620;
+  --shadow: 0 24px 75px rgba(0, 0, 0, 0.36), 0 2px 12px rgba(0, 0, 0, 0.24);
+}
+
+:root[data-style="editorial"] {
+  --page: #fffefd;
+  --canvas: #e9ecef;
+  --canvas-glow: rgba(255, 255, 255, 0.9);
+  --ink: #171a1f;
+  --muted: #62666c;
+  --faint: #8a8e94;
+  --line: #dfe1e3;
+  --line-strong: #c7c9cc;
+  --accent: #c74e35;
+  --accent-soft: #fae9e4;
+  --link: #aa3f2b;
+  --code-bg: #f4f5f6;
+  --code-ink: #2b2e33;
+  --quote: #f8f4f1;
+  --shadow: 0 24px 72px rgba(24, 29, 36, 0.13), 0 2px 9px rgba(24, 29, 36, 0.05);
+  --radius: 5px;
+  --font-body: "Avenir Next", Avenir, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  --font-display: "New York", "Iowan Old Style", Charter, Georgia, ui-serif, serif;
+  --body-size: 16.5px;
+  --body-leading: 1.68;
+}
+
+:root[data-theme="dark"][data-style="editorial"] {
+  --page: #1c1e21;
+  --canvas: #111315;
+  --canvas-glow: rgba(47, 50, 54, 0.5);
+  --ink: #f0efec;
+  --muted: #b8b8b5;
+  --faint: #858686;
+  --line: #35383c;
+  --line-strong: #494d52;
+  --accent: #ed8067;
+  --accent-soft: #462c28;
+  --link: #f09a84;
+  --code-bg: #17191b;
+  --code-ink: #e8e8e5;
+  --quote: #252427;
+  --shadow: 0 25px 76px rgba(0, 0, 0, 0.35), 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -58,8 +142,8 @@ body {
     radial-gradient(circle at 50% -20%, var(--canvas-glow), transparent 42%),
     var(--canvas);
   font-family: var(--font-body);
-  font-size: 16px;
-  line-height: 1.72;
+  font-size: var(--body-size);
+  line-height: var(--body-leading);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   transition: background 180ms ease, color 180ms ease;
@@ -608,6 +692,184 @@ sup {
 .footnote-backref {
   color: var(--accent);
   font-weight: 600;
+}
+
+:root[data-style="classic"] #reading-progress {
+  background: linear-gradient(90deg, #8f5037, #c99b72);
+}
+
+:root[data-style="classic"] #preview-document {
+  letter-spacing: 0.002em;
+}
+
+:root[data-style="classic"] h1,
+:root[data-style="classic"] h2,
+:root[data-style="classic"] h3,
+:root[data-style="classic"] h4,
+:root[data-style="classic"] h5,
+:root[data-style="classic"] h6 {
+  text-wrap: balance;
+}
+
+:root[data-style="classic"] h1 {
+  padding-bottom: 0;
+  border-bottom: 0;
+  font-size: clamp(2.3rem, 4.2vw, 3.15rem);
+  font-weight: 700;
+  line-height: 1.16;
+  letter-spacing: -0.025em;
+}
+
+:root[data-style="classic"] h2 {
+  padding-bottom: 0;
+  border-bottom: 0;
+  font-size: 1.72rem;
+  letter-spacing: -0.018em;
+}
+
+:root[data-style="classic"] h3 {
+  font-size: 1.35rem;
+  letter-spacing: -0.012em;
+}
+
+:root[data-style="classic"] h4 {
+  font-size: 1.08rem;
+  letter-spacing: 0;
+}
+
+:root[data-style="classic"] h1 + p {
+  margin: 1.35em 0 1.7em;
+  color: var(--muted);
+  font-size: 1.04em;
+  font-style: italic;
+  line-height: 1.62;
+}
+
+:root[data-style="classic"] p,
+:root[data-style="classic"] li,
+:root[data-style="classic"] blockquote {
+  font-kerning: normal;
+  font-variant-numeric: oldstyle-nums proportional-nums;
+  text-wrap: pretty;
+}
+
+:root[data-style="classic"] blockquote {
+  padding: 0.55em 0 0.55em 1.35em;
+  border-left-width: 1px;
+  border-radius: 0;
+  background: transparent;
+  font-style: italic;
+}
+
+:root[data-style="classic"] .code-card,
+:root[data-style="classic"] .diagram-card,
+:root[data-style="classic"] .table-scroll,
+:root[data-style="classic"] .katex-display,
+:root[data-style="classic"] img {
+  border-radius: 2px;
+}
+
+:root[data-style="classic"] .task-list-item > input,
+:root[data-style="classic"] .task-list-item > p > input {
+  border-radius: 1px;
+}
+
+:root[data-style="classic"] th {
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+:root[data-style="editorial"] #reading-progress {
+  background: linear-gradient(90deg, #c74e35, #f0a04b);
+}
+
+:root[data-style="editorial"] h1,
+:root[data-style="editorial"] h2,
+:root[data-style="editorial"] h3,
+:root[data-style="editorial"] h4,
+:root[data-style="editorial"] h5,
+:root[data-style="editorial"] h6 {
+  text-wrap: balance;
+}
+
+:root[data-style="editorial"] h1 {
+  padding-top: 0.28em;
+  padding-bottom: 0;
+  border-top: 0.12em solid var(--accent);
+  border-bottom: 0;
+  font-size: clamp(2.65rem, 5.2vw, 4.15rem);
+  font-weight: 650;
+  line-height: 1.03;
+  letter-spacing: -0.05em;
+}
+
+:root[data-style="editorial"] h2 {
+  padding-bottom: 0.58em;
+  border-bottom: 2px solid var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+:root[data-style="editorial"] h3 {
+  font-size: 1.52rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+:root[data-style="editorial"] h4,
+:root[data-style="editorial"] h5,
+:root[data-style="editorial"] h6 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+:root[data-style="editorial"] h1 + p {
+  margin: 1.15em 0 1.65em;
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 1.16em;
+  line-height: 1.55;
+}
+
+:root[data-style="editorial"] p,
+:root[data-style="editorial"] li {
+  text-wrap: pretty;
+}
+
+:root[data-style="editorial"] a {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+:root[data-style="editorial"] blockquote {
+  padding: 1em 0.1em;
+  border-top: 1px solid var(--line-strong);
+  border-right: 0;
+  border-bottom: 1px solid var(--line-strong);
+  border-left: 0;
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--font-display);
+  font-size: 1.15em;
+  font-style: italic;
+}
+
+:root[data-style="editorial"] .code-card,
+:root[data-style="editorial"] .diagram-card,
+:root[data-style="editorial"] .table-scroll,
+:root[data-style="editorial"] .katex-display,
+:root[data-style="editorial"] img {
+  border-radius: 4px;
+}
+
+:root[data-style="editorial"] th {
+  font-size: 0.76em;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
 }
 
 #render-error {

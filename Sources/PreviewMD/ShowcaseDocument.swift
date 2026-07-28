@@ -78,7 +78,7 @@ enum ShowcaseDocument {
 
     ## Small details, big difference
 
-    Long tables scroll instead of breaking the page. Code blocks keep their language label. Links to local Markdown open as new tabs, while web links open in your browser. Your theme, reading width, paper mode, and recents persist between launches.[^privacy]
+    Long tables scroll instead of breaking the page. Code blocks keep their language label. Links to local Markdown open as new tabs, while web links open in your browser. Your reading style, theme, reading width, paper mode, and recents persist between launches.[^privacy]
 
     [^privacy]: Rendering is offline. PreviewMD does not upload the contents of your documents.
     """#

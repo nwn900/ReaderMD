@@ -59,6 +59,38 @@ enum PreviewTheme: String, CaseIterable, Identifiable {
     }
 }
 
+enum ReadingStyle: String, CaseIterable, Identifiable {
+    case modern
+    case classic
+    case editorial
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .modern: "Modern"
+        case .classic: "Classic"
+        case .editorial: "Editorial"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .modern: "Clean system typography"
+        case .classic: "Warm, literary serif"
+        case .editorial: "Serif headlines, crisp body"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .modern: "textformat"
+        case .classic: "character.book.closed"
+        case .editorial: "newspaper"
+        }
+    }
+}
+
 enum ReadingWidth: String, CaseIterable, Identifiable {
     case narrow
     case comfortable
