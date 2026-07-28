@@ -2,5 +2,4 @@
 .build/
 .swiftpm/
 dist/
-site/*.zip
 .previewmd-data/

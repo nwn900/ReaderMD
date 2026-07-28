@@ -8,7 +8,10 @@
    and the pre-JS paint read index.html as shipped.
    ============================================================ */
 const DOWNLOAD_FILE = "PreviewMD-1.0-6-macOS.zip";
-const NEWSLETTER_ENDPOINT = "/api/subscribe";
+/* Document-relative on purpose: the page is served from the site root in local
+   development and from a /<slug>/ subpath in production. A leading slash would
+   miss the proxied endpoint there. */
+const NEWSLETTER_ENDPOINT = "api/subscribe";
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = (sel, root) => (root || document).querySelector(sel);

@@ -30,3 +30,7 @@ Environment variables:
 - `PORT` changes the listening port (default: `4173`).
 - `PREVIEWMD_SITE_HOST` changes the bind address (default: `127.0.0.1`).
 - `PREVIEWMD_SUBSCRIBERS_DB` changes the SQLite database path.
+
+The signup endpoint is requested document-relative, so the page works both at
+the server root (local development) and under a `/<slug>/` subpath (production).
+See `deploy/README.md` for how it is published and released.
