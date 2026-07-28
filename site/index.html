@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PreviewMD — Plain text, properly typeset.</title>
-  <meta name="description" content="PreviewMD is a free, native macOS Markdown reader with a print-inspired preview — tables, Mermaid diagrams, KaTeX math and highlighted code, rendered entirely offline. macOS 14+, notarized, ~3.5 MB.">
+  <meta name="description" content="PreviewMD is a free, native macOS Markdown reader with a print-inspired preview — tables, diagrams, math and highlighted code, rendered entirely offline. macOS 14+, notarized, ~3.5 MB.">
   <meta property="og:title" content="PreviewMD — Plain text, properly typeset.">
   <meta property="og:description" content="A native macOS reader for Markdown — tables, diagrams, math and code rendered like a printed page. Everything happens on your Mac; nothing leaves it. Free download.">
   <meta property="og:type" content="website">
@@ -18,8 +18,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=db-4">
-  <script src="main.js?v=db-4" defer></script>
+  <link rel="stylesheet" href="styles.css?v=db-5">
+  <script src="main.js?v=db-5" defer></script>
 </head>
 <body>
 
@@ -100,8 +100,8 @@
             <div class="row" data-row="3">
               <ul class="doc-tasks">
                 <li class="done"><span class="checkbox" aria-hidden="true"></span>Tables &amp; task lists</li>
-                <li class="done"><span class="checkbox" aria-hidden="true"></span>Mermaid diagrams</li>
-                <li class="done"><span class="checkbox" aria-hidden="true"></span>KaTeX math</li>
+                <li class="done"><span class="checkbox" aria-hidden="true"></span>Diagrams &amp; charts</li>
+                <li class="done"><span class="checkbox" aria-hidden="true"></span>Math &amp; equations</li>
               </ul>
             </div>
             <div class="row" data-row="4">
@@ -130,8 +130,8 @@ Mac; nothing leaves it.</pre></div>
 <span class="mk">|</span> Binary <span class="mk">|</span> Universal 2 <span class="mk">|</span>
 <span class="mk">|</span> Size   <span class="mk">|</span> ~3.5 MB     <span class="mk">|</span></pre></div>
             <div class="row" data-row="3"><pre class="src"><span class="mk">- [x]</span> Tables &amp; task lists
-<span class="mk">- [x]</span> Mermaid diagrams
-<span class="mk">- [x]</span> KaTeX math</pre></div>
+<span class="mk">- [x]</span> Diagrams &amp; charts
+<span class="mk">- [x]</span> Math &amp; equations</pre></div>
             <div class="row" data-row="4"><pre class="src"><span class="mk">$</span>E = mc^2<span class="mk">$</span></pre></div>
             <div class="row" data-row="5"><pre class="src"><span class="mk">[</span><a class="src-link" href="PreviewMD-1.0-6-macOS.zip" download data-download tabindex="-1">Download for macOS — free</a><span class="mk">](</span><span class="src-target" data-filename>PreviewMD-1.0-6-macOS.zip</span><span class="mk">)</span></pre></div>
           </div>
@@ -162,35 +162,35 @@ Mac; nothing leaves it.</pre></div>
         <p class="clip-label">GFM tables</p>
         <div class="clip-body">
           <table class="doc-table">
-            <thead><tr><th>Renderer</th><th>Bundled</th></tr></thead>
+            <thead><tr><th>Feature</th><th>Offline</th></tr></thead>
             <tbody>
-              <tr><td>markdown-it</td><td>yes</td></tr>
-              <tr><td>Mermaid</td><td>yes</td></tr>
-              <tr><td>KaTeX</td><td>yes</td></tr>
+              <tr><td>Diagrams</td><td>yes</td></tr>
+              <tr><td>Math</td><td>yes</td></tr>
+              <tr><td>Highlighting</td><td>yes</td></tr>
             </tbody>
           </table>
         </div>
-        <figcaption class="mono"><pre>| Renderer    | Bundled |
-|-------------|---------|
-| markdown-it | yes     |
-| Mermaid     | yes     |
-| KaTeX       | yes     |</pre></figcaption>
+        <figcaption class="mono"><pre>| Feature      | Offline |
+|--------------|---------|
+| Diagrams     | yes     |
+| Math         | yes     |
+| Highlighting | yes     |</pre></figcaption>
       </figure>
 
       <figure class="clipping">
-        <p class="clip-label">Mermaid diagrams</p>
-        <div class="clip-body clip-mermaid">
+        <p class="clip-label">Diagrams &amp; charts</p>
+        <div class="clip-body clip-diagram">
           <svg viewBox="0 0 352 88" role="img" aria-label="Flowchart: a Markdown file flows into PreviewMD, which flows into a typeset page.">
             <defs>
-              <marker id="mmArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <marker id="dgArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                 <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
               </marker>
             </defs>
-            <g class="mm-node"><rect x="6" y="26" width="66" height="36" rx="8"/><text x="39" y="49">.md</text></g>
-            <path class="mm-edge" d="M74 44h40" marker-end="url(#mmArrow)"/>
-            <g class="mm-node mm-app"><rect x="120" y="26" width="116" height="36" rx="18"/><text x="178" y="49">PreviewMD</text></g>
-            <path class="mm-edge" d="M238 44h40" marker-end="url(#mmArrow)"/>
-            <g class="mm-node"><rect x="284" y="26" width="62" height="36" rx="8"/><text x="315" y="49">page</text></g>
+            <g class="dg-node"><rect x="6" y="26" width="66" height="36" rx="8"/><text x="39" y="49">.md</text></g>
+            <path class="dg-edge" d="M74 44h40" marker-end="url(#dgArrow)"/>
+            <g class="dg-node dg-app"><rect x="120" y="26" width="116" height="36" rx="18"/><text x="178" y="49">PreviewMD</text></g>
+            <path class="dg-edge" d="M238 44h40" marker-end="url(#dgArrow)"/>
+            <g class="dg-node"><rect x="284" y="26" width="62" height="36" rx="8"/><text x="315" y="49">page</text></g>
           </svg>
         </div>
         <figcaption class="mono"><pre>graph LR
@@ -199,7 +199,7 @@ Mac; nothing leaves it.</pre></div>
       </figure>
 
       <figure class="clipping">
-        <p class="clip-label">KaTeX math</p>
+        <p class="clip-label">Math &amp; equations</p>
         <div class="clip-body clip-math">
           <p class="math-display"><span class="int" aria-hidden="true">&int;</span><span class="int-limits"><sup>&infin;</sup><sub>&minus;&infin;</sub></span><em>&thinsp;e</em><sup>&minus;<em>x</em>&sup2;</sup><em>&nbsp;dx</em>&nbsp;=&nbsp;&radic;<span class="sqrt-arg">&pi;</span></p>
         </div>
@@ -316,8 +316,7 @@ render(doc, mode: <span class="tok-enum">.split</span>)</code></pre>
       </div>
       <div class="colophon-col">
         <h3>Sealed like a document</h3>
-        <p>Rendering is fully offline. The engines that set your text are pinned, vendored copies embedded in the app itself:</p>
-        <p class="mono libs">markdown-it&nbsp;&middot; Mermaid&nbsp;&middot; KaTeX&nbsp;&middot; Highlight.js — embedded, offline</p>
+        <p>Rendering is fully offline. Everything that sets your text — tables, diagrams, math, highlighted code — is pinned inside the app itself, so a document comes out the same on day one and years later, on a plane or behind a firewall.</p>
         <p class="never-title">What it never does:</p>
         <ul class="never">
           <li>No network access</li>

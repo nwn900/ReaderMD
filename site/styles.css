@@ -639,26 +639,26 @@ h1, h2, h3, p, ul, pre, figure { margin: 0; }
   overflow-wrap: break-word;
 }
 
-/* mermaid clipping */
-.clip-mermaid svg {
+/* diagram clipping */
+.clip-diagram svg {
   width: 100%;
   height: auto;
   color: var(--accent);
   display: block;
 }
-.mm-node rect {
+.dg-node rect {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.5;
 }
-.mm-app rect { fill: color-mix(in srgb, var(--accent) 10%, transparent); }
-.mm-node text {
+.dg-app rect { fill: color-mix(in srgb, var(--accent) 10%, transparent); }
+.dg-node text {
   fill: var(--ink);
   font-family: var(--font-ui);
   font-size: 13px;
   text-anchor: middle;
 }
-.mm-edge {
+.dg-edge {
   stroke: currentColor;
   stroke-width: 1.5;
   fill: none;
@@ -803,11 +803,6 @@ h1, h2, h3, p, ul, pre, figure { margin: 0; }
   font-size: 15.5px;
   line-height: 1.65;
   color: var(--prose);
-}
-.libs {
-  margin-top: 14px;
-  font-size: 12.5px;
-  color: var(--slate-deep);
 }
 .never-title {
   margin-top: 18px;
