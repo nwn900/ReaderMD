@@ -175,6 +175,16 @@ struct PreviewMDCommands: Commands {
             .disabled(state.currentDocument == nil)
         }
 
+        // Find belongs in Edit by macOS convention, not in View next to the
+        // display options.
+        CommandGroup(after: .textEditing) {
+            Button("Find…") {
+                state.searchFieldFocusToken = UUID()
+            }
+            .keyboardShortcut("f")
+            .disabled(state.currentDocument == nil || state.isFocusMode)
+        }
+
         // Everything here belongs to the View menu, so it has to be a
         // CommandGroup in the `.sidebar` placement rather than a
         // CommandMenu("View"): SwiftUI already builds a View menu for the split
@@ -183,11 +193,20 @@ struct PreviewMDCommands: Commands {
         // AppKit's own Toggle Sidebar item is not declared here — see
         // AppDelegate.adoptSidebarToggle().
         CommandGroup(replacing: .sidebar) {
+            Button(state.isFocusMode ? "Exit Focus Mode" : "Enter Focus Mode") {
+                state.toggleFocusMode()
+            }
+            .keyboardShortcut("f", modifiers: [.command, .shift])
+            .disabled(!state.canEnterFocusMode)
+
+            Divider()
+
             Picker("Display Mode", selection: $state.displayMode) {
                 ForEach(DisplayMode.allCases) { mode in
                     Label(mode.title, systemImage: mode.symbol).tag(mode)
                 }
             }
+            .disabled(state.isFocusMode)
 
             Divider()
 
@@ -195,11 +214,7 @@ struct PreviewMDCommands: Commands {
                 state.isInspectorVisible.toggle()
             }
             .keyboardShortcut("i", modifiers: [.command, .option])
-
-            Button("Focus Search") {
-                state.searchFieldFocusToken = UUID()
-            }
-            .keyboardShortcut("f")
+            .disabled(state.isFocusMode)
 
             Divider()
 

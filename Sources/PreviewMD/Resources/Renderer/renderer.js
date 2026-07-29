@@ -27,7 +27,7 @@
       if (normalized === "mermaid") {
         return (
           '<div class="diagram-card">' +
-          '<div class="diagram-label"><span>Mermaid diagram</span></div>' +
+          '<div class="diagram-label"><span>Diagram</span></div>' +
           '<pre class="mermaid">' +
           escapeHtml(source) +
           "</pre></div>"

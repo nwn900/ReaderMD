@@ -9,6 +9,7 @@ A native macOS Markdown reader with a print-inspired preview, editing, tabs, out
 - KaTeX inline and display math
 - Syntax highlighting with copy buttons
 - Preview, source, and live split modes
+- A focus mode that strips every control except the page and the width ruler
 - Tabs, recent files, pinning, drag and drop, local images and relative links
 - A live 560–1600 px reading-width ruler with a one-click table/data layout
 - Modern, Classic, and Editorial reading styles with offline system typography
@@ -62,6 +63,7 @@ The distributable ZIP is written to `dist/`.
 | Save As | `⌘⇧S` |
 | Find in preview | `⌘F` |
 | Export PDF | `⌘⇧E` |
+| Focus mode | `⌘⇧F` |
 | Toggle outline | `⌘⌥I` |
 | Close tab | `⌘W` |
 | Actual size | `⌘0` |

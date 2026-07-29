@@ -15,6 +15,10 @@ final class AppState: ObservableObject {
     @Published var customReadingWidth: Double = 820
     @Published var usesPaperCanvas = false
     @Published var isInspectorVisible = false
+    /// Distraction-free reading: every piece of chrome is hidden except the
+    /// document column and the reading-width ruler. Deliberately not persisted —
+    /// it is a thing you do to a session, not a preference.
+    @Published private(set) var isFocusMode = false
     @Published var searchText = ""
     @Published var zoom: Double = 1
     @Published var outlineTarget: String?
@@ -31,6 +35,10 @@ final class AppState: ObservableObject {
     private let widthKey = "readingWidth"
     private let customWidthKey = "customReadingWidth"
     private let paperKey = "usesPaperCanvas"
+
+    /// Restored when focus mode ends, so entering it to read does not quietly
+    /// throw away the split or source view you were working in.
+    private var displayModeBeforeFocus: DisplayMode?
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -194,6 +202,9 @@ final class AppState: ObservableObject {
             sidebarSelection = ""
             searchText = ""
             outlineTarget = nil
+            // Nothing left to read, and focus mode hides the chrome needed to
+            // open something else.
+            exitFocusMode()
         } else if let currentDocument {
             sidebarSelection = currentDocument.isSample
                 ? "welcome"
@@ -204,6 +215,36 @@ final class AppState: ObservableObject {
     func closeCurrentTab() {
         guard let selectedDocumentID else { return }
         closeTab(selectedDocumentID)
+    }
+
+    // MARK: - Focus mode
+
+    var canEnterFocusMode: Bool {
+        currentDocument != nil
+    }
+
+    func toggleFocusMode() {
+        isFocusMode ? exitFocusMode() : enterFocusMode()
+    }
+
+    func enterFocusMode() {
+        guard canEnterFocusMode, !isFocusMode else { return }
+        // Focus mode is for reading, so it shows the preview. Remember the mode
+        // being left behind rather than stranding the reader in it afterwards.
+        displayModeBeforeFocus = displayMode
+        displayMode = .preview
+        isInspectorVisible = false
+        searchText = ""
+        isFocusMode = true
+    }
+
+    func exitFocusMode() {
+        guard isFocusMode else { return }
+        isFocusMode = false
+        if let previous = displayModeBeforeFocus {
+            displayMode = previous
+            displayModeBeforeFocus = nil
+        }
     }
 
     func saveCurrent() {

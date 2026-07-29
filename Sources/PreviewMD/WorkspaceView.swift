@@ -26,6 +26,18 @@ struct WorkspaceView: View {
             placement: .toolbar,
             prompt: "Find"
         )
+        // Focus mode keeps this hierarchy and only hides the chrome, so the web
+        // view is never rebuilt and the reader keeps their place in the page.
+        .toolbar(state.isFocusMode ? .hidden : .automatic, for: .windowToolbar)
+        .focusModeEscape(isActive: state.isFocusMode) {
+            state.exitFocusMode()
+        }
+        .onChange(of: state.isFocusMode) {
+            if state.isFocusMode {
+                columnVisibility = .detailOnly
+                isSearchPresented = false
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button {
@@ -87,7 +99,7 @@ struct WorkspaceView: View {
             DetailBackground()
 
             VStack(spacing: 0) {
-                if !state.documents.isEmpty {
+                if !state.documents.isEmpty && !state.isFocusMode {
                     DocumentTabBar()
                 }
 
@@ -124,6 +136,52 @@ struct WorkspaceView: View {
                 state.isInspectorVisible = newValue
             }
         )
+    }
+}
+
+private extension View {
+    /// Leaves focus mode on a bare Escape.
+    ///
+    /// A local event monitor rather than `onExitCommand`, because the web view
+    /// owns first responder while you are reading and SwiftUI's key handling
+    /// never sees the key.
+    func focusModeEscape(isActive: Bool, perform action: @escaping () -> Void) -> some View {
+        modifier(FocusModeEscape(isActive: isActive, action: action))
+    }
+}
+
+private struct FocusModeEscape: ViewModifier {
+    let isActive: Bool
+    let action: () -> Void
+
+    @State private var monitor: Any?
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: isActive, initial: true) { _, active in
+                active ? install() : remove()
+            }
+            .onDisappear(perform: remove)
+    }
+
+    private func install() {
+        guard monitor == nil else { return }
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            let modifiers: NSEvent.ModifierFlags = [.command, .option, .control, .shift]
+            guard event.keyCode == 53, // Escape
+                  event.modifierFlags.intersection(modifiers).isEmpty
+            else {
+                return event
+            }
+            action()
+            return nil // swallow it, so nothing else reacts to the same press
+        }
+    }
+
+    private func remove() {
+        guard let monitor else { return }
+        NSEvent.removeMonitor(monitor)
+        self.monitor = nil
     }
 }
 
@@ -504,7 +562,9 @@ private struct DocumentWorkspace: View {
                 }
             }
 
-            StatusBar(document: document)
+            if !state.isFocusMode {
+                StatusBar(document: document)
+            }
         }
     }
 }

@@ -52,6 +52,18 @@ Preserve these behaviors unless the user explicitly requests a change:
   menu.
 - Tables, Mermaid diagrams, KaTeX, code highlighting, local images, and
   relative links must continue to render offline.
+- Focus mode (⇧⌘F) hides every piece of chrome — sidebar, inspector, tab bar,
+  toolbar and status bar — leaving the document column and the reading-width
+  ruler, and nothing else. Leaving it restores the display mode it was entered
+  from. Escape leaves it.
+- Focus mode hides chrome inside the existing view hierarchy rather than
+  swapping in a different one, so the web view is never rebuilt and the reader
+  keeps their place in the document. Do not "simplify" this into a branch that
+  replaces the workspace.
+- The renderer names are an implementation detail: no user-facing surface —
+  window, settings, showcase, rendered output or landing page — advertises which
+  engines are bundled. They are named in the About window only, where their
+  licenses require it.
 
 ## Landing page and mailing list
 

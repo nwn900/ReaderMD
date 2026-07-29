@@ -141,6 +141,60 @@ final class AppStateTests: XCTestCase {
         XCTAssertEqual(state.currentDocument?.content, "# Opened from Dock")
     }
 
+    func testFocusModeNeedsSomethingToRead() throws {
+        let state = try makeState()
+
+        XCTAssertFalse(state.canEnterFocusMode)
+        state.enterFocusMode()
+
+        XCTAssertFalse(state.isFocusMode)
+    }
+
+    func testFocusModeReadsInPreviewAndGivesTheModeBack() throws {
+        let state = try makeState()
+        state.openWelcome()
+        state.displayMode = .split
+        state.isInspectorVisible = true
+
+        state.enterFocusMode()
+
+        XCTAssertTrue(state.isFocusMode)
+        XCTAssertEqual(state.displayMode, .preview, "focus mode is for reading")
+        XCTAssertFalse(state.isInspectorVisible)
+
+        state.exitFocusMode()
+
+        XCTAssertFalse(state.isFocusMode)
+        XCTAssertEqual(state.displayMode, .split, "the mode being left behind should come back")
+    }
+
+    func testFocusModeTogglesAndDoesNotStackRestoreState() throws {
+        let state = try makeState()
+        state.openWelcome()
+        state.displayMode = .source
+
+        state.toggleFocusMode()
+        // A second enter while already focused must not overwrite the saved mode
+        // with `.preview`, which would strand the reader in it on exit.
+        state.enterFocusMode()
+        state.toggleFocusMode()
+
+        XCTAssertFalse(state.isFocusMode)
+        XCTAssertEqual(state.displayMode, .source)
+    }
+
+    func testClosingTheLastTabLeavesFocusMode() throws {
+        let state = try makeState()
+        state.openWelcome()
+        state.enterFocusMode()
+        let document = try XCTUnwrap(state.currentDocument)
+
+        state.closeTab(document.id)
+
+        XCTAssertTrue(state.documents.isEmpty)
+        XCTAssertFalse(state.isFocusMode, "focus mode hides the chrome needed to open anything")
+    }
+
     private func makeState() throws -> AppState {
         let suiteName = "PreviewMDTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
