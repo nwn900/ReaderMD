@@ -181,11 +181,11 @@ body {
   height: calc(var(--top-inset, 0px) * 1.5);
   pointer-events: none;
   z-index: 5;
-  backdrop-filter: blur(18px) saturate(150%);
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
   background: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--page) 62%, transparent),
+    color-mix(in srgb, var(--page) 45%, transparent),
     transparent
   );
   mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
