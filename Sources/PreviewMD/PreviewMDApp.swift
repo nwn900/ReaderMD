@@ -186,9 +186,9 @@ struct PreviewMDCommands: Commands {
         }
 
         // Everything here belongs to the View menu, so it has to be a
-        // CommandGroup in the `.sidebar` placement rather than a
-        // CommandMenu("View"): SwiftUI already builds a View menu for the split
-        // view, so a second menu of the same name sat beside it in the menu bar.
+        // CommandGroup rather than a CommandMenu("View"): SwiftUI already builds
+        // a View menu for the split view, so a second menu of the same name sat
+        // beside it in the menu bar.
         //
         // AppKit's own Toggle Sidebar item is not declared here — see
         // AppDelegate.adoptSidebarToggle().
