@@ -170,6 +170,28 @@ body {
   padding: calc(42px + var(--top-inset, 0px)) clamp(24px, 5vw, 76px) 72px;
 }
 
+/* The soft edge the page passes under in focus mode. Zero height — and so
+   invisible — until an inset is set. The gradient mask is what makes the blur
+   fade out instead of ending on a line. */
+#top-blur {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--top-inset, 0px) * 1.5);
+  pointer-events: none;
+  z-index: 5;
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--page) 62%, transparent),
+    transparent
+  );
+  mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
+}
+
 #preview-document {
   width: min(100%, var(--reading-width));
   min-height: calc(100vh - 114px);

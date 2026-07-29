@@ -413,6 +413,10 @@ enum RendererAssets {
         </head>
         <body>
           <div id="reading-progress"></div>
+          <!-- The blurred edge focus mode reads under. It lives in the page
+               because a native effect view cannot blur a web view's content —
+               the page renders out of process, so AppKit has nothing to sample. -->
+          <div id="top-blur" aria-hidden="true"></div>
           <main id="preview-shell" aria-live="polite">
             <article id="preview-document"></article>
           </main>

@@ -180,60 +180,6 @@ enum FocusMetrics {
     static let toolbarHeight: Double = 52
 }
 
-/// The soft blurred edge the page passes under in focus mode.
-///
-/// macOS draws this itself for scroll views it owns, but the document lives in a
-/// web view, so the system cannot know where the content is. A blur masked by a
-/// vertical gradient gives the same read: fully blurred against the toolbar,
-/// fading to nothing a little below it, with no line anywhere.
-private struct TopEdgeBlur: NSViewRepresentable {
-    let height: CGFloat
-
-    func makeNSView(context: Context) -> NSView {
-        GradientMaskedBlur(height: height)
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        (nsView as? GradientMaskedBlur)?.fadeHeight = height
-    }
-
-    final class GradientMaskedBlur: NSVisualEffectView {
-        var fadeHeight: CGFloat {
-            didSet { needsLayout = true }
-        }
-
-        private let gradient = CAGradientLayer()
-
-        init(height: CGFloat) {
-            fadeHeight = height
-            super.init(frame: .zero)
-            material = .headerView
-            blendingMode = .withinWindow
-            state = .active
-            wantsLayer = true
-            // Layer coordinates start at the bottom, so 1 is the top edge.
-            gradient.colors = [NSColor.black.cgColor, NSColor.clear.cgColor]
-            gradient.startPoint = CGPoint(x: 0.5, y: 1)
-            gradient.endPoint = CGPoint(x: 0.5, y: 0)
-            layer?.mask = gradient
-        }
-
-        @available(*, unavailable)
-        required init?(coder: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-
-        override func layout() {
-            super.layout()
-            // The mask must not animate into place, or it lags behind resizing.
-            CATransaction.begin()
-            CATransaction.setDisableActions(true)
-            gradient.frame = bounds
-            CATransaction.commit()
-        }
-    }
-}
-
 /// Owns the parts of the window SwiftUI will not hand over.
 ///
 /// Two things cannot be expressed in SwiftUI here. `.searchable` cannot be
@@ -799,14 +745,6 @@ private struct PreviewPane: View {
             // handed to the renderer above, so the text still starts below the
             // bar rather than under it.
             .ignoresSafeArea(state.isFocusMode ? .container : [], edges: .top)
-            .overlay(alignment: .top) {
-                if state.isFocusMode {
-                    TopEdgeBlur(height: FocusMetrics.toolbarHeight + 26)
-                        .frame(height: FocusMetrics.toolbarHeight + 26)
-                        .ignoresSafeArea(edges: .top)
-                        .allowsHitTesting(false)
-                }
-            }
 
             ReadingWidthRuler()
                 .padding(.bottom, 14)
