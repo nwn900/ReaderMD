@@ -68,6 +68,7 @@ struct MarkdownWebView: NSViewRepresentable {
     let zoom: Double
     let searchText: String
     let outlineTarget: String?
+    let topInset: Double
     let controller: RendererController
     let onDropFiles: ([URL]) -> Void
     let onDropTargeted: (Bool) -> Void
@@ -89,7 +90,8 @@ struct MarkdownWebView: NSViewRepresentable {
             paperCanvas: usesPaperCanvas,
             zoom: zoom,
             searchText: searchText,
-            outlineTarget: outlineTarget
+            outlineTarget: outlineTarget,
+            topInset: topInset
         )
     }
 
@@ -163,6 +165,10 @@ struct MarkdownWebView: NSViewRepresentable {
         let zoom: Double
         let searchText: String
         let outlineTarget: String?
+        /// Height of the window toolbar the page has to clear in focus mode,
+        /// where the web view extends underneath it. Layout-only, so it travels
+        /// through `previewmdSetLayout` and never forces a re-render.
+        let topInset: Double
 
         func requiresFullRender(comparedTo other: Self) -> Bool {
             markdown != other.markdown
@@ -183,7 +189,7 @@ struct MarkdownWebView: NSViewRepresentable {
             let paperValue = paperCanvas ? "true" : "false"
             return """
             data-theme="\(initialTheme)" data-style="\(readingStyle)" data-paper="\(paperValue)" \
-            style="--reading-width: \(readingWidth)px"
+            style="--reading-width: \(readingWidth)px; --top-inset: \(topInset)px"
             """
         }
     }
@@ -279,9 +285,10 @@ struct MarkdownWebView: NSViewRepresentable {
                 lastPayload = payload
 
                 if payload.readingWidth != previous.readingWidth
-                    || payload.paperCanvas != previous.paperCanvas {
+                    || payload.paperCanvas != previous.paperCanvas
+                    || payload.topInset != previous.topInset {
                     webView.evaluateJavaScript(
-                        "window.previewmdSetLayout(\(payload.readingWidth), \(payload.paperCanvas));"
+                        "window.previewmdSetLayout(\(payload.readingWidth), \(payload.paperCanvas), \(payload.topInset));"
                     )
                 }
 

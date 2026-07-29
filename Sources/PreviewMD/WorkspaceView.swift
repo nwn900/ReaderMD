@@ -20,19 +20,21 @@ struct WorkspaceView: View {
             OutlineInspector()
                 .inspectorColumnWidth(min: 180, ideal: 200, max: 232)
         }
-        // Parameters vary, the modifier does not: swapping `.searchable` in and
-        // out with an `if` would change the view's identity and rebuild the web
-        // view, losing the reader's place. Moving the field to the (collapsed)
-        // sidebar takes it out of the toolbar without touching identity.
         .searchable(
             text: $state.searchText,
             isPresented: $isSearchPresented,
-            placement: state.isFocusMode ? .sidebar : .toolbar,
+            placement: .toolbar,
             prompt: "Find"
         )
-        .toolbar(removing: state.isFocusMode ? .sidebarToggle : nil)
         // Focus mode keeps this hierarchy and only hides the chrome, so the web
         // view is never rebuilt and the reader keeps their place in the page.
+        .background(
+            FocusWindowChrome(
+                isFocusMode: state.isFocusMode,
+                windowTitle: state.currentDocument?.title ?? "PreviewMD",
+                sidebarVisibility: columnVisibility
+            )
+        )
         .focusModeEscape(isActive: state.isFocusMode) {
             state.exitFocusMode()
         }
@@ -41,11 +43,6 @@ struct WorkspaceView: View {
                 columnVisibility = .detailOnly
                 isSearchPresented = false
             }
-            // An empty title leaves the bar carrying nothing but the window
-            // buttons and the way out.
-            NSApplication.shared.mainWindow?.title = state.isFocusMode
-                ? ""
-                : (state.currentDocument?.title ?? "PreviewMD")
         }
         // Focus mode empties the toolbar rather than removing it. The bar keeps
         // its system material, so the page scrolls up underneath it the way it
@@ -63,6 +60,20 @@ struct WorkspaceView: View {
                     .help("Leave focus mode (Esc)")
                 }
             } else {
+                // The app's own sidebar button. SwiftUI's is pulled out of the
+                // toolbar in FocusWindowChrome — it insists on sitting beside
+                // the principal slot — so this one holds the leading position.
+                ToolbarItem(placement: .navigation) {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.18)) {
+                            columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+                        }
+                    } label: {
+                        Label("Sidebar", systemImage: "sidebar.left")
+                    }
+                    .help(columnVisibility == .detailOnly ? "Show sidebar" : "Hide sidebar")
+                }
+
                 ToolbarItem(placement: .navigation) {
                     Button {
                         state.presentOpenPanel()
@@ -178,6 +189,80 @@ struct WorkspaceView: View {
                 state.isInspectorVisible = newValue
             }
         )
+    }
+}
+
+enum FocusMetrics {
+    /// Height of the unified toolbar the page has to clear in focus mode.
+    static let toolbarHeight: Double = 52
+}
+
+/// Owns the parts of the window SwiftUI will not hand over.
+///
+/// Two things cannot be expressed in SwiftUI here. `.searchable` cannot be
+/// dropped for one state and kept for another — wrapping it in an `if` changes
+/// the view's identity and rebuilds the web view, throwing away the reader's
+/// place in the document. And the split view's own sidebar button cannot be
+/// moved: SwiftUI parks it next to whatever sits in the principal slot.
+/// `.toolbar(removing: .sidebarToggle)` does remove it, but takes the tracking
+/// separator with it, and that separator is what lets the sidebar surface run up
+/// through the title bar. Pulling the button out of the NSToolbar directly
+/// leaves the separator in place, so the app declares its own button instead.
+private struct FocusWindowChrome: NSViewRepresentable {
+    let isFocusMode: Bool
+    let windowTitle: String
+    /// Not read directly — it is here so the representable updates when the
+    /// sidebar opens or closes, which is when SwiftUI rebuilds the toolbar.
+    let sidebarVisibility: NavigationSplitViewVisibility
+
+    private static let systemSidebarToggle = "com.apple.SwiftUI.navigationSplitView.toggleSidebar"
+    private static let systemSearchField = "com.apple.SwiftUI.search"
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        view.isHidden = true
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        let focused = isFocusMode
+        let title = windowTitle
+        // Not in a window yet on the first pass.
+        DispatchQueue.main.async {
+            guard let window = nsView.window else { return }
+
+            // `titlebarAppearsTransparent` stays false on purpose: the bar has
+            // to keep its material, because that material is what blurs the text
+            // passing beneath it. Only the content area is extended upwards.
+            //
+            // Always written, never toggled: a window restored with
+            // fullSizeContentView still set would otherwise come back laid out
+            // for a mode it is no longer in — which is what once left the
+            // document area blank on launch.
+            if focused {
+                window.styleMask.insert(.fullSizeContentView)
+            } else {
+                window.styleMask.remove(.fullSizeContentView)
+            }
+            window.title = focused ? "" : title
+            // The hairline under the bar is what makes the text look clipped
+            // rather than passing beneath it. Mail draws no such line.
+            window.titlebarSeparatorStyle = focused ? .none : .automatic
+
+            guard let toolbar = window.toolbar else { return }
+            // Removed, not hidden: hiding an item's view leaves its empty
+            // capsule behind, and the search field ignores it entirely.
+            // SwiftUI re-adds these on its next toolbar rebuild, which is why
+            // this runs again whenever the sidebar opens or closes.
+            var unwanted: Set<String> = [Self.systemSidebarToggle]
+            if focused {
+                unwanted.insert(Self.systemSearchField)
+            }
+            for index in toolbar.items.indices.reversed()
+            where unwanted.contains(toolbar.items[index].itemIdentifier.rawValue) {
+                toolbar.removeItem(at: index)
+            }
+        }
     }
 }
 
@@ -628,6 +713,7 @@ private struct PreviewPane: View {
                 zoom: state.zoom,
                 searchText: state.searchText,
                 outlineTarget: state.outlineTarget,
+                topInset: state.isFocusMode ? FocusMetrics.toolbarHeight : 0,
                 controller: state.rendererController,
                 onDropFiles: { urls in
                     urls
@@ -641,6 +727,11 @@ private struct PreviewPane: View {
                 }
             )
             .background(Color(nsColor: .textBackgroundColor))
+            // In focus mode the page runs up behind the toolbar's material, the
+            // way a document does in Mail or Safari. The matching top inset is
+            // handed to the renderer above, so the text still starts below the
+            // bar rather than under it.
+            .ignoresSafeArea(state.isFocusMode ? .container : [], edges: .top)
 
             ReadingWidthRuler()
                 .padding(.bottom, 14)

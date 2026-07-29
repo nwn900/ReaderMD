@@ -350,9 +350,10 @@
     const target = document.getElementById(targetID);
     target && target.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-  window.previewmdSetLayout = function (readingWidth, paperCanvas) {
+  window.previewmdSetLayout = function (readingWidth, paperCanvas, topInset) {
     root.dataset.paper = paperCanvas ? "true" : "false";
     root.style.setProperty("--reading-width", readingWidth + "px");
+    root.style.setProperty("--top-inset", (topInset || 0) + "px");
   };
 
   window.previewmdRender = async function (options) {
@@ -363,7 +364,11 @@
 
     root.dataset.theme = isDark ? "dark" : "light";
     root.dataset.style = options.readingStyle || "modern";
-    window.previewmdSetLayout(options.readingWidth, options.paperCanvas);
+    window.previewmdSetLayout(
+      options.readingWidth,
+      options.paperCanvas,
+      options.topInset
+    );
     activeSearchText = options.searchText || "";
     errorBox.hidden = true;
 

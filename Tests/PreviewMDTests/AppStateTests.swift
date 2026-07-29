@@ -113,14 +113,15 @@ final class AppStateTests: XCTestCase {
             paperCanvas: false,
             zoom: 1.2,
             searchText: "",
-            outlineTarget: nil
+            outlineTarget: nil,
+            topInset: 0
         )
 
         let html = RendererAssets.shellHTML(for: payload)
 
         XCTAssertTrue(
             html.contains(
-                #"<html lang="en" data-theme="dark" data-style="classic" data-paper="false" style="--reading-width: 1440px">"#
+                #"<html lang="en" data-theme="dark" data-style="classic" data-paper="false" style="--reading-width: 1440px; --top-inset: 0.0px">"#
             )
         )
     }

@@ -164,7 +164,10 @@ body {
 
 #preview-shell {
   width: 100%;
-  padding: 42px clamp(24px, 5vw, 76px) 72px;
+  /* --top-inset reserves the height of the window toolbar in focus mode, where
+     the web view runs underneath it. At rest the text starts below the bar; as
+     you scroll, it passes under the bar's material like any macOS document. */
+  padding: calc(42px + var(--top-inset, 0px)) clamp(24px, 5vw, 76px) 72px;
 }
 
 #preview-document {
