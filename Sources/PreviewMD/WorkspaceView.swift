@@ -28,13 +28,6 @@ struct WorkspaceView: View {
         )
         // Focus mode keeps this hierarchy and only hides the chrome, so the web
         // view is never rebuilt and the reader keeps their place in the page.
-        .background(
-            FocusWindowChrome(
-                isFocusMode: state.isFocusMode,
-                windowTitle: state.currentDocument?.title ?? "PreviewMD",
-                sidebarVisibility: columnVisibility
-            )
-        )
         // No solid bar in focus mode — the blurred edge below it is the whole
         // transition, and a background would put a hard band back on top of it.
         .toolbarBackground(state.isFocusMode ? .hidden : .automatic, for: .windowToolbar)
@@ -43,7 +36,11 @@ struct WorkspaceView: View {
         }
         .onChange(of: state.isFocusMode) {
             if state.isFocusMode {
-                columnVisibility = .detailOnly
+                // Forced through a different value first: the split view can be
+                // restored open behind SwiftUI's back, and assigning the value
+                // it already holds would collapse nothing.
+                columnVisibility = .all
+                DispatchQueue.main.async { columnVisibility = .detailOnly }
                 isSearchPresented = false
             }
         }
@@ -145,6 +142,16 @@ struct WorkspaceView: View {
                     .transition(.opacity)
             }
         }
+        // Attached to the detail column, never to the NavigationSplitView: a
+        // background on the split view changes how the toolbar divides itself
+        // between sidebar and detail, and pushes the sidebar button to the wrong
+        // side of it.
+        .background(
+            FocusWindowChrome(
+                isFocusMode: state.isFocusMode,
+                sidebarVisibility: columnVisibility
+            )
+        )
         .dropDestination(for: URL.self) { urls, _ in
             let accepted = urls.filter(MarkdownFileSupport.accepts)
             accepted.forEach(state.open)
@@ -240,13 +247,27 @@ private struct TopEdgeBlur: NSViewRepresentable {
 /// leaves the separator in place, so the app declares its own button instead.
 private struct FocusWindowChrome: NSViewRepresentable {
     let isFocusMode: Bool
-    let windowTitle: String
     /// Not read directly — it is here so the representable updates when the
     /// sidebar opens or closes, which is when SwiftUI rebuilds the toolbar.
     let sidebarVisibility: NavigationSplitViewVisibility
 
     private static let systemSidebarToggle = "com.apple.SwiftUI.navigationSplitView.toggleSidebar"
     private static let systemSearchField = "com.apple.SwiftUI.search"
+
+    final class Coordinator {
+        /// The title as the window had it before focus mode blanked it. Putting
+        /// a title of our own choosing back would change the toolbar's layout:
+        /// the leading region is sized around it, and a longer string pushes the
+        /// sidebar button across the split.
+        var restoredTitle: String?
+        /// Whether the window has actually been put into focus mode. Until it
+        /// has, this type must not touch the window at all — writing styleMask
+        /// or titlebarSeparatorStyle makes AppKit rebuild the title bar, and the
+        /// rebuild reassigns toolbar items between the sidebar and the detail.
+        var didEnterFocus = false
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeNSView(context: Context) -> NSView {
         let view = NSView(frame: .zero)
@@ -256,25 +277,33 @@ private struct FocusWindowChrome: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSView, context: Context) {
         let focused = isFocusMode
-        let title = windowTitle
+        let coordinator = context.coordinator
         // Not in a window yet on the first pass.
         DispatchQueue.main.async {
             guard let window = nsView.window else { return }
 
+            // Nothing to do until focus mode has actually been used.
+            guard focused || coordinator.didEnterFocus else { return }
+
             // `titlebarAppearsTransparent` stays false on purpose: the bar has
             // to keep its material, because that material is what blurs the text
             // passing beneath it. Only the content area is extended upwards.
-            //
-            // Always written, never toggled: a window restored with
-            // fullSizeContentView still set would otherwise come back laid out
-            // for a mode it is no longer in — which is what once left the
-            // document area blank on launch.
             if focused {
                 window.styleMask.insert(.fullSizeContentView)
+                coordinator.didEnterFocus = true
             } else {
                 window.styleMask.remove(.fullSizeContentView)
+                coordinator.didEnterFocus = false
             }
-            window.title = focused ? "" : title
+            if focused {
+                if coordinator.restoredTitle == nil {
+                    coordinator.restoredTitle = window.title
+                }
+                window.title = ""
+            } else if let restored = coordinator.restoredTitle {
+                window.title = restored
+                coordinator.restoredTitle = nil
+            }
             // The hairline under the bar is what makes the text look clipped
             // rather than passing beneath it. Mail draws no such line.
             window.titlebarSeparatorStyle = focused ? .none : .automatic
