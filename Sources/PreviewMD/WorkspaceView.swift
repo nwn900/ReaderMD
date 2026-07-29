@@ -35,6 +35,9 @@ struct WorkspaceView: View {
                 sidebarVisibility: columnVisibility
             )
         )
+        // No solid bar in focus mode — the blurred edge below it is the whole
+        // transition, and a background would put a hard band back on top of it.
+        .toolbarBackground(state.isFocusMode ? .hidden : .automatic, for: .windowToolbar)
         .focusModeEscape(isActive: state.isFocusMode) {
             state.exitFocusMode()
         }
@@ -60,20 +63,6 @@ struct WorkspaceView: View {
                     .help("Leave focus mode (Esc)")
                 }
             } else {
-                // The app's own sidebar button. SwiftUI's is pulled out of the
-                // toolbar in FocusWindowChrome — it insists on sitting beside
-                // the principal slot — so this one holds the leading position.
-                ToolbarItem(placement: .navigation) {
-                    Button {
-                        withAnimation(.easeOut(duration: 0.18)) {
-                            columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
-                        }
-                    } label: {
-                        Label("Sidebar", systemImage: "sidebar.left")
-                    }
-                    .help(columnVisibility == .detailOnly ? "Show sidebar" : "Hide sidebar")
-                }
-
                 ToolbarItem(placement: .navigation) {
                     Button {
                         state.presentOpenPanel()
@@ -83,35 +72,22 @@ struct WorkspaceView: View {
                     .help("Open Markdown (⌘O)")
                 }
 
-                // Focus and the display picker share ONE principal item. Two
-                // items here — or a ToolbarItemGroup — make SwiftUI drag the
-                // split view's sidebar button out of its leading slot to sit
-                // beside them, and that button carries the tracking separator
-                // that lets the sidebar run up through the title bar.
+                // The principal slot holds the display picker and nothing else.
+                // Anything added beside it makes SwiftUI drag the split view's
+                // sidebar button across to sit next to it, out of the sidebar
+                // column where it belongs.
                 ToolbarItem(placement: .principal) {
-                    HStack(spacing: 10) {
-                        Button {
-                            state.enterFocusMode()
-                        } label: {
-                            Label("Focus", systemImage: "rectangle.center.inset.filled")
+                    Picker("Display mode", selection: $state.displayMode) {
+                        ForEach(DisplayMode.allCases) { mode in
+                            Image(systemName: mode.symbol)
+                                .help(mode.title)
+                                .tag(mode)
                         }
-                        .disabled(!state.canEnterFocusMode)
-                        .help("Focus mode — just the page (⇧⌘F)")
-
-                        Divider().frame(height: 16)
-
-                        Picker("Display mode", selection: $state.displayMode) {
-                            ForEach(DisplayMode.allCases) { mode in
-                                Image(systemName: mode.symbol)
-                                    .help(mode.title)
-                                    .tag(mode)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .frame(width: 136)
-                        .disabled(state.currentDocument == nil)
                     }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .frame(width: 136)
+                    .disabled(state.currentDocument == nil)
                 }
 
                 ToolbarItem(placement: .primaryAction) {
@@ -197,6 +173,60 @@ enum FocusMetrics {
     static let toolbarHeight: Double = 52
 }
 
+/// The soft blurred edge the page passes under in focus mode.
+///
+/// macOS draws this itself for scroll views it owns, but the document lives in a
+/// web view, so the system cannot know where the content is. A blur masked by a
+/// vertical gradient gives the same read: fully blurred against the toolbar,
+/// fading to nothing a little below it, with no line anywhere.
+private struct TopEdgeBlur: NSViewRepresentable {
+    let height: CGFloat
+
+    func makeNSView(context: Context) -> NSView {
+        GradientMaskedBlur(height: height)
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        (nsView as? GradientMaskedBlur)?.fadeHeight = height
+    }
+
+    final class GradientMaskedBlur: NSVisualEffectView {
+        var fadeHeight: CGFloat {
+            didSet { needsLayout = true }
+        }
+
+        private let gradient = CAGradientLayer()
+
+        init(height: CGFloat) {
+            fadeHeight = height
+            super.init(frame: .zero)
+            material = .headerView
+            blendingMode = .withinWindow
+            state = .active
+            wantsLayer = true
+            // Layer coordinates start at the bottom, so 1 is the top edge.
+            gradient.colors = [NSColor.black.cgColor, NSColor.clear.cgColor]
+            gradient.startPoint = CGPoint(x: 0.5, y: 1)
+            gradient.endPoint = CGPoint(x: 0.5, y: 0)
+            layer?.mask = gradient
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+
+        override func layout() {
+            super.layout()
+            // The mask must not animate into place, or it lags behind resizing.
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            gradient.frame = bounds
+            CATransaction.commit()
+        }
+    }
+}
+
 /// Owns the parts of the window SwiftUI will not hand over.
 ///
 /// Two things cannot be expressed in SwiftUI here. `.searchable` cannot be
@@ -254,10 +284,8 @@ private struct FocusWindowChrome: NSViewRepresentable {
             // capsule behind, and the search field ignores it entirely.
             // SwiftUI re-adds these on its next toolbar rebuild, which is why
             // this runs again whenever the sidebar opens or closes.
-            var unwanted: Set<String> = [Self.systemSidebarToggle]
-            if focused {
-                unwanted.insert(Self.systemSearchField)
-            }
+            guard focused else { return }
+            let unwanted: Set<String> = [Self.systemSidebarToggle, Self.systemSearchField]
             for index in toolbar.items.indices.reversed()
             where unwanted.contains(toolbar.items[index].itemIdentifier.rawValue) {
                 toolbar.removeItem(at: index)
@@ -420,6 +448,16 @@ private struct ToolbarUtilities: View {
             }
             .disabled(state.currentDocument == nil)
             .help(state.isInspectorVisible ? "Hide outline" : "Show outline")
+
+            // Only ever enters: the bar is stripped once focus mode is on, and
+            // ⇧⌘F or Escape brings it back.
+            Button {
+                state.enterFocusMode()
+            } label: {
+                Label("Focus", systemImage: "rectangle.center.inset.filled")
+            }
+            .disabled(!state.canEnterFocusMode)
+            .help("Focus mode — just the page (⇧⌘F)")
         }
         .controlGroupStyle(.navigation)
     }
@@ -732,6 +770,14 @@ private struct PreviewPane: View {
             // handed to the renderer above, so the text still starts below the
             // bar rather than under it.
             .ignoresSafeArea(state.isFocusMode ? .container : [], edges: .top)
+            .overlay(alignment: .top) {
+                if state.isFocusMode {
+                    TopEdgeBlur(height: FocusMetrics.toolbarHeight + 26)
+                        .frame(height: FocusMetrics.toolbarHeight + 26)
+                        .ignoresSafeArea(edges: .top)
+                        .allowsHitTesting(false)
+                }
+            }
 
             ReadingWidthRuler()
                 .padding(.bottom, 14)
