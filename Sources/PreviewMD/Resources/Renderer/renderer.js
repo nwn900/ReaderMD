@@ -16,52 +16,74 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
 
+  /// Builds the card for one fenced or indented code block.
+  ///
+  /// Deliberately not wired up as markdown-it's `highlight` option. That hook
+  /// wraps whatever it returns in `<pre><code>` unless the string already starts
+  /// with `<pre`, and these cards start with a `<div>`. The result was an inline
+  /// `<code>` element holding a block-level child, which the browser splits into
+  /// two empty fragments — one above the card and one below — each still
+  /// carrying the padding, border and background of the inline-code style. Those
+  /// were the small stubs that used to bracket every code block and diagram.
+  function renderCodeCard(source, language) {
+    const normalized = (language || "").trim().toLowerCase();
+
+    if (normalized === "mermaid") {
+      return (
+        '<div class="diagram-card">' +
+        '<div class="diagram-label"><span>Diagram</span></div>' +
+        '<pre class="mermaid">' +
+        escapeHtml(source) +
+        "</pre></div>"
+      );
+    }
+
+    let highlighted = escapeHtml(source);
+    try {
+      if (normalized && window.hljs.getLanguage(normalized)) {
+        highlighted = window.hljs.highlight(source, {
+          language: normalized,
+          ignoreIllegals: true,
+        }).value;
+      } else {
+        highlighted = window.hljs.highlightAuto(source).value;
+      }
+    } catch (_) {}
+
+    const label = normalized || "code";
+    return (
+      '<div class="code-card">' +
+      '<div class="code-toolbar"><span>' +
+      escapeHtml(label) +
+      '</span><button class="copy-code" type="button" aria-label="Copy code">' +
+      '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 4V2.8C5 1.8 5.8 1 6.8 1h6.4c1 0 1.8.8 1.8 1.8v6.4c0 1-.8 1.8-1.8 1.8H12V9.5h1.2c.2 0 .3-.1.3-.3V2.8c0-.2-.1-.3-.3-.3H6.8c-.2 0-.3.1-.3.3V4H5Z"/><path d="M2.8 5h6.4c1 0 1.8.8 1.8 1.8v6.4c0 1-.8 1.8-1.8 1.8H2.8c-1 0-1.8-.8-1.8-1.8V6.8C1 5.8 1.8 5 2.8 5Zm0 1.5c-.2 0-.3.1-.3.3v6.4c0 .2.1.3.3.3h6.4c.2 0 .3-.1.3-.3V6.8c0-.2-.1-.3-.3-.3H2.8Z"/></svg>' +
+      "<span>Copy</span></button></div>" +
+      '<pre><code class="hljs language-' +
+      escapeHtml(normalized) +
+      '">' +
+      highlighted +
+      "</code></pre></div>"
+    );
+  }
+
   const md = window.markdownit({
     html: false,
     linkify: true,
     typographer: true,
     breaks: false,
-    highlight: function (source, language) {
-      const normalized = (language || "").trim().toLowerCase();
-
-      if (normalized === "mermaid") {
-        return (
-          '<div class="diagram-card">' +
-          '<div class="diagram-label"><span>Diagram</span></div>' +
-          '<pre class="mermaid">' +
-          escapeHtml(source) +
-          "</pre></div>"
-        );
-      }
-
-      let highlighted = escapeHtml(source);
-      try {
-        if (normalized && window.hljs.getLanguage(normalized)) {
-          highlighted = window.hljs.highlight(source, {
-            language: normalized,
-            ignoreIllegals: true,
-          }).value;
-        } else {
-          highlighted = window.hljs.highlightAuto(source).value;
-        }
-      } catch (_) {}
-
-      const label = normalized || "code";
-      return (
-        '<div class="code-card">' +
-        '<div class="code-toolbar"><span>' +
-        escapeHtml(label) +
-        '</span><button class="copy-code" type="button" aria-label="Copy code">' +
-        '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 4V2.8C5 1.8 5.8 1 6.8 1h6.4c1 0 1.8.8 1.8 1.8v6.4c0 1-.8 1.8-1.8 1.8H12V9.5h1.2c.2 0 .3-.1.3-.3V2.8c0-.2-.1-.3-.3-.3H6.8c-.2 0-.3.1-.3.3V4H5Z"/><path d="M2.8 5h6.4c1 0 1.8.8 1.8 1.8v6.4c0 1-.8 1.8-1.8 1.8H2.8c-1 0-1.8-.8-1.8-1.8V6.8C1 5.8 1.8 5 2.8 5Zm0 1.5c-.2 0-.3.1-.3.3v6.4c0 .2.1.3.3.3h6.4c.2 0 .3-.1.3-.3V6.8c0-.2-.1-.3-.3-.3H2.8Z"/></svg>' +
-        "<span>Copy</span></button></div>" +
-        '<pre><code class="hljs language-' +
-        escapeHtml(normalized) +
-        '">' +
-        highlighted +
-        "</code></pre></div>"
-      );
-    },
   });
+
+  // Own both code paths so nothing re-introduces the wrapper: fenced blocks and
+  // the indented kind, which markdown-it renders through a separate rule.
+  md.renderer.rules.fence = function (tokens, index) {
+    const token = tokens[index];
+    const info = (token.info || "").trim();
+    return renderCodeCard(token.content, info.split(/\s+/)[0] || "");
+  };
+
+  md.renderer.rules.code_block = function (tokens, index) {
+    return renderCodeCard(tokens[index].content, "");
+  };
 
   if (window.markdownitFootnote) {
     md.use(window.markdownitFootnote);

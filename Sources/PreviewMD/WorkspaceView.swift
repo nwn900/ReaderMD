@@ -12,10 +12,6 @@ struct WorkspaceView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             SidebarView()
                 .navigationSplitViewColumnWidth(min: 160, ideal: 176, max: 192)
-                // Drops the split view's automatic sidebar button, which SwiftUI
-                // parks beside the principal slot. It is re-declared below as a
-                // navigation item so it keeps its leading position.
-                .toolbar(removing: .sidebarToggle)
         } detail: {
             detail
         }
@@ -24,18 +20,19 @@ struct WorkspaceView: View {
             OutlineInspector()
                 .inspectorColumnWidth(min: 180, ideal: 200, max: 232)
         }
+        // Parameters vary, the modifier does not: swapping `.searchable` in and
+        // out with an `if` would change the view's identity and rebuild the web
+        // view, losing the reader's place. Moving the field to the (collapsed)
+        // sidebar takes it out of the toolbar without touching identity.
         .searchable(
             text: $state.searchText,
             isPresented: $isSearchPresented,
-            placement: .toolbar,
+            placement: state.isFocusMode ? .sidebar : .toolbar,
             prompt: "Find"
         )
+        .toolbar(removing: state.isFocusMode ? .sidebarToggle : nil)
         // Focus mode keeps this hierarchy and only hides the chrome, so the web
         // view is never rebuilt and the reader keeps their place in the page.
-        // The toolbar is hidden in FocusWindowChrome, not with SwiftUI's
-        // `.toolbar(.hidden, for: .windowToolbar)`: that takes the whole title
-        // bar with it, including the close/minimise/zoom buttons.
-        .background(FocusWindowChrome(isFocusMode: state.isFocusMode))
         .focusModeEscape(isActive: state.isFocusMode) {
             state.exitFocusMode()
         }
@@ -44,60 +41,71 @@ struct WorkspaceView: View {
                 columnVisibility = .detailOnly
                 isSearchPresented = false
             }
+            // An empty title leaves the bar carrying nothing but the window
+            // buttons and the way out.
+            NSApplication.shared.mainWindow?.title = state.isFocusMode
+                ? ""
+                : (state.currentDocument?.title ?? "PreviewMD")
         }
+        // Focus mode empties the toolbar rather than removing it. The bar keeps
+        // its system material, so the page scrolls up underneath it the way it
+        // does everywhere else in macOS, and the window keeps its buttons.
         .toolbar {
-            ToolbarItem(placement: .navigation) {
-                Button {
-                    withAnimation(.easeOut(duration: 0.18)) {
-                        columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+            if state.isFocusMode {
+                // Everything else goes; the bar itself stays, so the page scrolls
+                // up under its system material and the window keeps its buttons.
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        state.exitFocusMode()
+                    } label: {
+                        Label("Exit Focus Mode", systemImage: "xmark")
                     }
-                } label: {
-                    Label("Sidebar", systemImage: "sidebar.left")
+                    .help("Leave focus mode (Esc)")
                 }
-                .help(columnVisibility == .detailOnly ? "Show sidebar" : "Hide sidebar")
-            }
-
-            ToolbarItem(placement: .navigation) {
-                Button {
-                    state.presentOpenPanel()
-                } label: {
-                    Label("Open", systemImage: "folder.badge.plus")
+            } else {
+                ToolbarItem(placement: .navigation) {
+                    Button {
+                        state.presentOpenPanel()
+                    } label: {
+                        Label("Open", systemImage: "folder.badge.plus")
+                    }
+                    .help("Open Markdown (⌘O)")
                 }
-                .help("Open Markdown (⌘O)")
-            }
 
-            // Two items rather than one group with a Divider: a Divider inside a
-            // toolbar group draws as a stray horizontal dash on macOS 14, and
-            // there is no real toolbar separator to ask for. The gap between two
-            // items is the separation.
-            ToolbarItem(placement: .principal) {
-                // Only ever enters focus mode: the toolbar is gone once it is
-                // on, and ⇧⌘F or Escape brings it back.
-                Button {
-                    state.enterFocusMode()
-                } label: {
-                    Label("Focus", systemImage: "rectangle.center.inset.filled")
-                }
-                .disabled(!state.canEnterFocusMode)
-                .help("Focus mode — just the page (⇧⌘F)")
-            }
+                // Focus and the display picker share ONE principal item. Two
+                // items here — or a ToolbarItemGroup — make SwiftUI drag the
+                // split view's sidebar button out of its leading slot to sit
+                // beside them, and that button carries the tracking separator
+                // that lets the sidebar run up through the title bar.
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 10) {
+                        Button {
+                            state.enterFocusMode()
+                        } label: {
+                            Label("Focus", systemImage: "rectangle.center.inset.filled")
+                        }
+                        .disabled(!state.canEnterFocusMode)
+                        .help("Focus mode — just the page (⇧⌘F)")
 
-            ToolbarItem(placement: .principal) {
-                Picker("Display mode", selection: $state.displayMode) {
-                    ForEach(DisplayMode.allCases) { mode in
-                        Image(systemName: mode.symbol)
-                            .help(mode.title)
-                            .tag(mode)
+                        Divider().frame(height: 16)
+
+                        Picker("Display mode", selection: $state.displayMode) {
+                            ForEach(DisplayMode.allCases) { mode in
+                                Image(systemName: mode.symbol)
+                                    .help(mode.title)
+                                    .tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .frame(width: 136)
+                        .disabled(state.currentDocument == nil)
                     }
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 136)
-                .disabled(state.currentDocument == nil)
-            }
 
-            ToolbarItem(placement: .primaryAction) {
-                ToolbarUtilities()
+                ToolbarItem(placement: .primaryAction) {
+                    ToolbarUtilities()
+                }
             }
         }
         .onChange(of: state.searchFieldFocusToken) {
@@ -150,9 +158,6 @@ struct WorkspaceView: View {
                     .transition(.opacity)
             }
         }
-        // Without this the page stops below the (now transparent) title bar and
-        // the window background shows through as an empty strip above it.
-        .ignoresSafeArea(state.isFocusMode ? .container : [], edges: .top)
         .dropDestination(for: URL.self) { urls, _ in
             let accepted = urls.filter(MarkdownFileSupport.accepts)
             accepted.forEach(state.open)
@@ -173,39 +178,6 @@ struct WorkspaceView: View {
                 state.isInspectorVisible = newValue
             }
         )
-    }
-}
-
-/// Strips the window's title bar in focus mode, leaving the traffic lights
-/// floating over the page.
-///
-/// `fullSizeContentView` lets the document run to the top of the window; the
-/// transparent, title-less bar is what stops it reading as an empty strip above
-/// the page. Everything is set back on the way out — the window is shared with
-/// normal mode, so nothing here may be one-way.
-private struct FocusWindowChrome: NSViewRepresentable {
-    let isFocusMode: Bool
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView(frame: .zero)
-        view.isHidden = true
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        let focused = isFocusMode
-        // The view is not in a window yet on the first pass.
-        DispatchQueue.main.async {
-            guard let window = nsView.window else { return }
-            window.toolbar?.isVisible = !focused
-            window.titlebarAppearsTransparent = focused
-            window.titleVisibility = focused ? .hidden : .visible
-            if focused {
-                window.styleMask.insert(.fullSizeContentView)
-            } else {
-                window.styleMask.remove(.fullSizeContentView)
-            }
-        }
     }
 }
 
