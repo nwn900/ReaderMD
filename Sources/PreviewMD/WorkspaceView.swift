@@ -180,6 +180,22 @@ enum FocusMetrics {
     static let toolbarHeight: Double = 52
 }
 
+/// A transparent strip that drags the window, for the band the toolbar shares
+/// with the page in focus mode.
+///
+/// `mouseDownCanMoveWindow` is what AppKit consults under the pointer, and the
+/// web view answers no. The toolbar's own buttons live in the title bar above
+/// this view, so they keep receiving their clicks.
+private struct WindowDragArea: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView { DragView() }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    final class DragView: NSView {
+        override var mouseDownCanMoveWindow: Bool { true }
+    }
+}
+
 /// Owns the parts of the window SwiftUI will not hand over.
 ///
 /// Two things cannot be expressed in SwiftUI here. `.searchable` cannot be
@@ -234,12 +250,20 @@ private struct FocusWindowChrome: NSViewRepresentable {
             // `titlebarAppearsTransparent` stays false on purpose: the bar has
             // to keep its material, because that material is what blurs the text
             // passing beneath it. Only the content area is extended upwards.
+            // Changing the style mask makes AppKit recompute the frame from the
+            // content rect, which can shift the window's top edge. Entering a
+            // reading mode must not move or resize the window, so the frame is
+            // put back exactly as it was.
+            let frame = window.frame
             if focused {
                 window.styleMask.insert(.fullSizeContentView)
                 coordinator.didEnterFocus = true
             } else {
                 window.styleMask.remove(.fullSizeContentView)
                 coordinator.didEnterFocus = false
+            }
+            if window.frame != frame {
+                window.setFrame(frame, display: true)
             }
             if focused {
                 if coordinator.restoredTitle == nil {
@@ -259,6 +283,10 @@ private struct FocusWindowChrome: NSViewRepresentable {
             // capsule behind, and the search field ignores it entirely.
             // SwiftUI re-adds these on its next toolbar rebuild, which is why
             // this runs again whenever the sidebar opens or closes.
+            // SwiftUI cannot drop these for one state and keep them for
+            // another, so they come out of the NSToolbar directly. Note this is
+            // not what displaces the sidebar button afterwards: switching the
+            // toolbar's SwiftUI content rebuilds the bar and moves it anyway.
             guard focused else { return }
             let unwanted: Set<String> = [Self.systemSidebarToggle, Self.systemSearchField]
             for index in toolbar.items.indices.reversed()
@@ -745,6 +773,16 @@ private struct PreviewPane: View {
             // handed to the renderer above, so the text still starts below the
             // bar rather than under it.
             .ignoresSafeArea(state.isFocusMode ? .container : [], edges: .top)
+            .overlay(alignment: .top) {
+                if state.isFocusMode {
+                    // The page now reaches the top of the window, and the web
+                    // view swallows drags, so the strip beside the toolbar
+                    // buttons would not move the window. This gives it back.
+                    WindowDragArea()
+                        .frame(height: FocusMetrics.toolbarHeight)
+                        .ignoresSafeArea(edges: .top)
+                }
+            }
 
             ReadingWidthRuler()
                 .padding(.bottom, 14)
