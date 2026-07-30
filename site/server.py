@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve the PreviewMD landing page and store newsletter signups in SQLite."""
+"""Serve PreviewMD and store newsletter signups and download counts in SQLite."""
 
 from __future__ import annotations
 
@@ -24,6 +24,9 @@ PORT = int(os.environ.get("PORT", "4173"))
 
 MAX_BODY_BYTES = 4096
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+DOWNLOAD_FILE_PATTERN = re.compile(
+    r"^PreviewMD-[A-Za-z0-9][A-Za-z0-9._-]*-macOS\.zip$"
+)
 
 
 def initialize_database() -> None:
@@ -36,6 +39,15 @@ def initialize_database() -> None:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT NOT NULL COLLATE NOCASE UNIQUE,
                 created_at TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS downloads (
+                file_name TEXT PRIMARY KEY,
+                click_count INTEGER NOT NULL DEFAULT 0 CHECK (click_count >= 0),
+                updated_at TEXT NOT NULL
             )
             """
         )
@@ -54,6 +66,23 @@ def store_email(email: str) -> bool:
         return cursor.rowcount == 1
 
 
+def record_download_click(file_name: str) -> None:
+    """Atomically increment the aggregate click count for a release archive."""
+    updated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with sqlite3.connect(DB_PATH, timeout=5) as connection:
+        connection.execute(
+            """
+            INSERT INTO downloads (file_name, click_count, updated_at)
+            VALUES (?, 1, ?)
+            ON CONFLICT(file_name) DO UPDATE SET
+                click_count = click_count + 1,
+                updated_at = excluded.updated_at
+            """,
+            (file_name, updated_at),
+        )
+        connection.commit()
+
+
 class PreviewMDRequestHandler(SimpleHTTPRequestHandler):
     server_version = "PreviewMDLanding/1.0"
 
@@ -63,32 +92,50 @@ class PreviewMDRequestHandler(SimpleHTTPRequestHandler):
         super().end_headers()
 
     def do_POST(self) -> None:
-        if urlsplit(self.path).path != "/api/subscribe":
+        request_path = urlsplit(self.path).path
+        if request_path not in {"/api/subscribe", "/api/download"}:
             self.send_json(404, {"ok": False, "error": "not_found"})
             return
 
+        payload = self.read_json_object()
+        if payload is None:
+            return
+
+        if request_path == "/api/download":
+            self.handle_download(payload)
+            return
+
+        self.handle_subscribe(payload)
+
+    def read_json_object(self) -> dict[str, object] | None:
         content_type = self.headers.get("Content-Type", "")
         if not content_type.lower().startswith("application/json"):
             self.send_json(415, {"ok": False, "error": "json_required"})
-            return
+            return None
 
         try:
             content_length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
             self.send_json(400, {"ok": False, "error": "invalid_length"})
-            return
+            return None
 
         if content_length <= 0 or content_length > MAX_BODY_BYTES:
             self.send_json(413, {"ok": False, "error": "invalid_body_size"})
-            return
+            return None
 
         try:
             payload = json.loads(self.rfile.read(content_length))
         except (json.JSONDecodeError, UnicodeDecodeError):
             self.send_json(400, {"ok": False, "error": "invalid_json"})
-            return
+            return None
 
-        email_value = payload.get("email") if isinstance(payload, dict) else None
+        if not isinstance(payload, dict):
+            self.send_json(400, {"ok": False, "error": "json_object_required"})
+            return None
+        return payload
+
+    def handle_subscribe(self, payload: dict[str, object]) -> None:
+        email_value = payload.get("email")
         email = email_value.strip().lower() if isinstance(email_value, str) else ""
         if len(email) > 254 or not EMAIL_PATTERN.fullmatch(email):
             self.send_json(422, {"ok": False, "error": "invalid_email"})
@@ -107,6 +154,27 @@ class PreviewMDRequestHandler(SimpleHTTPRequestHandler):
             {"ok": True, "status": "subscribed"},
         )
 
+    def handle_download(self, payload: dict[str, object]) -> None:
+        file_value = payload.get("file")
+        file_name = file_value.strip() if isinstance(file_value, str) else ""
+        is_release = (
+            len(file_name) <= 255
+            and DOWNLOAD_FILE_PATTERN.fullmatch(file_name) is not None
+            and (SITE_DIR / file_name).is_file()
+        )
+        if not is_release:
+            self.send_json(422, {"ok": False, "error": "invalid_download"})
+            return
+
+        try:
+            record_download_click(file_name)
+        except sqlite3.Error:
+            self.log_error("Could not record download click")
+            self.send_json(500, {"ok": False, "error": "storage_failed"})
+            return
+
+        self.send_json(200, {"ok": True, "status": "recorded"})
+
     def send_json(self, status: int, payload: dict[str, object]) -> None:
         body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
         self.send_response(status)
@@ -123,7 +191,7 @@ def main() -> None:
     handler = partial(PreviewMDRequestHandler, directory=str(SITE_DIR))
     server = ThreadingHTTPServer((HOST, PORT), handler)
     print(f"PreviewMD landing: http://{HOST}:{PORT}")
-    print(f"Subscriber database: {DB_PATH}")
+    print(f"Landing database: {DB_PATH}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

@@ -60,10 +60,13 @@ Then:
 ssh ovh-vps 'exp-deploy git@github.com-previewmd:ashtree74/PreviewMD.git previewmd --out site --no-install'
 ```
 
-## Newsletter endpoint
+## Landing API
 
 `site/server.py` runs as a systemd unit bound to `127.0.0.1:8419`; nginx
-proxies exactly one path to it.
+proxies only the newsletter and download-count paths to it:
+
+- `POST /previewmd/api/subscribe`
+- `POST /previewmd/api/download`
 
 | File | Installed to |
 | --- | --- |
@@ -85,11 +88,14 @@ sudo systemctl status previewmd-signup
 sudo journalctl -u previewmd-signup -n 50
 ```
 
-Read the list:
+Read the signup list and aggregate download counts:
 
 ```bash
 ssh ovh-vps "sqlite3 /home/ubuntu/experiments/.data/previewmd-subscribers.sqlite3 \
   'SELECT email, created_at FROM subscribers ORDER BY created_at DESC;'"
+
+ssh ovh-vps "sqlite3 /home/ubuntu/experiments/.data/previewmd-subscribers.sqlite3 \
+  'SELECT file_name, click_count, updated_at FROM downloads ORDER BY updated_at DESC;'"
 ```
 
 The unit is hardened (`ProtectSystem=strict`, empty `CapabilityBoundingSet`,

@@ -1,0 +1,175 @@
+from __future__ import annotations
+
+import http.client
+import json
+import sqlite3
+import threading
+import unittest
+from functools import partial
+from http.server import ThreadingHTTPServer
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+import server as landing
+
+
+class QuietRequestHandler(landing.PreviewMDRequestHandler):
+    def log_message(self, format: str, *args: object) -> None:
+        pass
+
+
+class PreviewMDServerTests(unittest.TestCase):
+    archive_name = "PreviewMD-1.0-6-macOS.zip"
+
+    def setUp(self) -> None:
+        self.temporary_directory = TemporaryDirectory()
+        self.root = Path(self.temporary_directory.name)
+        self.site_dir = self.root / "site"
+        self.site_dir.mkdir()
+        (self.site_dir / self.archive_name).write_bytes(b"test archive")
+
+        self.original_db_path = landing.DB_PATH
+        self.original_site_dir = landing.SITE_DIR
+        landing.DB_PATH = self.root / "data" / "subscribers.sqlite3"
+        landing.SITE_DIR = self.site_dir
+        landing.initialize_database()
+
+        handler = partial(QuietRequestHandler, directory=str(self.site_dir))
+        self.http_server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        self.server_thread = threading.Thread(
+            target=self.http_server.serve_forever,
+            daemon=True,
+        )
+        self.server_thread.start()
+
+    def tearDown(self) -> None:
+        self.http_server.shutdown()
+        self.http_server.server_close()
+        self.server_thread.join(timeout=5)
+        landing.DB_PATH = self.original_db_path
+        landing.SITE_DIR = self.original_site_dir
+        self.temporary_directory.cleanup()
+
+    def post_json(
+        self,
+        path: str,
+        payload: object,
+    ) -> tuple[int, dict[str, object]]:
+        body = json.dumps(payload).encode("utf-8")
+        connection = http.client.HTTPConnection(
+            "127.0.0.1",
+            self.http_server.server_port,
+            timeout=5,
+        )
+        try:
+            connection.request(
+                "POST",
+                path,
+                body=body,
+                headers={"Content-Type": "application/json"},
+            )
+            response = connection.getresponse()
+            response_body = json.loads(response.read())
+            return response.status, response_body
+        finally:
+            connection.close()
+
+    def test_download_endpoint_increments_aggregate_count(self) -> None:
+        for expected_count in (1, 2):
+            status, payload = self.post_json(
+                "/api/download",
+                {"file": self.archive_name},
+            )
+
+            self.assertEqual(status, 200)
+            self.assertEqual(payload, {"ok": True, "status": "recorded"})
+            with sqlite3.connect(landing.DB_PATH) as connection:
+                row = connection.execute(
+                    """
+                    SELECT file_name, click_count, updated_at
+                    FROM downloads
+                    """
+                ).fetchone()
+            self.assertIsNotNone(row)
+            self.assertEqual(row[0], self.archive_name)
+            self.assertEqual(row[1], expected_count)
+            self.assertRegex(row[2], r"^\d{4}-\d{2}-\d{2}T")
+
+    def test_download_endpoint_rejects_unknown_or_unsafe_files(self) -> None:
+        for file_name in (
+            "PreviewMD-missing-macOS.zip",
+            "../PreviewMD-1.0-6-macOS.zip",
+            "not-previewmd.zip",
+        ):
+            status, payload = self.post_json(
+                "/api/download",
+                {"file": file_name},
+            )
+            self.assertEqual(status, 422)
+            self.assertEqual(payload["error"], "invalid_download")
+
+        with sqlite3.connect(landing.DB_PATH) as connection:
+            count = connection.execute("SELECT COUNT(*) FROM downloads").fetchone()[0]
+        self.assertEqual(count, 0)
+
+    def test_subscribe_endpoint_still_normalizes_and_deduplicates_email(self) -> None:
+        status, _ = self.post_json(
+            "/api/subscribe",
+            {"email": "  Reader@Example.com "},
+        )
+        duplicate_status, _ = self.post_json(
+            "/api/subscribe",
+            {"email": "reader@example.com"},
+        )
+
+        self.assertEqual(status, 201)
+        self.assertEqual(duplicate_status, 200)
+        with sqlite3.connect(landing.DB_PATH) as connection:
+            rows = connection.execute("SELECT email FROM subscribers").fetchall()
+        self.assertEqual(rows, [("reader@example.com",)])
+
+    def test_database_initialization_is_an_idempotent_migration(self) -> None:
+        legacy_database = self.root / "legacy.sqlite3"
+        with sqlite3.connect(legacy_database) as connection:
+            connection.execute(
+                """
+                CREATE TABLE subscribers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    email TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                """
+                INSERT INTO subscribers (email, created_at)
+                VALUES ('existing@example.com', '2026-01-01T00:00:00+00:00')
+                """
+            )
+            connection.commit()
+
+        landing.DB_PATH = legacy_database
+        landing.initialize_database()
+        landing.initialize_database()
+
+        with sqlite3.connect(landing.DB_PATH) as connection:
+            table_names = {
+                row[0]
+                for row in connection.execute(
+                    """
+                    SELECT name
+                    FROM sqlite_master
+                    WHERE type = 'table'
+                    """
+                )
+            }
+            subscribers = connection.execute(
+                "SELECT email FROM subscribers"
+            ).fetchall()
+        self.assertIn("subscribers", table_names)
+        self.assertIn("downloads", table_names)
+        self.assertEqual(subscribers, [("existing@example.com",)])
+
+
+if __name__ == "__main__":
+    unittest.main()

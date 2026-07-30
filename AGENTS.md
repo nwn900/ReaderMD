@@ -103,12 +103,15 @@ root, and is ignored by Git. Keep it outside `site/`; the database and mailing
 list must never be downloadable through the frontend. Do not commit a database
 containing subscriber addresses.
 
-The database is created automatically on first server startup. It stores only
-the normalized email address and UTC signup time, treats addresses
-case-insensitively, and ignores duplicates. Production hosting must provide a
-persistent filesystem or volume for `.previewmd-data/` and must back it up;
-static-only or ephemeral serverless hosting will not preserve this SQLite
-database across deployments.
+The database is created automatically on first server startup. The subscriber
+table stores only the normalized email address and UTC signup time, treats
+addresses case-insensitively, and ignores duplicates. Download clicks are
+recorded in the same database as an aggregate count per release filename plus
+the UTC time of the latest click; do not store IP addresses or associate a
+click with a subscriber. Tracking is best-effort and must never gate the ZIP
+download. Production hosting must provide a persistent filesystem or volume
+for `.previewmd-data/` and must back it up; static-only or ephemeral serverless
+hosting will not preserve this SQLite database across deployments.
 
 The landing server supports:
 

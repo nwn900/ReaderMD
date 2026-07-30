@@ -12,6 +12,7 @@ const DOWNLOAD_FILE = "PreviewMD-1.0-6-macOS.zip";
    development and from a /<slug>/ subpath in production. A leading slash would
    miss the proxied endpoint there. */
 const NEWSLETTER_ENDPOINT = "api/subscribe";
+const DOWNLOAD_ENDPOINT = "api/download";
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = (sel, root) => (root || document).querySelector(sel);
@@ -306,10 +307,29 @@ card.addEventListener("click", (e) => {
 $("#cardClose").addEventListener("click", dismissCard);
 $("#cardDismiss").addEventListener("click", dismissCard);
 
-/* Let the native download start, then open the signup on every click.
-   Dismissing it never suppresses a future download-triggered opening. */
+/* Let the native download start, record the click without gating it, then open
+   the signup. Dismissing it never suppresses a future opening. */
+function recordDownloadClick() {
+  fetch(DOWNLOAD_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({ file: DOWNLOAD_FILE }),
+    keepalive: true
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error("HTTP " + response.status);
+    })
+    .catch((err) => {
+      console.warn("PreviewMD: download tracking failed —", err);
+    });
+}
+
 $$("[data-download]").forEach((link) => {
-  link.addEventListener("click", () => setTimeout(showCard, 0));
+  link.addEventListener("click", () => {
+    recordDownloadClick();
+    setTimeout(showCard, 0);
+  });
 });
 
 const showSignupSuccess = () => {
