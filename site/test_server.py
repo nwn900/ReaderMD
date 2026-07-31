@@ -15,6 +15,7 @@ import server as landing
 
 
 class PreviewMDLandingContentTests(unittest.TestCase):
+    analytics_id = "G-8YXDM1JJH2"
     release_archive = "PreviewMD-1.5-7-macOS.zip"
     site_dir = Path(__file__).resolve().parent
 
@@ -43,6 +44,36 @@ class PreviewMDLandingContentTests(unittest.TestCase):
         )
         self.assertNotIn("PreviewMD-1.0-6-macOS.zip", html)
         self.assertNotIn("PreviewMD-1.0-6-macOS.zip", javascript)
+
+    def test_shared_analytics_respects_the_strict_csp(self) -> None:
+        html = (self.site_dir / "index.html").read_text(encoding="utf-8")
+        analytics = (self.site_dir / "analytics.js").read_text(encoding="utf-8")
+        nginx = (
+            self.site_dir.parent / "deploy" / "nginx-previewmd.conf"
+        ).read_text(encoding="utf-8")
+        inline_script_bodies = re.findall(
+            r"<script(?:\s[^>]*)?>(.*?)</script>",
+            html,
+            flags=re.DOTALL,
+        )
+
+        self.assertIn(
+            f'https://www.googletagmanager.com/gtag/js?id={self.analytics_id}',
+            html,
+        )
+        self.assertIn('src="analytics.js?v=1"', html)
+        self.assertIn(
+            f'const GOOGLE_ANALYTICS_ID = "{self.analytics_id}";',
+            analytics,
+        )
+        self.assertIn("No in-app telemetry", html)
+        self.assertTrue(all(not body.strip() for body in inline_script_bodies))
+        self.assertIn(
+            "script-src 'self' https://www.googletagmanager.com",
+            nginx,
+        )
+        self.assertIn("https://*.google-analytics.com", nginx)
+        self.assertIn("https://*.analytics.google.com", nginx)
 
 
 class QuietRequestHandler(landing.PreviewMDRequestHandler):
