@@ -62,6 +62,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         false
     }
 
+    func applicationShouldTerminate(
+        _ sender: NSApplication
+    ) -> NSApplication.TerminateReply {
+        guard let state else { return .terminateNow }
+
+        state.prepareForTermination { shouldTerminate in
+            sender.reply(toApplicationShouldTerminate: shouldTerminate)
+        }
+        return .terminateLater
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // The menu bar finishes assembling a runloop turn after launch.
         DispatchQueue.main.async {
@@ -139,6 +150,11 @@ struct PreviewMDCommands: Commands {
         }
 
         CommandGroup(replacing: .newItem) {
+            Button("New Markdown") {
+                state.newDocument()
+            }
+            .keyboardShortcut("n")
+
             Button("Open…") {
                 state.presentOpenPanel()
             }
@@ -165,6 +181,20 @@ struct PreviewMDCommands: Commands {
             }
             .keyboardShortcut("e", modifiers: [.command, .shift])
             .disabled(state.currentDocument == nil || state.displayMode == .source)
+        }
+
+        CommandGroup(replacing: .undoRedo) {
+            Button("Undo") {
+                state.undoCurrent()
+            }
+            .keyboardShortcut("z")
+            .disabled(!state.canUndoCurrent)
+
+            Button("Redo") {
+                state.redoCurrent()
+            }
+            .keyboardShortcut("z", modifiers: [.command, .shift])
+            .disabled(!state.canRedoCurrent)
         }
 
         CommandGroup(after: .printItem) {

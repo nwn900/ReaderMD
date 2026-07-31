@@ -8,6 +8,7 @@
   const progress = document.getElementById("reading-progress");
   let renderVersion = 0;
   let activeSearchText = "";
+  let lastRenderOptions = null;
 
   const escapeHtml = (value) =>
     value
@@ -73,6 +74,15 @@
     breaks: false,
   });
 
+  // markdown-it rejects file: URLs by default together with executable schemes.
+  // PreviewMD deliberately supports local images, so allow only this additional
+  // non-executable scheme while preserving the built-in javascript/vbscript
+  // protection and the narrow data:image allowlist.
+  const defaultValidateLink = md.validateLink.bind(md);
+  md.validateLink = function (value) {
+    return /^file:/i.test(value.trim()) || defaultValidateLink(value);
+  };
+
   // Own both code paths so nothing re-introduces the wrapper: fenced blocks and
   // the indented kind, which markdown-it renders through a separate rule.
   md.renderer.rules.fence = function (tokens, index) {
@@ -87,6 +97,36 @@
 
   if (window.markdownitFootnote) {
     md.use(window.markdownitFootnote);
+
+    const defaultFootnoteRef = md.renderer.rules.footnote_ref;
+    if (defaultFootnoteRef) {
+      md.renderer.rules.footnote_ref = function (tokens, index, options, env, self) {
+        const html = defaultFootnoteRef(tokens, index, options, env, self);
+        const meta = tokens[index].meta || {};
+        const label = meta.label || String((meta.id || 0) + 1);
+        return html.replace(
+          '<sup class="footnote-ref">',
+          '<sup class="footnote-ref" data-footnote-label="' +
+            escapeHtml(String(label)) +
+            '">'
+        );
+      };
+    }
+
+    const defaultFootnoteOpen = md.renderer.rules.footnote_open;
+    if (defaultFootnoteOpen) {
+      md.renderer.rules.footnote_open = function (tokens, index, options, env, self) {
+        const html = defaultFootnoteOpen(tokens, index, options, env, self);
+        const meta = tokens[index].meta || {};
+        const label = meta.label || String((meta.id || 0) + 1);
+        return html.replace(
+          'class="footnote-item"',
+          'class="footnote-item" data-footnote-label="' +
+            escapeHtml(String(label)) +
+            '"'
+        );
+      };
+    }
   }
 
   const defaultHeadingOpen =
@@ -254,6 +294,7 @@
       if (version !== renderVersion) return;
       const node = diagrams[index];
       const source = node.textContent;
+      node.dataset.source = source;
       try {
         const result = await window.mermaid.render(
           "previewmd-diagram-" + version + "-" + index,
@@ -357,6 +398,7 @@
   };
 
   window.previewmdRender = async function (options) {
+    lastRenderOptions = Object.assign({}, options);
     const version = ++renderVersion;
     const isDark =
       options.theme === "dark" ||
@@ -386,10 +428,19 @@
       if (options.outlineTarget) {
         window.previewmdScrollTo(options.outlineTarget);
       }
+      if (window.previewmdEditorDidRender) {
+        window.previewmdEditorDidRender(options.markdown || "", options.editable === true);
+      }
       updateProgress();
     } catch (error) {
       errorBox.hidden = false;
       errorBox.textContent = "Preview couldn’t be rendered: " + error.message;
     }
+  };
+
+  window.previewmdRefreshEditor = function (markdown) {
+    if (!lastRenderOptions) return;
+    const options = Object.assign({}, lastRenderOptions, { markdown: markdown });
+    window.previewmdRender(options);
   };
 })();

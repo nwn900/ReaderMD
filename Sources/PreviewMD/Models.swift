@@ -20,7 +20,7 @@ enum DisplayMode: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .preview: "Preview"
+        case .preview: "Document"
         case .split: "Split"
         case .source: "Source"
         }
@@ -33,6 +33,11 @@ enum DisplayMode: String, CaseIterable, Identifiable {
         case .source: "chevron.left.forwardslash.chevron.right"
         }
     }
+}
+
+enum DocumentEditOrigin: Equatable {
+    case source
+    case richEditor
 }
 
 enum PreviewTheme: String, CaseIterable, Identifiable {
@@ -137,6 +142,16 @@ struct MarkdownDocument: Identifiable, Equatable {
     var title: String
     var content: String
     var lastSavedContent: String
+    /// Monotonically increasing in-memory revision shared by the source and
+    /// rich editors. It prevents an edit echoed back from SwiftUI from
+    /// rebuilding the web editor and moving its selection.
+    var contentRevision = 0
+    var fileFormat = MarkdownFileFormat.standard
+    var diskSnapshot: FileSnapshot?
+    var undoHistory: [String] = []
+    var redoHistory: [String] = []
+    var lastEditOrigin: DocumentEditOrigin?
+    var lastEditAt: Date?
     var openedAt: Date
     var fileModifiedAt: Date?
     var isPinned: Bool

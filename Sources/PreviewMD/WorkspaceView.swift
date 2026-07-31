@@ -712,26 +712,113 @@ private struct TabButton: View {
 
 private struct DocumentWorkspace: View {
     @EnvironmentObject private var state: AppState
+    @State private var sourceColumnWidth: CGFloat = 420
+    @State private var splitDragStartWidth: CGFloat?
     let document: MarkdownDocument
 
     var body: some View {
         VStack(spacing: 0) {
-            switch state.displayMode {
-            case .preview:
-                PreviewPane(document: document)
-            case .source:
-                SourceEditor()
-            case .split:
-                HSplitView {
+            GeometryReader { proxy in
+                let availableWidth = proxy.size.width
+                let clampedSourceWidth = min(
+                    max(320, sourceColumnWidth),
+                    max(320, availableWidth - 420)
+                )
+                let isSplit = state.displayMode == .split
+                let isSourceOnly = state.displayMode == .source
+                let dividerWidth: CGFloat = isSplit ? 9 : 0
+                let visibleSourceWidth = isSourceOnly
+                    ? availableWidth
+                    : (isSplit ? clampedSourceWidth : 0)
+                let previewWidth = max(
+                    0,
+                    availableWidth - visibleSourceWidth - dividerWidth
+                )
+
+                HStack(spacing: 0) {
+                    // Both editors stay in this stable order. Changing display
+                    // mode only changes their frames, never their identity.
                     SourceEditor()
-                        .frame(minWidth: 320)
+                        .frame(width: visibleSourceWidth)
+                        .opacity(visibleSourceWidth > 0 ? 1 : 0)
+                        .allowsHitTesting(visibleSourceWidth > 0)
+                        .accessibilityHidden(visibleSourceWidth == 0)
+                        .clipped()
+
+                    SplitDivider()
+                        .frame(width: dividerWidth)
+                        .opacity(isSplit ? 1 : 0)
+                        .allowsHitTesting(isSplit)
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { value in
+                                    if splitDragStartWidth == nil {
+                                        splitDragStartWidth = clampedSourceWidth
+                                    }
+                                    sourceColumnWidth = min(
+                                        max(
+                                            320,
+                                            (splitDragStartWidth ?? clampedSourceWidth)
+                                                + value.translation.width
+                                        ),
+                                        max(320, availableWidth - 420)
+                                    )
+                                }
+                                .onEnded { _ in
+                                    splitDragStartWidth = nil
+                                }
+                        )
+
                     PreviewPane(document: document)
-                        .frame(minWidth: 420)
+                        .frame(width: previewWidth)
+                        .opacity(isSourceOnly ? 0 : 1)
+                        .allowsHitTesting(!isSourceOnly)
+                        .accessibilityHidden(isSourceOnly)
+                        .clipped()
                 }
+                .clipped()
             }
+            // The stable split container otherwise clips PreviewPane back to
+            // the content safe area. In focus mode it must share the toolbar's
+            // region so the web page's fading top blur can cover that band.
+            .ignoresSafeArea(
+                state.isFocusMode ? .container : [],
+                edges: .top
+            )
 
             if !state.isFocusMode {
                 StatusBar(document: document)
+            }
+        }
+    }
+}
+
+private struct SplitDivider: View {
+    @State private var isHovering = false
+
+    var body: some View {
+        ZStack {
+            Color.clear
+                .frame(width: 9)
+
+            Rectangle()
+                .fill(Color(nsColor: .separatorColor))
+                .frame(width: 1)
+        }
+        .frame(width: 9)
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            isHovering = hovering
+            if hovering {
+                NSCursor.resizeLeftRight.push()
+            } else {
+                NSCursor.pop()
+            }
+        }
+        .onDisappear {
+            if isHovering {
+                NSCursor.pop()
+                isHovering = false
             }
         }
     }
@@ -745,7 +832,10 @@ private struct PreviewPane: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             MarkdownWebView(
+                documentID: document.id,
                 markdown: document.content,
+                revision: document.contentRevision,
+                isEditable: !state.isFocusMode,
                 documentURL: document.url,
                 theme: state.theme,
                 readingStyle: state.readingStyle,
@@ -756,6 +846,14 @@ private struct PreviewPane: View {
                 outlineTarget: state.outlineTarget,
                 topInset: state.isFocusMode ? FocusMetrics.toolbarHeight : 0,
                 controller: state.rendererController,
+                onContentChange: { documentID, markdown, historyBoundary in
+                    state.updateContent(
+                        markdown,
+                        for: documentID,
+                        origin: .richEditor,
+                        startsNewUndoGroup: historyBoundary
+                    )
+                },
                 onDropFiles: { urls in
                     urls
                         .filter(MarkdownFileSupport.accepts)

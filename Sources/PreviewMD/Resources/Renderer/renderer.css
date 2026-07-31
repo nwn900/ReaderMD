@@ -452,6 +452,7 @@ code {
 }
 
 .code-card {
+  position: relative;
   margin: 1.55em 0;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -650,6 +651,7 @@ img {
 }
 
 .diagram-card {
+  position: relative;
   margin: 1.7em 0;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -902,6 +904,424 @@ sup {
   text-transform: uppercase;
 }
 
+#preview-document.is-editable {
+  caret-color: var(--accent);
+  cursor: text;
+  outline: none;
+}
+
+#preview-document.is-editable:focus {
+  outline: none;
+}
+
+#preview-document.is-editable > :first-child {
+  scroll-margin-top: calc(var(--top-inset) + 28px);
+}
+
+#preview-document.is-editable img,
+#preview-document.is-editable .code-card,
+#preview-document.is-editable .diagram-card,
+#preview-document.is-editable .katex {
+  cursor: default;
+}
+
+#preview-document.is-editable td,
+#preview-document.is-editable th {
+  min-width: 44px;
+}
+
+#preview-document.is-editable .task-list-item > input,
+#preview-document.is-editable .task-list-item > p > input {
+  cursor: pointer;
+}
+
+.editor-block-inserter {
+  position: fixed;
+  z-index: 9998;
+  width: 28px;
+  height: 28px;
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  user-select: none;
+}
+
+.editor-block-inserter[hidden],
+.editor-insert-menu[hidden] {
+  display: none;
+}
+
+.editor-block-add {
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  padding: 0 0 2px;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  outline: none;
+  background: transparent;
+  font: 400 22px/26px -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: default;
+}
+
+.editor-block-add:hover,
+.editor-block-add[aria-expanded="true"] {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--line-strong) 72%, transparent);
+  background: color-mix(in srgb, var(--page) 88%, transparent);
+  box-shadow: 0 2px 9px rgba(0, 0, 0, 0.1);
+}
+
+.editor-block-add:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 72%, transparent);
+  outline-offset: 1px;
+}
+
+.editor-insert-menu {
+  position: absolute;
+  top: -8px;
+  left: 36px;
+  box-sizing: border-box;
+  width: 338px;
+  max-height: min(520px, calc(100vh - 32px));
+  padding: 7px;
+  overflow: auto;
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--line-strong) 78%, transparent);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--page) 96%, transparent);
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.2),
+    0 2px 5px rgba(0, 0, 0, 0.11);
+  font-size: 12px;
+  line-height: 1.15;
+  -webkit-backdrop-filter: blur(24px) saturate(1.15);
+  backdrop-filter: blur(24px) saturate(1.15);
+}
+
+.editor-insert-menu.opens-upward {
+  top: auto;
+  bottom: -8px;
+}
+
+.editor-insert-menu-title {
+  padding: 6px 7px 8px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.editor-insert-section {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  padding: 5px 0;
+  border-top: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+}
+
+.editor-insert-section-title {
+  grid-column: 1 / -1;
+  padding: 3px 7px 4px;
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.editor-insert-section button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  height: 32px;
+  padding: 3px 7px;
+  color: inherit;
+  border: 0;
+  border-radius: 7px;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.editor-insert-section button:hover {
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+}
+
+.editor-insert-section button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 72%, transparent);
+  outline-offset: -1px;
+}
+
+.editor-insert-icon {
+  display: grid;
+  flex: 0 0 25px;
+  width: 25px;
+  height: 23px;
+  place-items: center;
+  color: var(--muted);
+  border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--canvas) 72%, transparent);
+  font: 600 10px/1 var(--font-mono);
+}
+
+.editor-markdown-composer {
+  position: fixed;
+  z-index: 10020;
+  inset: 0;
+  display: grid;
+  padding: 36px;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.24);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+
+.editor-markdown-composer-card {
+  display: flex;
+  box-sizing: border-box;
+  width: min(640px, calc(100vw - 52px));
+  height: min(430px, calc(100vh - 70px));
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--line-strong) 78%, transparent);
+  border-radius: 14px;
+  background: var(--page);
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.3);
+}
+
+.editor-markdown-composer-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 10px 0 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.editor-markdown-composer-header > span {
+  flex: 1;
+}
+
+.editor-markdown-composer-header button {
+  height: 27px;
+  padding: 0 10px;
+  color: inherit;
+  border: 0;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  font: inherit;
+}
+
+.editor-markdown-composer-header button.is-primary {
+  color: white;
+  background: var(--accent);
+}
+
+.editor-markdown-composer textarea {
+  flex: 1;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+  padding: 16px;
+  resize: none;
+  color: var(--ink);
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: 12.5px/1.55 var(--font-mono);
+  tab-size: 2;
+}
+
+.editor-markdown-composer-hint {
+  padding: 8px 14px 10px;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  font-size: 10px;
+  text-align: right;
+}
+
+.editor-bubble-toolbar {
+  position: fixed;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 34px;
+  padding: 4px;
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--line-strong) 78%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--page) 94%, transparent);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.18),
+    0 1px 2px rgba(0, 0, 0, 0.12);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  font-size: 12px;
+  line-height: 1;
+  user-select: none;
+  -webkit-backdrop-filter: blur(22px) saturate(1.15);
+  backdrop-filter: blur(22px) saturate(1.15);
+}
+
+.editor-bubble-toolbar[hidden],
+.editor-bubble-toolbar button[hidden],
+.editor-bubble-toolbar input[hidden] {
+  display: none;
+}
+
+.editor-bubble-toolbar button,
+.editor-bubble-toolbar select,
+.editor-bubble-toolbar input {
+  box-sizing: border-box;
+  height: 26px;
+  margin: 0;
+  color: inherit;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+}
+
+.editor-bubble-toolbar button {
+  min-width: 27px;
+  padding: 0 7px;
+  cursor: default;
+}
+
+.editor-bubble-toolbar button:hover,
+.editor-bubble-toolbar button.is-active,
+.editor-bubble-toolbar select:hover {
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.editor-bubble-toolbar button.is-active {
+  color: var(--accent);
+}
+
+.editor-bubble-toolbar button:focus-visible,
+.editor-bubble-toolbar select:focus-visible,
+.editor-bubble-toolbar input:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 72%, transparent);
+  outline-offset: 1px;
+}
+
+.editor-bubble-toolbar select {
+  max-width: 94px;
+  padding: 0 23px 0 7px;
+}
+
+.editor-toolbar-separator {
+  width: 1px;
+  height: 20px;
+  margin: 0 2px;
+  background: var(--line);
+}
+
+.editor-code-icon {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.editor-object-label {
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.editor-bubble-toolbar .editor-destructive {
+  color: #c43e47;
+}
+
+.editor-selected-object {
+  outline: 2px solid color-mix(in srgb, var(--accent) 82%, transparent) !important;
+  outline-offset: 3px;
+}
+
+td.editor-selected-object,
+th.editor-selected-object {
+  outline-offset: -2px;
+}
+
+.editor-object-source {
+  position: absolute;
+  z-index: 12;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 180px;
+  color: var(--code-ink);
+  border-radius: inherit;
+  background: var(--code-bg);
+}
+
+.diagram-card > .editor-object-source {
+  position: relative;
+  min-height: 280px;
+}
+
+.editor-object-source-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.editor-object-source-header input {
+  width: 120px;
+  height: 25px;
+  padding: 0 7px;
+  color: inherit;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--code-bg) 84%, var(--page));
+  font: 11px var(--font-mono);
+}
+
+.editor-object-source-spacer {
+  flex: 1;
+}
+
+.editor-object-source-header button {
+  height: 25px;
+  padding: 0 9px;
+  color: inherit;
+  border: 0;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--code-ink) 9%, transparent);
+  font: 11px -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.editor-object-source-header button.is-primary {
+  color: white;
+  background: var(--accent);
+}
+
+.editor-object-source textarea {
+  flex: 1;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 140px;
+  padding: 14px;
+  resize: vertical;
+  color: inherit;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: 12.5px/1.55 var(--font-mono);
+  tab-size: 2;
+}
+
 #render-error {
   position: fixed;
   right: 24px;
@@ -960,7 +1380,11 @@ sup {
 
   #reading-progress,
   .copy-code,
-  .heading-anchor {
+  .heading-anchor,
+  .editor-bubble-toolbar,
+  .editor-object-source,
+  .editor-block-inserter,
+  .editor-markdown-composer {
     display: none !important;
   }
 
