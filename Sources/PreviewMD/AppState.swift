@@ -75,10 +75,73 @@ final class AppState: ObservableObject {
                 self?.currentDocument?.content ?? ""
             },
             set: { [weak self] newValue in
-                guard let self, let index = self.currentDocumentIndex else { return }
-                self.documents[index].content = newValue
+                guard let self, let documentID = self.selectedDocumentID else { return }
+                self.updateContent(newValue, for: documentID, origin: .source)
             }
         )
+    }
+
+    func updateContent(
+        _ content: String,
+        for documentID: UUID,
+        origin: DocumentEditOrigin = .richEditor,
+        startsNewUndoGroup: Bool = false
+    ) {
+        guard let index = documents.firstIndex(where: { $0.id == documentID }),
+              documents[index].content != content
+        else { return }
+
+        let now = Date()
+        let coalescesTyping =
+            !startsNewUndoGroup
+            && documents[index].lastEditOrigin == origin
+            && now.timeIntervalSince(documents[index].lastEditAt ?? .distantPast) < 0.8
+
+        if !coalescesTyping {
+            documents[index].undoHistory.append(documents[index].content)
+            if documents[index].undoHistory.count > 100 {
+                documents[index].undoHistory.removeFirst(
+                    documents[index].undoHistory.count - 100
+                )
+            }
+        }
+        documents[index].redoHistory.removeAll()
+        documents[index].content = content
+        documents[index].contentRevision &+= 1
+        documents[index].lastEditOrigin = origin
+        documents[index].lastEditAt = now
+    }
+
+    var canUndoCurrent: Bool {
+        currentDocument?.undoHistory.isEmpty == false
+    }
+
+    var canRedoCurrent: Bool {
+        currentDocument?.redoHistory.isEmpty == false
+    }
+
+    func undoCurrent() {
+        guard let index = currentDocumentIndex,
+              let previous = documents[index].undoHistory.popLast()
+        else { return }
+
+        documents[index].redoHistory.append(documents[index].content)
+        documents[index].content = previous
+        documents[index].contentRevision &+= 1
+        documents[index].lastEditOrigin = nil
+        documents[index].lastEditAt = nil
+    }
+
+    func redoCurrent() {
+        guard let index = currentDocumentIndex,
+              let next = documents[index].redoHistory.popLast()
+        else { return }
+
+        documents[index].undoHistory.append(documents[index].content)
+        documents[index].content = next
+        documents[index].contentRevision &+= 1
+        documents[index].lastEditOrigin = nil
+        documents[index].lastEditAt = nil
     }
 
     func openWelcome() {
@@ -103,6 +166,32 @@ final class AppState: ObservableObject {
         documents.insert(document, at: 0)
         selectedDocumentID = document.id
         sidebarSelection = "welcome"
+    }
+
+    func newDocument() {
+        let existingTitles = Set(documents.map(\.title))
+        var title = "Untitled"
+        var suffix = 2
+        while existingTitles.contains(title) {
+            title = "Untitled \(suffix)"
+            suffix += 1
+        }
+
+        let document = MarkdownDocument(
+            id: UUID(),
+            url: nil,
+            title: title,
+            content: "",
+            lastSavedContent: "",
+            openedAt: Date(),
+            fileModifiedAt: nil,
+            isPinned: false,
+            isSample: false
+        )
+        documents.append(document)
+        selectedDocumentID = document.id
+        sidebarSelection = ""
+        searchText = ""
     }
 
     func presentOpenPanel() {
@@ -134,17 +223,18 @@ final class AppState: ObservableObject {
         }
 
         do {
-            let content = try String(contentsOf: normalizedURL, encoding: .utf8)
-            let values = try? normalizedURL.resourceValues(forKeys: [.contentModificationDateKey])
+            let readResult = try MarkdownFileIO.read(from: normalizedURL)
             let recent = recentDocuments.first { $0.path == normalizedURL.path }
             let document = MarkdownDocument(
                 id: UUID(),
                 url: normalizedURL,
                 title: normalizedURL.deletingPathExtension().lastPathComponent,
-                content: content,
-                lastSavedContent: content,
+                content: readResult.content,
+                lastSavedContent: readResult.content,
+                fileFormat: readResult.format,
+                diskSnapshot: readResult.snapshot,
                 openedAt: Date(),
-                fileModifiedAt: values?.contentModificationDate,
+                fileModifiedAt: readResult.snapshot.modificationDate,
                 isPinned: recent?.isPinned ?? false,
                 isSample: false
             )
@@ -167,6 +257,20 @@ final class AppState: ObservableObject {
     }
 
     func closeTab(_ id: UUID) {
+        if selectedDocumentID == id {
+            rendererController.flushMarkdown(for: id) { [weak self] markdown in
+                guard let self else { return }
+                if let markdown {
+                    self.updateContent(markdown, for: id)
+                }
+                self.confirmCloseTab(id)
+            }
+        } else {
+            confirmCloseTab(id)
+        }
+    }
+
+    private func confirmCloseTab(_ id: UUID) {
         guard let index = documents.firstIndex(where: { $0.id == id }) else { return }
         let document = documents[index]
 
@@ -181,13 +285,21 @@ final class AppState: ObservableObject {
             let response = alert.runModal()
             if response == .alertFirstButtonReturn {
                 selectedDocumentID = id
-                saveCurrent()
-                guard currentDocument?.isDirty == false else { return }
+                saveCurrent { [weak self] saved in
+                    guard saved else { return }
+                    self?.removeTab(id)
+                }
+                return
             } else if response == .alertSecondButtonReturn {
                 return
             }
         }
 
+        removeTab(id)
+    }
+
+    private func removeTab(_ id: UUID) {
+        guard let index = documents.firstIndex(where: { $0.id == id }) else { return }
         documents.remove(at: index)
 
         if selectedDocumentID == id {
@@ -254,26 +366,87 @@ final class AppState: ObservableObject {
         }
     }
 
-    func saveCurrent() {
-        guard let index = currentDocumentIndex else { return }
-        if documents[index].url == nil || documents[index].isSample {
-            saveCurrentAs()
+    func saveCurrent(completion: ((Bool) -> Void)? = nil) {
+        guard let documentID = selectedDocumentID else {
+            completion?(false)
             return
         }
 
-        guard let url = documents[index].url else { return }
-        do {
-            try documents[index].content.write(to: url, atomically: true, encoding: .utf8)
-            documents[index].lastSavedContent = documents[index].content
-            documents[index].fileModifiedAt = Date()
-            touchRecent(url)
-        } catch {
-            present(error: "Couldn’t save “\(documents[index].title)”. \(error.localizedDescription)")
+        rendererController.flushMarkdown(for: documentID) { [weak self] markdown in
+            guard let self else {
+                completion?(false)
+                return
+            }
+            if let markdown {
+                self.updateContent(markdown, for: documentID)
+            }
+            self.save(documentID: documentID, completion: completion)
         }
     }
 
-    func saveCurrentAs() {
-        guard let index = currentDocumentIndex else { return }
+    private func save(documentID: UUID, completion: ((Bool) -> Void)?) {
+        guard let index = documents.firstIndex(where: { $0.id == documentID }) else {
+            completion?(false)
+            return
+        }
+        if documents[index].url == nil || documents[index].isSample {
+            saveAs(documentID: documentID, completion: completion)
+            return
+        }
+
+        guard let url = documents[index].url else {
+            completion?(false)
+            return
+        }
+        if hasExternalChanges(at: url, comparedTo: documents[index].diskSnapshot) {
+            resolveSaveConflict(documentID: documentID, url: url, completion: completion)
+            return
+        }
+
+        write(documentID: documentID, to: url, completion: completion)
+    }
+
+    func saveCurrentAs(completion: ((Bool) -> Void)? = nil) {
+        guard let documentID = selectedDocumentID else {
+            completion?(false)
+            return
+        }
+
+        rendererController.flushMarkdown(for: documentID) { [weak self] markdown in
+            guard let self else {
+                completion?(false)
+                return
+            }
+            if let markdown {
+                self.updateContent(markdown, for: documentID)
+            }
+            self.saveAs(documentID: documentID, completion: completion)
+        }
+    }
+
+    func prepareForTermination(completion: @escaping (Bool) -> Void) {
+        guard let selectedDocumentID else {
+            confirmAndSaveDirtyDocuments(completion: completion)
+            return
+        }
+
+        rendererController.flushMarkdown(for: selectedDocumentID) { [weak self] markdown in
+            guard let self else {
+                completion(false)
+                return
+            }
+            if let markdown {
+                self.updateContent(markdown, for: selectedDocumentID)
+            }
+            self.confirmAndSaveDirtyDocuments(completion: completion)
+        }
+    }
+
+    private func saveAs(documentID: UUID, completion: ((Bool) -> Void)?) {
+        guard let index = documents.firstIndex(where: { $0.id == documentID }) else {
+            completion?(false)
+            return
+        }
         let panel = NSSavePanel()
         panel.title = "Save Markdown"
         panel.prompt = "Save"
@@ -283,25 +456,76 @@ final class AppState: ObservableObject {
         panel.allowedContentTypes = Self.markdownContentTypes
         panel.canCreateDirectories = true
 
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        do {
-            try documents[index].content.write(to: url, atomically: true, encoding: .utf8)
-            documents[index].url = url
-            documents[index].title = url.deletingPathExtension().lastPathComponent
-            documents[index].lastSavedContent = documents[index].content
-            documents[index].fileModifiedAt = Date()
-            documents[index].isSample = false
-            sidebarSelection = url.path
-            touchRecent(url)
-        } catch {
-            present(error: "Couldn’t save “\(url.lastPathComponent)”. \(error.localizedDescription)")
+        guard panel.runModal() == .OK, let url = panel.url else {
+            completion?(false)
+            return
+        }
+        write(documentID: documentID, to: url, updatesLocation: true, completion: completion)
+    }
+
+    private func confirmAndSaveDirtyDocuments(
+        completion: @escaping (Bool) -> Void
+    ) {
+        let dirtyIDs = documents.filter(\.isDirty).map(\.id)
+        guard !dirtyIDs.isEmpty else {
+            completion(true)
+            return
+        }
+
+        let alert = NSAlert()
+        alert.messageText = dirtyIDs.count == 1
+            ? "Save changes before quitting?"
+            : "Save changes to \(dirtyIDs.count) documents before quitting?"
+        alert.informativeText = "Unsaved changes will be lost if you quit without saving."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Save All")
+        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: "Quit Without Saving")
+
+        switch alert.runModal() {
+        case .alertFirstButtonReturn:
+            saveDirtyDocuments(dirtyIDs[...], completion: completion)
+        case .alertThirdButtonReturn:
+            completion(true)
+        default:
+            completion(false)
+        }
+    }
+
+    private func saveDirtyDocuments(
+        _ remaining: ArraySlice<UUID>,
+        completion: @escaping (Bool) -> Void
+    ) {
+        guard let documentID = remaining.first else {
+            completion(true)
+            return
+        }
+
+        selectedDocumentID = documentID
+        save(documentID: documentID) { [weak self] saved in
+            guard let self, saved else {
+                completion(false)
+                return
+            }
+            self.saveDirtyDocuments(remaining.dropFirst(), completion: completion)
         }
     }
 
     func reloadCurrent() {
-        guard let index = currentDocumentIndex,
-              let url = documents[index].url
-        else { return }
+        guard let documentID = selectedDocumentID else { return }
+        rendererController.flushMarkdown(for: documentID) { [weak self] markdown in
+            guard let self else { return }
+            if let markdown {
+                self.updateContent(markdown, for: documentID)
+            }
+            self.confirmReload(documentID: documentID)
+        }
+    }
+
+    private func confirmReload(documentID: UUID) {
+        guard let index = documents.firstIndex(where: { $0.id == documentID }) else {
+            return
+        }
 
         if documents[index].isDirty {
             let alert = NSAlert()
@@ -313,13 +537,106 @@ final class AppState: ObservableObject {
             guard alert.runModal() == .alertFirstButtonReturn else { return }
         }
 
+        _ = reload(documentID: documentID)
+    }
+
+    @discardableResult
+    private func reload(documentID: UUID) -> Bool {
+        guard let index = documents.firstIndex(where: { $0.id == documentID }),
+              let url = documents[index].url
+        else { return false }
+
         do {
-            let content = try String(contentsOf: url, encoding: .utf8)
-            documents[index].content = content
-            documents[index].lastSavedContent = content
-            documents[index].fileModifiedAt = Date()
+            let readResult = try MarkdownFileIO.read(from: url)
+            documents[index].content = readResult.content
+            documents[index].lastSavedContent = readResult.content
+            documents[index].contentRevision &+= 1
+            documents[index].undoHistory.removeAll()
+            documents[index].redoHistory.removeAll()
+            documents[index].lastEditOrigin = nil
+            documents[index].lastEditAt = nil
+            documents[index].fileFormat = readResult.format
+            documents[index].diskSnapshot = readResult.snapshot
+            documents[index].fileModifiedAt = readResult.snapshot.modificationDate
+            return true
         } catch {
             present(error: "Couldn’t reload “\(url.lastPathComponent)”. \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    private func write(
+        documentID: UUID,
+        to url: URL,
+        updatesLocation: Bool = false,
+        completion: ((Bool) -> Void)?
+    ) {
+        guard let index = documents.firstIndex(where: { $0.id == documentID }) else {
+            completion?(false)
+            return
+        }
+
+        do {
+            let snapshot = try MarkdownFileIO.write(
+                documents[index].content,
+                to: url,
+                format: documents[index].fileFormat
+            )
+            if updatesLocation {
+                documents[index].url = url
+                documents[index].title = url.deletingPathExtension().lastPathComponent
+                documents[index].isSample = false
+                if selectedDocumentID == documentID {
+                    sidebarSelection = url.path
+                }
+            }
+            documents[index].lastSavedContent = documents[index].content
+            documents[index].diskSnapshot = snapshot
+            documents[index].fileModifiedAt = snapshot.modificationDate
+            touchRecent(url)
+            completion?(true)
+        } catch {
+            present(error: "Couldn’t save “\(url.lastPathComponent)”. \(error.localizedDescription)")
+            completion?(false)
+        }
+    }
+
+    private func hasExternalChanges(
+        at url: URL,
+        comparedTo snapshot: FileSnapshot?
+    ) -> Bool {
+        guard let snapshot else { return false }
+        guard let current = try? FileSnapshot.capture(url: url) else { return true }
+        // Atomic replacement can make metadata timestamps settle a moment
+        // after the write. The content fingerprint is the authoritative signal
+        // and avoids a false conflict on two consecutive saves.
+        return current.fingerprint != snapshot.fingerprint
+    }
+
+    private func resolveSaveConflict(
+        documentID: UUID,
+        url: URL,
+        completion: ((Bool) -> Void)?
+    ) {
+        let alert = NSAlert()
+        alert.messageText = "“\(url.lastPathComponent)” changed on disk."
+        alert.informativeText = "Choose which version to keep before saving."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Overwrite")
+        alert.addButton(withTitle: "Save As…")
+        alert.addButton(withTitle: "Reload")
+        alert.addButton(withTitle: "Cancel")
+
+        switch alert.runModal() {
+        case .alertFirstButtonReturn:
+            write(documentID: documentID, to: url, completion: completion)
+        case .alertSecondButtonReturn:
+            saveAs(documentID: documentID, completion: completion)
+        case .alertThirdButtonReturn:
+            selectedDocumentID = documentID
+            completion?(reload(documentID: documentID))
+        default:
+            completion?(false)
         }
     }
 

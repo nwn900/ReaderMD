@@ -15,6 +15,31 @@ final class AppStateTests: XCTestCase {
         XCTAssertEqual(state.sidebarSelection, "")
     }
 
+    func testNewDocumentIsExplicitAndUsesUniqueTitles() throws {
+        let state = try makeState()
+
+        state.newDocument()
+        state.newDocument()
+
+        XCTAssertEqual(state.documents.map(\.title), ["Untitled", "Untitled 2"])
+        XCTAssertEqual(state.currentDocument?.title, "Untitled 2")
+        XCTAssertNil(state.currentDocument?.url)
+        XCTAssertFalse(state.currentDocument?.isDirty ?? true)
+    }
+
+    func testCleanDocumentAllowsTerminationWithoutPrompt() throws {
+        let state = try makeState()
+        state.newDocument()
+        let prepared = expectation(description: "Prepared to terminate")
+
+        state.prepareForTermination { shouldTerminate in
+            XCTAssertTrue(shouldTerminate)
+            prepared.fulfill()
+        }
+
+        wait(for: [prepared], timeout: 2)
+    }
+
     func testClosingTheOnlyTabLeavesAnEmptyWorkspace() throws {
         let state = try makeState()
         state.openWelcome()
@@ -103,9 +128,113 @@ final class AppStateTests: XCTestCase {
         )
     }
 
+    func testContentRevisionChangesOnlyWhenContentChanges() throws {
+        let state = try makeState()
+        state.openWelcome()
+        let document = try XCTUnwrap(state.currentDocument)
+
+        state.updateContent(document.content, for: document.id)
+        XCTAssertEqual(state.currentDocument?.contentRevision, 0)
+
+        state.updateContent(document.content + "\nNew text", for: document.id)
+        XCTAssertEqual(state.currentDocument?.contentRevision, 1)
+        XCTAssertTrue(state.currentDocument?.isDirty == true)
+    }
+
+    func testUndoRedoUsesDocumentHistory() throws {
+        let state = try makeState()
+        state.openWelcome()
+        let document = try XCTUnwrap(state.currentDocument)
+        let original = document.content
+
+        state.updateContent(
+            "First",
+            for: document.id,
+            origin: .richEditor,
+            startsNewUndoGroup: true
+        )
+        state.updateContent(
+            "Second",
+            for: document.id,
+            origin: .richEditor,
+            startsNewUndoGroup: true
+        )
+        state.undoCurrent()
+        XCTAssertEqual(state.currentDocument?.content, "First")
+        state.undoCurrent()
+        XCTAssertEqual(state.currentDocument?.content, original)
+
+        state.redoCurrent()
+        XCTAssertEqual(state.currentDocument?.content, "First")
+        state.redoCurrent()
+        XCTAssertEqual(state.currentDocument?.content, "Second")
+    }
+
+    func testSourceTypingCoalescesIntoOneUndoStep() throws {
+        let state = try makeState()
+        state.newDocument()
+        let document = try XCTUnwrap(state.currentDocument)
+
+        state.updateContent("a", for: document.id, origin: .source)
+        state.updateContent("ab", for: document.id, origin: .source)
+        state.updateContent("abc", for: document.id, origin: .source)
+        state.undoCurrent()
+
+        XCTAssertEqual(state.currentDocument?.content, "")
+    }
+
+    func testOpeningAndSavingPreservesUTF8BOMAndCRLF() throws {
+        let state = try makeState()
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PreviewMD-format-\(UUID().uuidString).md")
+        var original = Data([0xEF, 0xBB, 0xBF])
+        original.append(Data("# Heading\r\n\r\nOriginal\r\n".utf8))
+        try original.write(to: fileURL)
+        defer { try? FileManager.default.removeItem(at: fileURL) }
+
+        state.open(url: fileURL)
+        let document = try XCTUnwrap(state.currentDocument)
+        XCTAssertEqual(document.content, "# Heading\n\nOriginal\n")
+        XCTAssertEqual(document.fileFormat.lineEnding, .carriageReturnLineFeed)
+        XCTAssertTrue(document.fileFormat.hasUTF8ByteOrderMark)
+
+        state.updateContent("# Heading\n\nEdited\n", for: document.id)
+        let saved = expectation(description: "Saved")
+        state.saveCurrent { success in
+            XCTAssertTrue(success)
+            saved.fulfill()
+        }
+        wait(for: [saved], timeout: 2)
+
+        let result = try Data(contentsOf: fileURL)
+        XCTAssertTrue(result.starts(with: [0xEF, 0xBB, 0xBF]))
+        XCTAssertEqual(
+            String(data: result.dropFirst(3), encoding: .utf8),
+            "# Heading\r\n\r\nEdited\r\n"
+        )
+        XCTAssertFalse(state.currentDocument?.isDirty ?? true)
+
+        state.updateContent("# Heading\n\nEdited twice\n", for: document.id)
+        let savedAgain = expectation(description: "Saved again")
+        state.saveCurrent { success in
+            XCTAssertTrue(success)
+            savedAgain.fulfill()
+        }
+        wait(for: [savedAgain], timeout: 2)
+
+        let secondResult = try Data(contentsOf: fileURL)
+        XCTAssertEqual(
+            String(data: secondResult.dropFirst(3), encoding: .utf8),
+            "# Heading\r\n\r\nEdited twice\r\n"
+        )
+    }
+
     func testRendererShellStartsWithCurrentAppearance() {
         let payload = MarkdownWebView.RenderPayload(
+            documentID: UUID().uuidString,
             markdown: "# Current settings",
+            revision: 0,
+            editable: true,
             theme: PreviewTheme.dark.rawValue,
             readingStyle: ReadingStyle.classic.rawValue,
             systemDark: false,

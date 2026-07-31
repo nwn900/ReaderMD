@@ -5,6 +5,9 @@ A native macOS Markdown reader with a print-inspired preview, editing, tabs, out
 ## Highlights
 
 - GitHub Flavored Markdown, tables, task lists, alerts, and footnotes
+- Direct rich-text editing in the rendered document
+- A contextual selection toolbar for text, links, images, tables, code, diagrams, and math
+- A left-margin `+` menu on empty lines for inserting every supported Markdown block
 - Mermaid diagrams and charts
 - KaTeX inline and display math
 - Syntax highlighting with copy buttons
@@ -58,9 +61,12 @@ The distributable ZIP is written to `dist/`.
 
 | Action | Shortcut |
 | --- | --- |
+| New Markdown | `⌘N` |
 | Open Markdown | `⌘O` |
 | Save | `⌘S` |
 | Save As | `⌘⇧S` |
+| Undo / redo | `⌘Z` / `⌘⇧Z` |
+| Bold / italic / link | `⌘B` / `⌘I` / `⌘K` |
 | Find in preview | `⌘F` |
 | Export PDF | `⌘⇧E` |
 | Focus mode | `⌘⇧F` |

@@ -1,14 +1,43 @@
 import AppKit
 import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
 import WebKit
 
 @MainActor
 final class RendererController: ObservableObject {
     private weak var webView: WKWebView?
+    private var attachedDocumentID: UUID?
 
-    func attach(_ webView: WKWebView) {
+    func attach(_ webView: WKWebView, documentID: UUID) {
         self.webView = webView
+        attachedDocumentID = documentID
+    }
+
+    func flushMarkdown(
+        for documentID: UUID,
+        completion: @escaping (String?) -> Void
+    ) {
+        guard let webView, attachedDocumentID == documentID else {
+            completion(nil)
+            return
+        }
+
+        webView.evaluateJavaScript(
+            "window.previewmdFlushEditor ? window.previewmdFlushEditor() : null"
+        ) { result, _ in
+            Task { @MainActor in
+                completion(result as? String)
+            }
+        }
+    }
+
+    func undo() {
+        webView?.evaluateJavaScript("window.previewmdUndo && window.previewmdUndo();")
+    }
+
+    func redo() {
+        webView?.evaluateJavaScript("window.previewmdRedo && window.previewmdRedo();")
     }
 
     func exportPDF(
@@ -59,7 +88,10 @@ final class RendererController: ObservableObject {
 }
 
 struct MarkdownWebView: NSViewRepresentable {
+    let documentID: UUID
     let markdown: String
+    let revision: Int
+    let isEditable: Bool
     let documentURL: URL?
     let theme: PreviewTheme
     let readingStyle: ReadingStyle
@@ -70,6 +102,7 @@ struct MarkdownWebView: NSViewRepresentable {
     let outlineTarget: String?
     let topInset: Double
     let controller: RendererController
+    let onContentChange: (UUID, String, Bool) -> Void
     let onDropFiles: ([URL]) -> Void
     let onDropTargeted: (Bool) -> Void
 
@@ -77,12 +110,20 @@ struct MarkdownWebView: NSViewRepresentable {
     @EnvironmentObject private var state: AppState
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(openMarkdown: state.open(url:))
+        Coordinator(
+            documentID: documentID,
+            documentURL: documentURL,
+            openMarkdown: state.open(url:),
+            onContentChange: onContentChange
+        )
     }
 
     private var renderPayload: RenderPayload {
         RenderPayload(
+            documentID: documentID.uuidString,
             markdown: markdown,
+            revision: revision,
+            editable: isEditable,
             theme: theme.rawValue,
             readingStyle: readingStyle.rawValue,
             systemDark: colorScheme == .dark,
@@ -100,15 +141,18 @@ struct MarkdownWebView: NSViewRepresentable {
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
         configuration.preferences.isElementFullscreenEnabled = true
         configuration.userContentController.add(context.coordinator, name: "copyText")
+        configuration.userContentController.add(context.coordinator, name: "editorChange")
+        configuration.userContentController.add(context.coordinator, name: "pickImage")
 
         let webView = MarkdownDropWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
+        webView.uiDelegate = context.coordinator
         webView.allowsMagnification = true
         webView.underPageBackgroundColor = .clear
         webView.onDropFiles = onDropFiles
         webView.onDropTargeted = onDropTargeted
         context.coordinator.webView = webView
-        controller.attach(webView)
+        controller.attach(webView, documentID: documentID)
         let initialPayload = renderPayload
         webView.pageZoom = initialPayload.zoom
         context.coordinator.loadShell(
@@ -120,8 +164,11 @@ struct MarkdownWebView: NSViewRepresentable {
     }
 
     func updateNSView(_ webView: WKWebView, context: Context) {
-        controller.attach(webView)
+        controller.attach(webView, documentID: documentID)
+        context.coordinator.documentID = documentID
+        context.coordinator.documentURL = documentURL
         context.coordinator.openMarkdown = state.open(url:)
+        context.coordinator.onContentChange = onContentChange
         if let dropWebView = webView as? MarkdownDropWebView {
             dropWebView.onDropFiles = onDropFiles
             dropWebView.onDropTargeted = onDropTargeted
@@ -142,7 +189,10 @@ struct MarkdownWebView: NSViewRepresentable {
 
     static func dismantleNSView(_ webView: WKWebView, coordinator: Coordinator) {
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "copyText")
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "editorChange")
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "pickImage")
         webView.navigationDelegate = nil
+        webView.uiDelegate = nil
         if let dropWebView = webView as? MarkdownDropWebView {
             dropWebView.onDropFiles = nil
             dropWebView.onDropTargeted = nil
@@ -156,7 +206,10 @@ struct MarkdownWebView: NSViewRepresentable {
     }
 
     struct RenderPayload: Codable, Equatable {
+        let documentID: String
         let markdown: String
+        let revision: Int
+        let editable: Bool
         let theme: String
         let readingStyle: String
         let systemDark: Bool
@@ -195,17 +248,29 @@ struct MarkdownWebView: NSViewRepresentable {
     }
 
     @MainActor
-    final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler, WKUIDelegate {
         weak var webView: WKWebView?
+        var documentID: UUID
+        var documentURL: URL?
         var openMarkdown: (URL) -> Void
+        var onContentChange: (UUID, String, Bool) -> Void
         var basePath = ""
 
         private var isLoaded = false
         private var pendingPayload: RenderPayload?
         private var lastPayload: RenderPayload?
+        private var lastEditorMarkdown: String?
 
-        init(openMarkdown: @escaping (URL) -> Void) {
+        init(
+            documentID: UUID,
+            documentURL: URL?,
+            openMarkdown: @escaping (URL) -> Void,
+            onContentChange: @escaping (UUID, String, Bool) -> Void
+        ) {
+            self.documentID = documentID
+            self.documentURL = documentURL
             self.openMarkdown = openMarkdown
+            self.onContentChange = onContentChange
         }
 
         func loadShell(
@@ -263,15 +328,132 @@ struct MarkdownWebView: NSViewRepresentable {
             decisionHandler(.allow)
         }
 
+        func webView(
+            _ webView: WKWebView,
+            runJavaScriptTextInputPanelWithPrompt prompt: String,
+            defaultText: String?,
+            initiatedByFrame frame: WKFrameInfo,
+            completionHandler: @escaping @MainActor (String?) -> Void
+        ) {
+            let field = NSTextField(
+                frame: NSRect(x: 0, y: 0, width: 360, height: 24)
+            )
+            field.stringValue = defaultText ?? ""
+            field.placeholderString = prompt
+
+            let alert = NSAlert()
+            alert.messageText = prompt
+            alert.alertStyle = .informational
+            alert.accessoryView = field
+            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: "Cancel")
+
+            if alert.runModal() == .alertFirstButtonReturn {
+                completionHandler(field.stringValue)
+            } else {
+                completionHandler(nil)
+            }
+        }
+
         nonisolated func userContentController(
             _ userContentController: WKUserContentController,
             didReceive message: WKScriptMessage
         ) {
             MainActor.assumeIsolated {
-                guard message.name == "copyText", let text = message.body as? String else { return }
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(text, forType: .string)
+                switch message.name {
+                case "copyText":
+                    guard let text = message.body as? String else { return }
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(text, forType: .string)
+                case "editorChange":
+                    guard let body = message.body as? [String: Any],
+                          let markdown = body["markdown"] as? String
+                    else { return }
+                    lastEditorMarkdown = markdown
+                    let historyBoundary = body["historyBoundary"] as? Bool ?? false
+                    onContentChange(documentID, markdown, historyBoundary)
+                case "pickImage":
+                    guard let webView else { return }
+                    presentImagePicker(in: webView)
+                default:
+                    break
+                }
             }
+        }
+
+        private func presentImagePicker(in webView: WKWebView) {
+            let panel = NSOpenPanel()
+            panel.title = "Choose Image"
+            panel.prompt = "Insert"
+            panel.canChooseDirectories = false
+            panel.canChooseFiles = true
+            panel.allowsMultipleSelection = false
+            panel.allowedContentTypes = [.image]
+
+            let handleResponse: (NSApplication.ModalResponse) -> Void = {
+                [weak self, weak webView] response in
+                guard let self, let webView else { return }
+                guard response == .OK, let imageURL = panel.url else {
+                    webView.evaluateJavaScript(
+                        "window.previewmdCancelPickedImage && window.previewmdCancelPickedImage();"
+                    )
+                    return
+                }
+
+                let source = Self.markdownImageSource(
+                    for: imageURL,
+                    relativeTo: self.documentURL
+                )
+                let alt = imageURL.deletingPathExtension().lastPathComponent
+                guard let sourceJSON = self.javaScriptJSON(source),
+                      let altJSON = self.javaScriptJSON(alt)
+                else { return }
+                webView.evaluateJavaScript(
+                    "window.previewmdInsertPickedImage && window.previewmdInsertPickedImage(\(sourceJSON), \(altJSON));"
+                )
+            }
+
+            if let window = webView.window {
+                panel.beginSheetModal(for: window, completionHandler: handleResponse)
+            } else {
+                panel.begin(completionHandler: handleResponse)
+            }
+        }
+
+        static func markdownImageSource(
+            for imageURL: URL,
+            relativeTo documentURL: URL?
+        ) -> String {
+            guard let documentURL else {
+                return imageURL.standardizedFileURL.absoluteString
+            }
+
+            let baseComponents =
+                documentURL
+                .deletingLastPathComponent()
+                .standardizedFileURL
+                .pathComponents
+            let imageComponents = imageURL.standardizedFileURL.pathComponents
+            var commonCount = 0
+            while commonCount < min(baseComponents.count, imageComponents.count),
+                  baseComponents[commonCount] == imageComponents[commonCount] {
+                commonCount += 1
+            }
+
+            guard commonCount > 0 else {
+                return imageURL.standardizedFileURL.absoluteString
+            }
+
+            let parentComponents = Array(
+                repeating: "..",
+                count: baseComponents.count - commonCount
+            )
+            let childComponents = Array(imageComponents.dropFirst(commonCount))
+            let relativePath = (parentComponents + childComponents).joined(separator: "/")
+            var allowed = CharacterSet.urlPathAllowed
+            allowed.remove(charactersIn: "#?<>()[\\]")
+            return relativePath.addingPercentEncoding(withAllowedCharacters: allowed)
+                ?? relativePath
         }
 
         private func applyPendingPayload(in webView: WKWebView) {
@@ -302,6 +484,25 @@ struct MarkdownWebView: NSViewRepresentable {
                    let targetJSON = javaScriptJSON(target) {
                     webView.evaluateJavaScript("window.previewmdScrollTo(\(targetJSON));")
                 }
+
+                if payload.editable != previous.editable {
+                    webView.evaluateJavaScript(
+                        "window.previewmdSetEditable && window.previewmdSetEditable(\(payload.editable));"
+                    )
+                }
+                return
+            }
+
+            if let previous = lastPayload,
+               payload.markdown == lastEditorMarkdown,
+               payload.theme == previous.theme,
+               payload.readingStyle == previous.readingStyle,
+               payload.systemDark == previous.systemDark {
+                lastPayload = payload
+                lastEditorMarkdown = nil
+                webView.evaluateJavaScript(
+                    "window.previewmdSetEditable && window.previewmdSetEditable(\(payload.editable));"
+                )
                 return
             }
 
@@ -310,6 +511,7 @@ struct MarkdownWebView: NSViewRepresentable {
             else { return }
 
             lastPayload = payload
+            lastEditorMarkdown = nil
             webView.evaluateJavaScript("window.previewmdRender(\(json));")
         }
 
@@ -398,6 +600,7 @@ enum RendererAssets {
     private static let autoRender = script(named: "auto-render.min")
     private static let mermaid = script(named: "mermaid.min")
     private static let renderer = script(named: "renderer")
+    private static let editor = script(named: "editor")
     private static let baseCSS = text(named: "renderer", extension: "css")
     private static let katexCSS = rewrittenKaTeXCSS()
 
@@ -428,6 +631,7 @@ enum RendererAssets {
           <script>\(autoRender)</script>
           <script>\(mermaid)</script>
           <script>\(renderer)</script>
+          <script>\(editor)</script>
         </body>
         </html>
         """
