@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import http.client
 import json
+import re
 import sqlite3
 import threading
 import unittest
@@ -13,13 +14,43 @@ from tempfile import TemporaryDirectory
 import server as landing
 
 
+class PreviewMDLandingContentTests(unittest.TestCase):
+    release_archive = "PreviewMD-1.5-7-macOS.zip"
+    site_dir = Path(__file__).resolve().parent
+
+    def test_editing_is_presented_as_a_core_capability(self) -> None:
+        html = (self.site_dir / "index.html").read_text(encoding="utf-8")
+        normalized = html.lower()
+
+        self.assertIn("reader and editor", normalized)
+        self.assertIn("direct editing", normalized)
+        self.assertIn("the rendered document is an editor", normalized)
+        self.assertNotIn("reader, not editor", normalized)
+        self.assertNotIn("new in previewmd", normalized)
+
+    def test_release_archive_is_consistent_in_html_and_javascript(self) -> None:
+        html = (self.site_dir / "index.html").read_text(encoding="utf-8")
+        javascript = (self.site_dir / "main.js").read_text(encoding="utf-8")
+        release_links = set(
+            re.findall(r'href="(PreviewMD-[^"]+-macOS\.zip)"', html)
+        )
+
+        self.assertEqual(release_links, {self.release_archive})
+        self.assertIn(
+            f'const DOWNLOAD_FILE = "{self.release_archive}";',
+            javascript,
+        )
+        self.assertNotIn("PreviewMD-1.0-6-macOS.zip", html)
+        self.assertNotIn("PreviewMD-1.0-6-macOS.zip", javascript)
+
+
 class QuietRequestHandler(landing.PreviewMDRequestHandler):
     def log_message(self, format: str, *args: object) -> None:
         pass
 
 
 class PreviewMDServerTests(unittest.TestCase):
-    archive_name = "PreviewMD-1.0-6-macOS.zip"
+    archive_name = "PreviewMD-1.5-7-macOS.zip"
 
     def setUp(self) -> None:
         self.temporary_directory = TemporaryDirectory()
@@ -98,7 +129,7 @@ class PreviewMDServerTests(unittest.TestCase):
     def test_download_endpoint_rejects_unknown_or_unsafe_files(self) -> None:
         for file_name in (
             "PreviewMD-missing-macOS.zip",
-            "../PreviewMD-1.0-6-macOS.zip",
+            "../PreviewMD-1.5-7-macOS.zip",
             "not-previewmd.zip",
         ):
             status, payload = self.post_json(

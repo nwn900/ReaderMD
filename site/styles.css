@@ -758,7 +758,7 @@ h1, h2, h3, p, ul, pre, figure { margin: 0; }
 .fn-text { font-size: 14px; color: var(--slate-deep); }
 .fn-text .mono { font-size: 12px; }
 
-/* ---------- reader, not editor ---------- */
+/* ---------- reading and editing ---------- */
 .reader-list {
   margin-top: 40px;
   padding: 0;

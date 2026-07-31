@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PreviewMD — Plain text, properly typeset.</title>
-  <meta name="description" content="PreviewMD is a free, native macOS Markdown reader with a print-inspired preview — tables, diagrams, math and highlighted code, rendered entirely offline. macOS 14+, notarized, ~3.5 MB.">
+  <meta name="description" content="PreviewMD is a free, native macOS Markdown reader and editor with a print-inspired canvas. Edit the rendered document directly or work in source and split views — entirely offline. macOS 14+, notarized, ~3.5 MB.">
   <meta property="og:title" content="PreviewMD — Plain text, properly typeset.">
-  <meta property="og:description" content="A native macOS reader for Markdown — tables, diagrams, math and code rendered like a printed page. Everything happens on your Mac; nothing leaves it. Free download.">
+  <meta property="og:description" content="A native macOS reader and editor for Markdown — write in the typeset page, source, or split view. Everything happens on your Mac; nothing leaves it. Free download.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PreviewMD">
   <!-- og:image intentionally omitted until launch: scrapers require an absolute
@@ -18,8 +18,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=db-5">
-  <script src="main.js?v=db-6" defer></script>
+  <link rel="stylesheet" href="styles.css?v=db-6">
+  <script src="main.js?v=db-7" defer></script>
 </head>
 <body>
 
@@ -39,9 +39,9 @@
   <section class="hero wrap" id="hero">
 
     <div class="cta-block" id="ctaBlock">
-      <p class="kicker">A native Markdown reader for&nbsp;the&nbsp;Mac.</p>
-      <a class="btn btn-prism" href="PreviewMD-1.0-6-macOS.zip" download data-download>Download for macOS — free</a>
-      <p class="mono meta">v1.0&nbsp;&middot;&nbsp;3.5&nbsp;MB&nbsp;&middot;&nbsp;Universal&nbsp;2&nbsp;&middot;&nbsp;notarized</p>
+      <p class="kicker">A native Markdown reader and editor for&nbsp;the&nbsp;Mac.</p>
+      <a class="btn btn-prism" href="PreviewMD-1.5-7-macOS.zip" download data-download>Download for macOS — free</a>
+      <p class="mono meta">v1.5&nbsp;&middot;&nbsp;3.5&nbsp;MB&nbsp;&middot;&nbsp;Universal&nbsp;2&nbsp;&middot;&nbsp;notarized</p>
     </div>
 
     <!-- Reading-width ruler: a working control, like the app's -->
@@ -85,7 +85,7 @@
               <h1 class="doc-h1">Plain text, properly&nbsp;typeset.</h1>
             </div>
             <div class="row" data-row="1">
-              <p class="doc-p">PreviewMD is a native macOS reader for Markdown — tables, diagrams, math and code rendered like a printed page. Everything happens on your Mac; nothing leaves&nbsp;it.</p>
+              <p class="doc-p">PreviewMD is a native macOS reader and editor for Markdown — write in the typeset page, source, or split view. Everything happens on your Mac; nothing leaves&nbsp;it.</p>
             </div>
             <div class="row" data-row="2">
               <table class="doc-table">
@@ -99,16 +99,16 @@
             </div>
             <div class="row" data-row="3">
               <ul class="doc-tasks">
-                <li class="done"><span class="checkbox" aria-hidden="true"></span>Tables &amp; task lists</li>
-                <li class="done"><span class="checkbox" aria-hidden="true"></span>Diagrams &amp; charts</li>
-                <li class="done"><span class="checkbox" aria-hidden="true"></span>Math &amp; equations</li>
+                <li class="done"><span class="checkbox" aria-hidden="true"></span>Edit in the typeset page</li>
+                <li class="done"><span class="checkbox" aria-hidden="true"></span>Source &amp; split editing</li>
+                <li class="done"><span class="checkbox" aria-hidden="true"></span>Tables, diagrams, math &amp; code</li>
               </ul>
             </div>
             <div class="row" data-row="4">
               <p class="doc-math"><em>E&nbsp;=&nbsp;mc</em><sup>2</sup></p>
             </div>
             <div class="row" data-row="5">
-              <p class="doc-p"><a class="doc-link" href="PreviewMD-1.0-6-macOS.zip" download data-download>Download for macOS — free</a></p>
+              <p class="doc-p"><a class="doc-link" href="PreviewMD-1.5-7-macOS.zip" download data-download>Download for macOS — free</a></p>
             </div>
           </div>
         </div>
@@ -119,9 +119,9 @@
             <div class="row" data-row="0"><pre class="src"><span class="mk">#</span> Plain text,
 <span class="mk">**</span>properly typeset.<span class="mk">**</span></pre></div>
             <div class="row" data-row="1"><pre class="src">PreviewMD is a native macOS
-reader for Markdown — tables,
-diagrams, math and code
-rendered like a printed page.
+reader and editor for Markdown —
+write in the typeset page,
+source, or split view.
 Everything happens on your
 Mac; nothing leaves it.</pre></div>
             <div class="row" data-row="2"><pre class="src"><span class="mk">|</span> Spec   <span class="mk">|</span> Value       <span class="mk">|</span>
@@ -129,11 +129,11 @@ Mac; nothing leaves it.</pre></div>
 <span class="mk">|</span> macOS  <span class="mk">|</span> 14 or later <span class="mk">|</span>
 <span class="mk">|</span> Binary <span class="mk">|</span> Universal 2 <span class="mk">|</span>
 <span class="mk">|</span> Size   <span class="mk">|</span> ~3.5 MB     <span class="mk">|</span></pre></div>
-            <div class="row" data-row="3"><pre class="src"><span class="mk">- [x]</span> Tables &amp; task lists
-<span class="mk">- [x]</span> Diagrams &amp; charts
-<span class="mk">- [x]</span> Math &amp; equations</pre></div>
+            <div class="row" data-row="3"><pre class="src"><span class="mk">- [x]</span> Edit in the typeset page
+<span class="mk">- [x]</span> Source &amp; split editing
+<span class="mk">- [x]</span> Tables, diagrams, math &amp; code</pre></div>
             <div class="row" data-row="4"><pre class="src"><span class="mk">$</span>E = mc^2<span class="mk">$</span></pre></div>
-            <div class="row" data-row="5"><pre class="src"><span class="mk">[</span><a class="src-link" href="PreviewMD-1.0-6-macOS.zip" download data-download tabindex="-1">Download for macOS — free</a><span class="mk">](</span><span class="src-target" data-filename>PreviewMD-1.0-6-macOS.zip</span><span class="mk">)</span></pre></div>
+            <div class="row" data-row="5"><pre class="src"><span class="mk">[</span><a class="src-link" href="PreviewMD-1.5-7-macOS.zip" download data-download tabindex="-1">Download for macOS — free</a><span class="mk">](</span><span class="src-target" data-filename>PreviewMD-1.5-7-macOS.zip</span><span class="mk">)</span></pre></div>
           </div>
         </div>
 
@@ -247,10 +247,10 @@ render(doc, mode: <span class="tok-enum">.split</span>)</code></pre>
     </div>
   </section>
 
-  <!-- ============ READER, NOT EDITOR ============ -->
+  <!-- ============ READING STYLES ============ -->
   <section class="wrap section" id="styles">
     <h2>Three ways to set a page</h2>
-    <p class="section-lede">New in PreviewMD: reading styles. One click in the toolbar re-sets the whole document &mdash; typefaces, page tone and accents &mdash; and every style carries its own dark grade.</p>
+    <p class="section-lede">Three reading styles set the whole document in one click &mdash; typefaces, page tone and accents &mdash; and every style carries its own dark grade.</p>
 
     <div class="specimens">
 
@@ -291,15 +291,20 @@ render(doc, mode: <span class="tok-enum">.split</span>)</code></pre>
   </section>
 
   <section class="wrap section" id="reader">
-    <h2>Reader, not editor</h2>
-    <p class="section-lede">PreviewMD does one job: it shows Markdown at its best. The chrome stays out of the way.</p>
+    <h2>Read and edit, in one place</h2>
+    <p class="section-lede">The rendered document is an editor, with source and split views ready whenever you want the Markdown itself. The chrome stays out of the way.</p>
     <ul class="reader-list">
-      <li><strong>Preview&nbsp;· Split&nbsp;· Source</strong><span>One document, three ways to look at it.</span></li>
+      <li><strong>Direct editing</strong><span>Click into the rendered page and write without leaving the document.</span></li>
+      <li><strong>Contextual formatting</strong><span>Select text for headings, emphasis, links, lists and inline code.</span></li>
+      <li><strong>Markdown block menu</strong><span>Use the margin + on an empty line for tables, code, diagrams, images, math, callouts and more.</span></li>
+      <li><strong>Preview&nbsp;· Split&nbsp;· Source</strong><span>One document, three ways to read and edit it.</span></li>
+      <li><strong>Undo, redo &amp; safe saves</strong><span>Edit freely while preserving line endings and UTF-8 file details.</span></li>
       <li><strong>Tabs, recents &amp; pinning</strong><span>Your working set stays where you left it.</span></li>
-      <li><strong>Drag &amp; drop</strong><span>Drop a file on the window and read.</span></li>
+      <li><strong>Drag &amp; drop</strong><span>Drop a file on the window and start working.</span></li>
       <li><strong>Reading-width ruler</strong><span>A live 560–1600&nbsp;px measure, with narrow, comfortable, wide and table presets.</span></li>
       <li><strong>Outline navigation</strong><span>Move through the document by its headings.</span></li>
       <li><strong>Search</strong><span>Find anything in the document, fast.</span></li>
+      <li><strong>Focus mode</strong><span>Hide every piece of chrome and keep only the document and width ruler.</span></li>
       <li><strong>PDF export</strong><span>The page you see is the page you print.</span></li>
       <li><strong>Full dark mode</strong><span>Follows the system — like everything else here.</span></li>
     </ul>
@@ -330,9 +335,9 @@ render(doc, mode: <span class="tok-enum">.split</span>)</code></pre>
 
   <!-- ============ FOOTER CTA ============ -->
   <section class="wrap section footer-cta" id="download">
-    <p class="kicker">Set your documents properly.</p>
-    <a class="btn btn-prism" href="PreviewMD-1.0-6-macOS.zip" download data-download>Download for macOS — free</a>
-    <p class="mono meta"><span data-filename>PreviewMD-1.0-6-macOS.zip</span>&nbsp;&middot; v1.0 (build 6)&nbsp;&middot; ~3.5&nbsp;MB&nbsp;&middot; macOS 14+&nbsp;&middot; Apple&nbsp;Silicon &amp; Intel</p>
+    <p class="kicker">Write and set your documents properly.</p>
+    <a class="btn btn-prism" href="PreviewMD-1.5-7-macOS.zip" download data-download>Download for macOS — free</a>
+    <p class="mono meta"><span data-filename>PreviewMD-1.5-7-macOS.zip</span>&nbsp;&middot; v1.5 (build 7)&nbsp;&middot; ~3.5&nbsp;MB&nbsp;&middot; macOS 14+&nbsp;&middot; Apple&nbsp;Silicon &amp; Intel</p>
     <p class="assure">Developer ID signed and notarized — opens cleanly, no warnings.</p>
   </section>
 
