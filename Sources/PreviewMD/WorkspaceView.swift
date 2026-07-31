@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 struct WorkspaceView: View {
     @EnvironmentObject private var state: AppState
     @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
+    @State private var columnVisibilityBeforeFocus: NavigationSplitViewVisibility?
     @State private var isDropTargeted = false
     @State private var isSearchPresented = false
 
@@ -36,30 +37,27 @@ struct WorkspaceView: View {
         }
         .onChange(of: state.isFocusMode) {
             if state.isFocusMode {
+                columnVisibilityBeforeFocus = columnVisibility
                 // Forced through a different value first: the split view can be
                 // restored open behind SwiftUI's back, and assigning the value
                 // it already holds would collapse nothing.
                 columnVisibility = .all
-                DispatchQueue.main.async { columnVisibility = .detailOnly }
+                DispatchQueue.main.async {
+                    if state.isFocusMode {
+                        columnVisibility = .detailOnly
+                    }
+                }
                 isSearchPresented = false
+            } else if let restored = columnVisibilityBeforeFocus {
+                columnVisibilityBeforeFocus = nil
+                columnVisibility = restored
             }
         }
         // Focus mode empties the toolbar rather than removing it. The bar keeps
         // its system material, so the page scrolls up underneath it the way it
         // does everywhere else in macOS, and the window keeps its buttons.
         .toolbar {
-            if state.isFocusMode {
-                // Everything else goes; the bar itself stays, so the page scrolls
-                // up under its system material and the window keeps its buttons.
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        state.exitFocusMode()
-                    } label: {
-                        Label("Exit Focus Mode", systemImage: "xmark")
-                    }
-                    .help("Leave focus mode (Esc)")
-                }
-            } else {
+            if !state.isFocusMode {
                 ToolbarItem(placement: .navigation) {
                     Button {
                         state.presentOpenPanel()
@@ -90,6 +88,26 @@ struct WorkspaceView: View {
                 ToolbarItem(placement: .primaryAction) {
                     ToolbarUtilities()
                 }
+            }
+        }
+        // The toolbar itself has no items in focus mode. Keeping the exit
+        // control in the existing detail hierarchy prevents AppKit from moving
+        // it into the leading group when the inspector closes and the toolbar
+        // is rebuilt.
+        .overlay(alignment: .topTrailing) {
+            if state.isFocusMode {
+                Button {
+                    state.exitFocusMode()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .medium))
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.circle)
+                .help("Leave focus mode (Esc)")
+                .padding(.top, 9)
+                .padding(.trailing, 12)
             }
         }
         .onChange(of: state.searchFieldFocusToken) {
@@ -149,7 +167,8 @@ struct WorkspaceView: View {
         .background(
             FocusWindowChrome(
                 isFocusMode: state.isFocusMode,
-                sidebarVisibility: columnVisibility
+                sidebarVisibility: columnVisibility,
+                inspectorVisibility: state.isInspectorVisible
             )
         )
         .dropDestination(for: URL.self) { urls, _ in
@@ -184,8 +203,8 @@ enum FocusMetrics {
 /// with the page in focus mode.
 ///
 /// `mouseDownCanMoveWindow` is what AppKit consults under the pointer, and the
-/// web view answers no. The toolbar's own buttons live in the title bar above
-/// this view, so they keep receiving their clicks.
+/// web view answers no. The focus exit control is layered above this view, so
+/// it keeps receiving its clicks.
 private struct WindowDragArea: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView { DragView() }
 
@@ -196,26 +215,189 @@ private struct WindowDragArea: NSViewRepresentable {
     }
 }
 
+@MainActor
+final class ToolbarItemVisibilityController: NSObject {
+    private struct ItemState {
+        let item: NSToolbarItem
+        let view: NSView?
+        let isBordered: Bool
+        let searchFieldWasHidden: Bool?
+        let searchFieldAlpha: CGFloat?
+        let searchFieldWidth: CGFloat?
+        let searchFieldWidthConstraint: NSLayoutConstraint?
+        let searchContainer: NSView?
+        let searchContainerWasHidden: Bool?
+        let searchContainerAlpha: CGFloat?
+    }
+
+    private final class CollapsedItemView: NSView {
+        override var intrinsicContentSize: NSSize { .zero }
+    }
+
+    private let identifiers: Set<NSToolbarItem.Identifier>
+    private var itemStates: [ObjectIdentifier: ItemState] = [:]
+    private weak var observedToolbar: NSToolbar?
+    private var isEnforcingHidden = false
+    private var afterToolbarChange: (@MainActor () -> Void)?
+
+    init(identifiers: Set<NSToolbarItem.Identifier>) {
+        self.identifiers = identifiers
+        super.init()
+    }
+
+    func enforceHidden(
+        from toolbar: NSToolbar,
+        afterToolbarChange: @escaping @MainActor () -> Void = {}
+    ) {
+        if observedToolbar !== toolbar {
+            stopEnforcingHidden()
+            observedToolbar = toolbar
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(toolbarDidAddItem),
+                name: NSToolbar.willAddItemNotification,
+                object: toolbar
+            )
+        }
+        self.afterToolbarChange = afterToolbarChange
+        isEnforcingHidden = true
+        hideItems(in: toolbar)
+        toolbar.validateVisibleItems()
+        afterToolbarChange()
+    }
+
+    func stopEnforcingHidden() {
+        let toolbar = observedToolbar
+        if let toolbar {
+            NotificationCenter.default.removeObserver(
+                self,
+                name: NSToolbar.willAddItemNotification,
+                object: toolbar
+            )
+        }
+        isEnforcingHidden = false
+        observedToolbar = nil
+        afterToolbarChange = nil
+        restoreHiddenItems()
+        toolbar?.validateVisibleItems()
+        DispatchQueue.main.async { [weak toolbar] in
+            toolbar?.validateVisibleItems()
+        }
+    }
+
+    func hideItems(in toolbar: NSToolbar) {
+        for item in toolbar.items {
+            let identifier = item.itemIdentifier
+            guard identifiers.contains(identifier) else { continue }
+            let key = ObjectIdentifier(item)
+            if itemStates[key] == nil {
+                let searchItem = item as? NSSearchToolbarItem
+                let searchContainer = searchItem?.searchField.superview
+                itemStates[key] = ItemState(
+                    item: item,
+                    view: item.view,
+                    isBordered: item.isBordered,
+                    searchFieldWasHidden: searchItem?.searchField.isHidden,
+                    searchFieldAlpha: searchItem?.searchField.alphaValue,
+                    searchFieldWidth: searchItem?.preferredWidthForSearchField,
+                    searchFieldWidthConstraint: searchItem?.searchField.widthAnchor.constraint(
+                        equalToConstant: 0
+                    ),
+                    searchContainer: searchContainer,
+                    searchContainerWasHidden: searchContainer?.isHidden,
+                    searchContainerAlpha: searchContainer?.alphaValue
+                )
+            }
+
+            item.isBordered = false
+            if let searchItem = item as? NSSearchToolbarItem {
+                itemStates[key]?.searchContainer?.isHidden = true
+                itemStates[key]?.searchContainer?.alphaValue = 0
+                searchItem.searchField.isHidden = true
+                searchItem.searchField.alphaValue = 0
+                searchItem.preferredWidthForSearchField = 0
+                itemStates[key]?.searchFieldWidthConstraint?.isActive = true
+            } else {
+                let collapsedView = CollapsedItemView(frame: .zero)
+                collapsedView.translatesAutoresizingMaskIntoConstraints = false
+                item.view = collapsedView
+            }
+        }
+    }
+
+    private func restoreHiddenItems() {
+        for state in itemStates.values {
+            state.item.isBordered = state.isBordered
+            if let searchItem = state.item as? NSSearchToolbarItem {
+                state.searchFieldWidthConstraint?.isActive = false
+                if let wasHidden = state.searchContainerWasHidden {
+                    state.searchContainer?.isHidden = wasHidden
+                }
+                if let alpha = state.searchContainerAlpha {
+                    state.searchContainer?.alphaValue = alpha
+                }
+                if let wasHidden = state.searchFieldWasHidden {
+                    searchItem.searchField.isHidden = wasHidden
+                }
+                if let alpha = state.searchFieldAlpha {
+                    searchItem.searchField.alphaValue = alpha
+                }
+                if let width = state.searchFieldWidth {
+                    searchItem.preferredWidthForSearchField = width
+                }
+            } else {
+                state.item.view = state.view
+            }
+        }
+        itemStates.removeAll()
+    }
+
+    @objc private func toolbarDidAddItem(_ notification: Notification) {
+        guard isEnforcingHidden,
+              let toolbar = notification.object as? NSToolbar,
+              toolbar === observedToolbar
+        else {
+            return
+        }
+        // SwiftUI can still be in the middle of inserting a batch of toolbar
+        // items. Hide the focus-mode exclusions on the next main-queue pass,
+        // after that insertion has completed.
+        DispatchQueue.main.async { [weak self, weak toolbar] in
+            guard let self, let toolbar,
+                  self.isEnforcingHidden,
+                  toolbar === self.observedToolbar
+            else {
+                return
+            }
+            self.hideItems(in: toolbar)
+            toolbar.validateVisibleItems()
+            self.afterToolbarChange?()
+        }
+    }
+}
+
 /// Owns the parts of the window SwiftUI will not hand over.
 ///
-/// Two things cannot be expressed in SwiftUI here. `.searchable` cannot be
-/// dropped for one state and kept for another — wrapping it in an `if` changes
-/// the view's identity and rebuilds the web view, throwing away the reader's
-/// place in the document. And the split view's own sidebar button cannot be
-/// moved: SwiftUI parks it next to whatever sits in the principal slot.
-/// `.toolbar(removing: .sidebarToggle)` does remove it, but takes the tracking
-/// separator with it, and that separator is what lets the sidebar surface run up
-/// through the title bar. Pulling the button out of the NSToolbar directly
-/// leaves the separator in place, so the app declares its own button instead.
+/// SwiftUI cannot hide its search item for one state without rebuilding the
+/// view hierarchy, and dynamic removal of the split-view toggle is ignored on
+/// supported macOS releases. Their item identity remains intact: focus mode
+/// collapses their existing views, then restores the exact same items and
+/// properties on exit without asking SwiftUI to reconstruct either one.
 private struct FocusWindowChrome: NSViewRepresentable {
     let isFocusMode: Bool
-    /// Not read directly — it is here so the representable updates when the
-    /// sidebar opens or closes, which is when SwiftUI rebuilds the toolbar.
+    /// Not read directly — it makes the representable update if SwiftUI rebuilds
+    /// the toolbar while changing the split-view columns.
     let sidebarVisibility: NavigationSplitViewVisibility
+    /// Closing the inspector also rebuilds the toolbar after focus mode begins.
+    /// Keeping this input explicit makes the representable follow that lifecycle.
+    let inspectorVisibility: Bool
 
-    private static let systemSidebarToggle = "com.apple.SwiftUI.navigationSplitView.toggleSidebar"
-    private static let systemSearchField = "com.apple.SwiftUI.search"
+    private static let systemSidebarToggle = NSToolbarItem.Identifier(
+        "com.apple.SwiftUI.navigationSplitView.toggleSidebar"
+    )
+    private static let systemSearchField = NSToolbarItem.Identifier("com.apple.SwiftUI.search")
 
+    @MainActor
     final class Coordinator {
         /// The title as the window had it before focus mode blanked it. Putting
         /// a title of our own choosing back would change the toolbar's layout:
@@ -227,6 +409,40 @@ private struct FocusWindowChrome: NSViewRepresentable {
         /// or titlebarSeparatorStyle makes AppKit rebuild the title bar, and the
         /// rebuild reassigns toolbar items between the sidebar and the detail.
         var didEnterFocus = false
+        /// SwiftUI's unified window already carries this flag. Focus mode must
+        /// remove it on exit only when it added the flag itself; otherwise the
+        /// restored window is not the same window configuration it entered with.
+        var addedFullSizeContentView = false
+        /// `.automatic` is not necessarily the value chosen by the system or a
+        /// future window style, so restore the exact separator state we found.
+        var restoredSeparatorStyle: NSTitlebarSeparatorStyle?
+        private var titleObservation: NSKeyValueObservation?
+        /// Keep the system items alive but hidden so SwiftUI can restore the
+        /// toolbar without having to reconstruct its sidebar and search items.
+        let toolbarItems: ToolbarItemVisibilityController
+
+        init() {
+            toolbarItems = ToolbarItemVisibilityController(
+                identifiers: [systemSidebarToggle, systemSearchField]
+            )
+        }
+
+        func enforceBlankTitle(in window: NSWindow) {
+            guard titleObservation == nil else { return }
+            titleObservation = window.observe(\.title, options: [.new]) { [weak self, weak window] _, change in
+                guard !(change.newValue ?? "").isEmpty else { return }
+                Task { @MainActor [weak self, weak window] in
+                    guard let self, let window, self.didEnterFocus else { return }
+                    FocusWindowChrome.applyFocusedWindowChrome(to: window)
+                }
+            }
+        }
+
+        func stopEnforcingBlankTitle() {
+            titleObservation?.invalidate()
+            titleObservation = nil
+        }
+
     }
 
     func makeCoordinator() -> Coordinator { Coordinator() }
@@ -251,15 +467,24 @@ private struct FocusWindowChrome: NSViewRepresentable {
             // to keep its material, because that material is what blurs the text
             // passing beneath it. Only the content area is extended upwards.
             // Changing the style mask makes AppKit recompute the frame from the
-            // content rect, which can shift the window's top edge. Entering a
-            // reading mode must not move or resize the window, so the frame is
-            // put back exactly as it was.
+            // content rect, which can shift the window's top edge. Only change
+            // it if this window did not already use a full-size content view,
+            // and put the frame back exactly as it was.
             let frame = window.frame
             if focused {
-                window.styleMask.insert(.fullSizeContentView)
+                if !coordinator.didEnterFocus {
+                    coordinator.addedFullSizeContentView = !window.styleMask.contains(.fullSizeContentView)
+                    coordinator.restoredSeparatorStyle = window.titlebarSeparatorStyle
+                }
+                if coordinator.addedFullSizeContentView {
+                    window.styleMask.insert(.fullSizeContentView)
+                }
                 coordinator.didEnterFocus = true
             } else {
-                window.styleMask.remove(.fullSizeContentView)
+                if coordinator.addedFullSizeContentView {
+                    window.styleMask.remove(.fullSizeContentView)
+                }
+                coordinator.addedFullSizeContentView = false
                 coordinator.didEnterFocus = false
             }
             if window.frame != frame {
@@ -269,31 +494,47 @@ private struct FocusWindowChrome: NSViewRepresentable {
                 if coordinator.restoredTitle == nil {
                     coordinator.restoredTitle = window.title
                 }
-                window.title = ""
+                coordinator.enforceBlankTitle(in: window)
+                Self.applyFocusedWindowChrome(to: window)
             } else if let restored = coordinator.restoredTitle {
+                coordinator.stopEnforcingBlankTitle()
                 window.title = restored
                 coordinator.restoredTitle = nil
             }
             // The hairline under the bar is what makes the text look clipped
             // rather than passing beneath it. Mail draws no such line.
-            window.titlebarSeparatorStyle = focused ? .none : .automatic
+            if !focused {
+                window.titlebarSeparatorStyle = coordinator.restoredSeparatorStyle ?? .automatic
+                coordinator.restoredSeparatorStyle = nil
+            }
 
-            guard let toolbar = window.toolbar else { return }
-            // Removed, not hidden: hiding an item's view leaves its empty
-            // capsule behind, and the search field ignores it entirely.
-            // SwiftUI re-adds these on its next toolbar rebuild, which is why
-            // this runs again whenever the sidebar opens or closes.
-            // SwiftUI cannot drop these for one state and keep them for
-            // another, so they come out of the NSToolbar directly. Note this is
-            // not what displaces the sidebar button afterwards: switching the
-            // toolbar's SwiftUI content rebuilds the bar and moves it anyway.
-            guard focused else { return }
-            let unwanted: Set<String> = [Self.systemSidebarToggle, Self.systemSearchField]
-            for index in toolbar.items.indices.reversed()
-            where unwanted.contains(toolbar.items[index].itemIdentifier.rawValue) {
-                toolbar.removeItem(at: index)
+            if focused {
+                guard let toolbar = window.toolbar else { return }
+                coordinator.toolbarItems.enforceHidden(from: toolbar) { [weak window] in
+                    guard let window else { return }
+                    Self.applyFocusedWindowChrome(to: window)
+                }
+            } else {
+                coordinator.toolbarItems.stopEnforcingHidden()
             }
         }
+    }
+
+    private static func applyFocusedWindowChrome(to window: NSWindow) {
+        window.title = ""
+        if window.titlebarSeparatorStyle != .none {
+            window.titlebarSeparatorStyle = .none
+        }
+        if let titlebarView = window.standardWindowButton(.closeButton)?.superview {
+            titlebarView.needsLayout = true
+            titlebarView.layoutSubtreeIfNeeded()
+            titlebarView.needsDisplay = true
+        }
+    }
+
+    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
+        coordinator.toolbarItems.stopEnforcingHidden()
+        coordinator.stopEnforcingBlankTitle()
     }
 }
 

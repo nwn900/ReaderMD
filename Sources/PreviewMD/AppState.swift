@@ -37,8 +37,9 @@ final class AppState: ObservableObject {
     private let paperKey = "usesPaperCanvas"
 
     /// Restored when focus mode ends, so entering it to read does not quietly
-    /// throw away the split or source view you were working in.
+    /// throw away the split/source view or inspector you were working with.
     private var displayModeBeforeFocus: DisplayMode?
+    private var inspectorVisibilityBeforeFocus: Bool?
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -205,6 +206,7 @@ final class AppState: ObservableObject {
             // Nothing left to read, and focus mode hides the chrome needed to
             // open something else.
             exitFocusMode()
+            isInspectorVisible = false
         } else if let currentDocument {
             sidebarSelection = currentDocument.isSample
                 ? "welcome"
@@ -232,6 +234,7 @@ final class AppState: ObservableObject {
         // Focus mode is for reading, so it shows the preview. Remember the mode
         // being left behind rather than stranding the reader in it afterwards.
         displayModeBeforeFocus = displayMode
+        inspectorVisibilityBeforeFocus = isInspectorVisible
         displayMode = .preview
         isInspectorVisible = false
         searchText = ""
@@ -244,6 +247,10 @@ final class AppState: ObservableObject {
         if let previous = displayModeBeforeFocus {
             displayMode = previous
             displayModeBeforeFocus = nil
+        }
+        if let wasVisible = inspectorVisibilityBeforeFocus {
+            isInspectorVisible = wasVisible
+            inspectorVisibilityBeforeFocus = nil
         }
     }
 

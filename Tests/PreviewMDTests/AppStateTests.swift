@@ -167,6 +167,7 @@ final class AppStateTests: XCTestCase {
 
         XCTAssertFalse(state.isFocusMode)
         XCTAssertEqual(state.displayMode, .split, "the mode being left behind should come back")
+        XCTAssertTrue(state.isInspectorVisible, "the inspector should return after focus mode")
     }
 
     func testFocusModeTogglesAndDoesNotStackRestoreState() throws {
@@ -187,6 +188,7 @@ final class AppStateTests: XCTestCase {
     func testClosingTheLastTabLeavesFocusMode() throws {
         let state = try makeState()
         state.openWelcome()
+        state.isInspectorVisible = true
         state.enterFocusMode()
         let document = try XCTUnwrap(state.currentDocument)
 
@@ -194,6 +196,7 @@ final class AppStateTests: XCTestCase {
 
         XCTAssertTrue(state.documents.isEmpty)
         XCTAssertFalse(state.isFocusMode, "focus mode hides the chrome needed to open anything")
+        XCTAssertFalse(state.isInspectorVisible, "the empty workspace must not retain an inspector")
     }
 
     private func makeState() throws -> AppState {
