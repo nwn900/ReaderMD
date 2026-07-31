@@ -35,6 +35,7 @@ class PreviewMDLandingContentTests(unittest.TestCase):
             re.findall(r'href="(PreviewMD-[^"]+-macOS\.zip)"', html)
         )
 
+        self.assertTrue((self.site_dir / self.release_archive).is_file())
         self.assertEqual(release_links, {self.release_archive})
         self.assertIn(
             f'const DOWNLOAD_FILE = "{self.release_archive}";',
