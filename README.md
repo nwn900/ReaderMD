@@ -17,6 +17,7 @@ A native macOS Markdown reader with a print-inspired preview, editing, tabs, out
 - A live 560–1600 px reading-width ruler with a one-click table/data layout
 - Modern, Classic, and Editorial reading styles with offline system typography
 - Native macOS sidebar, toolbar, menus, keyboard shortcuts, and dark mode
+- Folder workspaces with a collapsible Markdown file tree in the sidebar
 - Finder Quick Look previews for Markdown files after installation
 - Narrow, comfortable, wide, and table presets, plus optional paper canvas
 - Fully offline rendering
@@ -61,6 +62,13 @@ If macOS already remembers Xcode or another editor for Markdown, choose
 **PreviewMD → Settings → Files → Use PreviewMD as Default**. The Open button in
 Finder Quick Look will then target PreviewMD.
 
+Use **File → Open Folder…** (⇧⌘O) to browse a documentation folder. PreviewMD
+shows its supported Markdown and text documents as a collapsible tree in the
+left sidebar, prunes directories that contain no supported documents, and opens
+selected files in the existing tab bar. Opening a folder never opens a README
+or another document automatically. Drop a folder anywhere in the main window
+to open it the same way.
+
 A local development build can be registered without copying the app:
 
 ```bash
@@ -98,6 +106,7 @@ then signed, notarized, stapled, and assessed by Gatekeeper as a second check.
 | --- | --- |
 | New Markdown | `⌘N` |
 | Open Markdown | `⌘O` |
+| Open Folder | `⌘⇧O` |
 | Save | `⌘S` |
 | Save As | `⌘⇧S` |
 | Undo / redo | `⌘Z` / `⌘⇧Z` |

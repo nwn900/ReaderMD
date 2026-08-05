@@ -25,6 +25,9 @@ final class AppState: ObservableObject {
     @Published var searchFieldFocusToken = UUID()
     @Published var sidebarSelection = ""
     @Published var errorMessage: String?
+    @Published private(set) var workspaceFolderURL: URL?
+    @Published private(set) var workspaceFolderItems: [FolderTreeItem] = []
+    @Published private(set) var isWorkspaceFolderLoading = false
 
     let rendererController = RendererController()
 
@@ -35,6 +38,8 @@ final class AppState: ObservableObject {
     private let widthKey = "readingWidth"
     private let customWidthKey = "customReadingWidth"
     private let paperKey = "usesPaperCanvas"
+    private var workspaceFolderRequestID = UUID()
+    private var workspaceFolderLoadTask: Task<Void, Never>?
 
     /// Restored when focus mode ends, so entering it to read does not quietly
     /// throw away the split/source view or inspector you were working with.
@@ -205,6 +210,93 @@ final class AppState: ObservableObject {
         panel.begin { [weak self] response in
             guard response == .OK else { return }
             panel.urls.forEach { self?.open(url: $0) }
+        }
+    }
+
+    func presentFolderOpenPanel() {
+        let panel = NSOpenPanel()
+        panel.title = "Open Folder"
+        panel.prompt = "Open"
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [.folder]
+        panel.begin { [weak self] response in
+            guard response == .OK, let url = panel.url else { return }
+            self?.openFolder(url: url)
+        }
+    }
+
+    func openFolder(url: URL) {
+        loadFolder(at: url.standardizedFileURL, clearsExistingItems: true)
+    }
+
+    func refreshWorkspaceFolder() {
+        guard let workspaceFolderURL else { return }
+        loadFolder(at: workspaceFolderURL, clearsExistingItems: false)
+    }
+
+    func closeWorkspaceFolder() {
+        workspaceFolderLoadTask?.cancel()
+        workspaceFolderLoadTask = nil
+        workspaceFolderRequestID = UUID()
+        workspaceFolderURL = nil
+        workspaceFolderItems = []
+        isWorkspaceFolderLoading = false
+    }
+
+    private func loadFolder(at url: URL, clearsExistingItems: Bool) {
+        var isDirectory: ObjCBool = false
+        guard url.isFileURL,
+              FileManager.default.fileExists(
+                atPath: url.path,
+                isDirectory: &isDirectory
+              ),
+              isDirectory.boolValue
+        else {
+            present(error: "Couldn’t open “\(url.lastPathComponent)” as a folder.")
+            return
+        }
+
+        let requestID = UUID()
+        workspaceFolderLoadTask?.cancel()
+        workspaceFolderRequestID = requestID
+        workspaceFolderURL = url
+        if clearsExistingItems {
+            workspaceFolderItems = []
+        }
+        isWorkspaceFolderLoading = true
+
+        workspaceFolderLoadTask = Task { [weak self] in
+            let scanTask = Task.detached(priority: .userInitiated) {
+                try MarkdownFolderTree.contents(of: url)
+            }
+            await withTaskCancellationHandler {
+                do {
+                    let items = try await scanTask.value
+                    guard let self,
+                          self.workspaceFolderRequestID == requestID,
+                          self.workspaceFolderURL == url
+                    else { return }
+                    self.workspaceFolderItems = items
+                    self.isWorkspaceFolderLoading = false
+                    self.workspaceFolderLoadTask = nil
+                } catch is CancellationError {
+                    guard let self, self.workspaceFolderRequestID == requestID else { return }
+                    self.isWorkspaceFolderLoading = false
+                    self.workspaceFolderLoadTask = nil
+                } catch {
+                    guard let self, self.workspaceFolderRequestID == requestID else { return }
+                    self.isWorkspaceFolderLoading = false
+                    self.workspaceFolderLoadTask = nil
+                    self.present(
+                        error: "Couldn’t read “\(url.lastPathComponent)”. \(error.localizedDescription)"
+                    )
+                }
+            } onCancel: {
+                scanTask.cancel()
+            }
         }
     }
 
@@ -594,6 +686,9 @@ final class AppState: ObservableObject {
             documents[index].diskSnapshot = snapshot
             documents[index].fileModifiedAt = snapshot.modificationDate
             touchRecent(url)
+            if updatesLocation, isInsideWorkspaceFolder(url) {
+                refreshWorkspaceFolder()
+            }
             completion?(true)
         } catch {
             present(error: "Couldn’t save “\(url.lastPathComponent)”. \(error.localizedDescription)")
@@ -611,6 +706,14 @@ final class AppState: ObservableObject {
         // after the write. The content fingerprint is the authoritative signal
         // and avoids a false conflict on two consecutive saves.
         return current.fingerprint != snapshot.fingerprint
+    }
+
+    private func isInsideWorkspaceFolder(_ url: URL) -> Bool {
+        guard let workspaceFolderURL else { return false }
+        let rootComponents = workspaceFolderURL.standardizedFileURL.pathComponents
+        let fileComponents = url.standardizedFileURL.pathComponents
+        return fileComponents.count > rootComponents.count
+            && fileComponents.starts(with: rootComponents)
     }
 
     private func resolveSaveConflict(

@@ -12,7 +12,7 @@ struct WorkspaceView: View {
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             SidebarView()
-                .navigationSplitViewColumnWidth(min: 160, ideal: 176, max: 192)
+                .navigationSplitViewColumnWidth(min: 180, ideal: 208, max: 280)
         } detail: {
             detail
         }
@@ -59,12 +59,17 @@ struct WorkspaceView: View {
         .toolbar {
             if !state.isFocusMode {
                 ToolbarItem(placement: .navigation) {
-                    Button {
-                        state.presentOpenPanel()
+                    Menu {
+                        Button("Open Markdown…") {
+                            state.presentOpenPanel()
+                        }
+                        Button("Open Folder…") {
+                            state.presentFolderOpenPanel()
+                        }
                     } label: {
                         Label("Open", systemImage: "folder.badge.plus")
                     }
-                    .help("Open Markdown (⌘O)")
+                    .help("Open Markdown or a folder")
                 }
 
                 // The principal slot holds the display picker and nothing else.
@@ -135,6 +140,11 @@ struct WorkspaceView: View {
                 isSearchPresented = false
             }
         }
+        .onChange(of: state.workspaceFolderURL) {
+            if state.workspaceFolderURL != nil, !state.isFocusMode {
+                columnVisibility = .all
+            }
+        }
     }
 
     @ViewBuilder
@@ -172,9 +182,13 @@ struct WorkspaceView: View {
             )
         )
         .dropDestination(for: URL.self) { urls, _ in
+            let folders = urls.filter(MarkdownFileSupport.isFolder)
             let accepted = urls.filter(MarkdownFileSupport.accepts)
+            if let folder = folders.first {
+                state.openFolder(url: folder)
+            }
             accepted.forEach(state.open)
-            return !accepted.isEmpty
+            return !folders.isEmpty || !accepted.isEmpty
         } isTargeted: { targeted in
             withAnimation(.easeOut(duration: 0.16)) {
                 isDropTargeted = targeted
@@ -734,18 +748,56 @@ private struct SidebarView: View {
                     BrandHeader()
                 }
 
-                if !pinned.isEmpty {
-                    Section("Pinned") {
-                        ForEach(pinned) { item in
-                            RecentRow(item: item)
+                if let folderURL = state.workspaceFolderURL {
+                    Section {
+                        if state.workspaceFolderItems.isEmpty {
+                            if state.isWorkspaceFolderLoading {
+                                HStack(spacing: 8) {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                    Text("Scanning for Markdown…")
+                                }
+                                .foregroundStyle(.secondary)
+                            } else {
+                                VStack(spacing: 6) {
+                                    Label(
+                                        "No Markdown Files",
+                                        systemImage: "doc.text.magnifyingglass"
+                                    )
+                                    .font(.callout.weight(.medium))
+                                    Text("This folder has no supported documents.")
+                                        .font(.caption)
+                                        .multilineTextAlignment(.center)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                            }
+                        } else {
+                            OutlineGroup(
+                                state.workspaceFolderItems,
+                                children: \.children
+                            ) { item in
+                                FolderTreeRow(item: item)
+                            }
+                        }
+                    } header: {
+                        FolderSectionHeader(folderURL: folderURL)
+                    }
+                } else {
+                    if !pinned.isEmpty {
+                        Section("Pinned") {
+                            ForEach(pinned) { item in
+                                RecentRow(item: item)
+                            }
                         }
                     }
-                }
 
-                if !recent.isEmpty {
-                    Section("Recent") {
-                        ForEach(recent) { item in
-                            RecentRow(item: item)
+                    if !recent.isEmpty {
+                        Section("Recent") {
+                            ForEach(recent) { item in
+                                RecentRow(item: item)
+                            }
                         }
                     }
                 }
@@ -755,18 +807,124 @@ private struct SidebarView: View {
 
             Divider()
 
-            Button {
-                state.presentOpenPanel()
-            } label: {
-                Label("Open Markdown…", systemImage: "plus")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
+            HStack(spacing: 12) {
+                Button {
+                    state.presentOpenPanel()
+                } label: {
+                    Label("File", systemImage: "doc.badge.plus")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .help("Open Markdown (⌘O)")
+
+                Button {
+                    state.presentFolderOpenPanel()
+                } label: {
+                    Label("Folder", systemImage: "folder.badge.plus")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .help("Open Folder (⇧⌘O)")
             }
             .buttonStyle(.plain)
+            .font(.callout)
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .foregroundStyle(.secondary)
         }
+    }
+}
+
+private struct FolderSectionHeader: View {
+    @EnvironmentObject private var state: AppState
+    let folderURL: URL
+
+    var body: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "folder.fill")
+                .foregroundStyle(.secondary)
+            Text(folderURL.lastPathComponent)
+                .fontWeight(.semibold)
+                .lineLimit(1)
+                .help(folderURL.path(percentEncoded: false))
+
+            Spacer(minLength: 4)
+
+            if state.isWorkspaceFolderLoading {
+                ProgressView()
+                    .controlSize(.mini)
+            }
+
+            Button {
+                state.refreshWorkspaceFolder()
+            } label: {
+                Image(systemName: "arrow.clockwise")
+            }
+            .buttonStyle(.plain)
+            .help("Refresh Folder")
+
+            Button {
+                state.closeWorkspaceFolder()
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(.plain)
+            .help("Close Folder")
+        }
+        .textCase(nil)
+    }
+}
+
+private struct FolderTreeRow: View {
+    @EnvironmentObject private var state: AppState
+    let item: FolderTreeItem
+
+    var body: some View {
+        Group {
+            if item.isDirectory {
+                rowLabel
+            } else {
+                Button {
+                    state.open(url: item.url)
+                } label: {
+                    rowLabel
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .contextMenu {
+            Button("Show in Finder") {
+                NSWorkspace.shared.activateFileViewerSelecting([item.url])
+            }
+        }
+    }
+
+    private var rowLabel: some View {
+        HStack(spacing: 7) {
+            Image(systemName: item.isDirectory ? "folder" : "doc.text")
+                .font(.system(size: 13))
+                .frame(width: 16)
+                .foregroundStyle(
+                    item.isDirectory
+                        ? Color.secondary
+                        : (isSelected ? Color.accentColor : Color.secondary)
+                )
+            Text(item.title)
+                .lineLimit(1)
+                .foregroundStyle(.primary)
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 2)
+        .contentShape(Rectangle())
+        .background(
+            isSelected ? Color.accentColor.opacity(0.13) : Color.clear,
+            in: RoundedRectangle(cornerRadius: 5, style: .continuous)
+        )
+        .help(item.url.path(percentEncoded: false))
+    }
+
+    private var isSelected: Bool {
+        !item.isDirectory && state.sidebarSelection == item.url.standardizedFileURL.path
     }
 }
 
@@ -1498,7 +1656,7 @@ private struct EmptyWorkspace: View {
                     Text("Ready for your next document")
                         .font(.system(size: 23, weight: .semibold, design: .rounded))
 
-                    Text("Open a Markdown file or drop it anywhere in this window.")
+                    Text("Open a Markdown file or a folder containing your documents.")
                         .font(.system(size: 13.5))
                         .foregroundStyle(.secondary)
                 }
@@ -1513,6 +1671,14 @@ private struct EmptyWorkspace: View {
                     .controlSize(.large)
 
                     Button {
+                        state.presentFolderOpenPanel()
+                    } label: {
+                        Label("Open Folder…", systemImage: "folder.badge.plus")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+
+                    Button {
                         state.openWelcome()
                     } label: {
                         Label("View Showcase", systemImage: "sparkles")
@@ -1523,7 +1689,7 @@ private struct EmptyWorkspace: View {
 
                 HStack(spacing: 7) {
                     Image(systemName: "arrow.down.doc")
-                    Text("Drop .md, .markdown or .txt")
+                    Text("Drop a folder or Markdown files")
                     Text("•")
                     Text("⌘O to open")
                 }
@@ -1585,7 +1751,7 @@ private struct DropOverlay: View {
                     .foregroundStyle(Color.accentColor)
                 Text("Drop to open")
                     .font(.title3.weight(.semibold))
-                Text("Open Markdown files as new tabs")
+                Text("Open Markdown files as tabs or browse a folder")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

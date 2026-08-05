@@ -160,6 +160,11 @@ struct PreviewMDCommands: Commands {
             }
             .keyboardShortcut("o")
 
+            Button("Open Folder…") {
+                state.presentFolderOpenPanel()
+            }
+            .keyboardShortcut("o", modifiers: [.command, .shift])
+
             Divider()
 
             Button("Save") {

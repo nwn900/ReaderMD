@@ -11,6 +11,12 @@ enum MarkdownFileSupport {
         url.isFileURL
             && supportedExtensions.contains(url.pathExtension.lowercased())
     }
+
+    static func isFolder(_ url: URL) -> Bool {
+        guard url.isFileURL else { return false }
+        return (try? url.resourceValues(forKeys: [.isDirectoryKey]))
+            .flatMap(\.isDirectory) == true
+    }
 }
 
 enum MarkdownDefaultApplication {

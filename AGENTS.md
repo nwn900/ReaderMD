@@ -33,6 +33,12 @@ Preserve these behaviors unless the user explicitly requests a change:
 - The left sidebar is collapsed by default.
 - When opened, the left sidebar should start near 200 pt and remain compact
   like the sidebar in Preview rather than consuming document-reading space.
+- Opening a folder shows a collapsible tree of its supported Markdown and text
+  documents in the existing left sidebar. Empty/irrelevant directories, hidden
+  files, packages, and symlinked directories stay out of the tree.
+- Folder loading must not block the main thread, and opening a folder must not
+  automatically open a README or any other document. Files selected from the
+  tree open as tabs in the existing main window.
 - The document inspector should also open near 200 pt, expanding only enough
   to keep outline and insight content usable.
 - The document inspector is collapsed by default.
