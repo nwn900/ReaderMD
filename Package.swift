@@ -20,9 +20,17 @@ let package = Package(
                 .enableUpcomingFeature("ExistentialAny")
             ]
         ),
+        .target(
+            name: "PreviewMDQuickLook",
+            linkerSettings: [
+                .linkedFramework("AppKit"),
+                .linkedFramework("Quartz"),
+                .linkedFramework("WebKit"),
+            ]
+        ),
         .testTarget(
             name: "PreviewMDTests",
-            dependencies: ["PreviewMD"]
+            dependencies: ["PreviewMD", "PreviewMDQuickLook"]
         )
     ]
 )

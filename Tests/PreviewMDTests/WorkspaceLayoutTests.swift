@@ -21,6 +21,22 @@ final class WorkspaceLayoutTests: XCTestCase {
         XCTAssertTrue(workspace.contains("edges: .top"))
     }
 
+    func testSidebarKeepsBrandButDoesNotAdvertiseShowcase() throws {
+        let source = try workspaceSource()
+        let sidebarStart = try XCTUnwrap(
+            source.range(of: "private struct SidebarView")
+        )
+        let sidebarTail = source[sidebarStart.lowerBound...]
+        let sidebarEnd = try XCTUnwrap(
+            sidebarTail.range(of: "private struct FolderSectionHeader")
+        )
+        let sidebar = String(sidebarTail[..<sidebarEnd.lowerBound])
+
+        XCTAssertTrue(sidebar.contains("BrandHeader()"))
+        XCTAssertFalse(sidebar.contains("Showcase"))
+        XCTAssertFalse(sidebar.contains("openWelcome"))
+    }
+
     private func workspaceSource() throws -> String {
         let url = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

@@ -25,7 +25,7 @@ struct PreviewMDApp: App {
         Settings {
             SettingsView()
                 .environmentObject(state)
-                .frame(width: 520, height: 360)
+                .frame(width: 520, height: 450)
         }
 
         // Replaces the standard About panel, which cannot show the bundled
@@ -159,6 +159,11 @@ struct PreviewMDCommands: Commands {
                 state.presentOpenPanel()
             }
             .keyboardShortcut("o")
+
+            Button("Open Folder…") {
+                state.presentFolderOpenPanel()
+            }
+            .keyboardShortcut("o", modifiers: [.command, .shift])
 
             Divider()
 

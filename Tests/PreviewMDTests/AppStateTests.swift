@@ -126,6 +126,10 @@ final class AppStateTests: XCTestCase {
         XCTAssertFalse(
             MarkdownFileSupport.accepts(URL(string: "https://example.com/readme.md")!)
         )
+        XCTAssertEqual(
+            MarkdownDefaultApplication.commonMarkdownType.identifier,
+            "net.daringfireball.markdown"
+        )
     }
 
     func testContentRevisionChangesOnlyWhenContentChanges() throws {

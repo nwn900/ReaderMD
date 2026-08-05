@@ -16,7 +16,7 @@ import server as landing
 
 class PreviewMDLandingContentTests(unittest.TestCase):
     analytics_id = "G-8YXDM1JJH2"
-    release_archive = "PreviewMD-1.5-7-macOS.zip"
+    release_archive = "PreviewMD-1.6-8-macOS.dmg"
     site_dir = Path(__file__).resolve().parent
 
     def test_editing_is_presented_as_a_core_capability(self) -> None:
@@ -33,7 +33,7 @@ class PreviewMDLandingContentTests(unittest.TestCase):
         html = (self.site_dir / "index.html").read_text(encoding="utf-8")
         javascript = (self.site_dir / "main.js").read_text(encoding="utf-8")
         release_links = set(
-            re.findall(r'href="(PreviewMD-[^"]+-macOS\.zip)"', html)
+            re.findall(r'href="(PreviewMD-[^"]+-macOS\.dmg)"', html)
         )
 
         self.assertTrue((self.site_dir / self.release_archive).is_file())
@@ -42,8 +42,8 @@ class PreviewMDLandingContentTests(unittest.TestCase):
             f'const DOWNLOAD_FILE = "{self.release_archive}";',
             javascript,
         )
-        self.assertNotIn("PreviewMD-1.0-6-macOS.zip", html)
-        self.assertNotIn("PreviewMD-1.0-6-macOS.zip", javascript)
+        self.assertNotIn("PreviewMD-1.5-7-macOS.zip", html)
+        self.assertNotIn("PreviewMD-1.5-7-macOS.zip", javascript)
 
     def test_shared_analytics_respects_the_strict_csp(self) -> None:
         html = (self.site_dir / "index.html").read_text(encoding="utf-8")
@@ -82,7 +82,7 @@ class QuietRequestHandler(landing.PreviewMDRequestHandler):
 
 
 class PreviewMDServerTests(unittest.TestCase):
-    archive_name = "PreviewMD-1.5-7-macOS.zip"
+    archive_name = "PreviewMD-1.6-8-macOS.dmg"
 
     def setUp(self) -> None:
         self.temporary_directory = TemporaryDirectory()
@@ -160,8 +160,11 @@ class PreviewMDServerTests(unittest.TestCase):
 
     def test_download_endpoint_rejects_unknown_or_unsafe_files(self) -> None:
         for file_name in (
+            "PreviewMD-missing-macOS.dmg",
             "PreviewMD-missing-macOS.zip",
-            "../PreviewMD-1.5-7-macOS.zip",
+            "../PreviewMD-1.6-8-macOS.dmg",
+            "../PreviewMD-1.6-8-macOS.zip",
+            "PreviewMD-1.6-8-macOS.pkg",
             "not-previewmd.zip",
         ):
             status, payload = self.post_json(
