@@ -30,15 +30,51 @@ final class EditorWebViewTests: XCTestCase, WKNavigationDelegate {
         )
     }
 
-    func testLocalFileURLImageRendersAndRoundTrips() async throws {
-        let markdown = "![Local icon](file:///tmp/AppIcon.svg)\n"
-        let webView = try await makeEditor(markdown: markdown)
+    func testRelativeAndAbsoluteLocalImagesDecodeAndRoundTrip() async throws {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PreviewMD-local-image-\(UUID().uuidString)")
+        let imagesFolder = folder.appendingPathComponent("Images")
+        try FileManager.default.createDirectory(
+            at: imagesFolder,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: folder) }
+
+        let documentURL = folder.appendingPathComponent("Document.md")
+        let imageURL = imagesFolder.appendingPathComponent("pixel image.svg")
+        try Data(
+            """
+            <svg xmlns="http://www.w3.org/2000/svg" width="7" height="5">
+              <rect width="7" height="5" fill="red"/>
+            </svg>
+            """.utf8
+        ).write(to: imageURL)
+
+        let markdown = """
+        ![Relative](Images/pixel%20image.svg)
+        ![Absolute](\(imageURL.absoluteString))
+
+        """
+        let webView = try await makeEditor(
+            markdown: markdown,
+            documentURL: documentURL
+        )
         let result = try await webView.callAsyncJavaScript(
             """
-            const image = document.querySelector("#preview-document img");
+            const images = Array.from(
+              document.querySelectorAll("#preview-document img")
+            );
+            await Promise.all(images.map((image) => {
+              if (image.complete) return Promise.resolve();
+              return new Promise((resolve) => {
+                image.addEventListener("load", resolve, { once: true });
+                image.addEventListener("error", resolve, { once: true });
+              });
+            }));
             return {
-              hasImage: image !== null,
-              source: image && image.getAttribute("src"),
+              sources: images.map((image) => image.getAttribute("src")),
+              originals: images.map((image) => image.dataset.previewmdSource),
+              widths: images.map((image) => image.naturalWidth),
               markdown: window.previewmdSerializeEditor(),
             };
             """,
@@ -46,9 +82,49 @@ final class EditorWebViewTests: XCTestCase, WKNavigationDelegate {
         )
         let response = try XCTUnwrap(result as? [String: Any])
 
-        XCTAssertEqual(response["hasImage"] as? Bool, true)
-        XCTAssertEqual(response["source"] as? String, "file:///tmp/AppIcon.svg")
+        let sources = try XCTUnwrap(response["sources"] as? [String])
+        XCTAssertEqual(sources.count, 2)
+        XCTAssertTrue(
+            sources.allSatisfy {
+                $0.hasPrefix("\(LocalImageSchemeHandler.scheme)://resource?")
+            }
+        )
+        XCTAssertEqual(
+            response["originals"] as? [String],
+            ["Images/pixel%20image.svg", imageURL.absoluteString]
+        )
+        XCTAssertEqual(response["widths"] as? [Int], [7, 7])
         XCTAssertEqual(response["markdown"] as? String, markdown)
+    }
+
+    func testLocalImageLoaderRejectsRemoteAndNonImageFiles() throws {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PreviewMD-local-image-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(
+            at: folder,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: folder) }
+
+        let textURL = folder.appendingPathComponent("secret.txt")
+        try Data("not an image".utf8).write(to: textURL)
+
+        XCTAssertThrowsError(
+            try LocalImageSchemeHandler.resource(
+                for: localImageRequestURL(source: "https://example.com/image.png"),
+                relativeTo: folder
+            )
+        ) { error in
+            XCTAssertEqual(error as? LocalImageSchemeHandler.LoadError, .invalidRequest)
+        }
+        XCTAssertThrowsError(
+            try LocalImageSchemeHandler.resource(
+                for: localImageRequestURL(source: "secret.txt"),
+                relativeTo: folder
+            )
+        ) { error in
+            XCTAssertEqual(error as? LocalImageSchemeHandler.LoadError, .unsupportedType)
+        }
     }
 
     func testRichSelectionSerializesAsBoldMarkdown() async throws {
@@ -754,7 +830,10 @@ final class EditorWebViewTests: XCTestCase, WKNavigationDelegate {
         navigationExpectation?.fulfill()
     }
 
-    private func makeEditor(markdown: String) async throws -> WKWebView {
+    private func makeEditor(
+        markdown: String,
+        documentURL: URL? = nil
+    ) async throws -> WKWebView {
         let payload = MarkdownWebView.RenderPayload(
             documentID: UUID().uuidString,
             markdown: markdown,
@@ -772,6 +851,13 @@ final class EditorWebViewTests: XCTestCase, WKNavigationDelegate {
         )
         let configuration = WKWebViewConfiguration()
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
+        let baseURL = documentURL?.deletingLastPathComponent()
+            ?? Bundle.module.resourceURL
+            ?? FileManager.default.temporaryDirectory
+        configuration.setURLSchemeHandler(
+            LocalImageSchemeHandler(baseURL: baseURL),
+            forURLScheme: LocalImageSchemeHandler.scheme
+        )
         let webView = WKWebView(frame: .init(x: 0, y: 0, width: 900, height: 700), configuration: configuration)
         webView.navigationDelegate = self
 
@@ -779,7 +865,7 @@ final class EditorWebViewTests: XCTestCase, WKNavigationDelegate {
         navigationExpectation = loaded
         webView.loadHTMLString(
             RendererAssets.shellHTML(for: payload),
-            baseURL: Bundle.module.resourceURL
+            baseURL: baseURL
         )
         await fulfillment(of: [loaded], timeout: 5)
         navigationExpectation = nil
@@ -797,6 +883,14 @@ final class EditorWebViewTests: XCTestCase, WKNavigationDelegate {
             contentWorld: .page
         )
         return webView
+    }
+
+    private func localImageRequestURL(source: String) throws -> URL {
+        var components = URLComponents()
+        components.scheme = LocalImageSchemeHandler.scheme
+        components.host = "resource"
+        components.queryItems = [URLQueryItem(name: "source", value: source)]
+        return try XCTUnwrap(components.url)
     }
 }
 #endif

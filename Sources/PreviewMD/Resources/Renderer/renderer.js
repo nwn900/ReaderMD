@@ -154,11 +154,42 @@
     function (tokens, index, options, env, self) {
       return self.renderToken(tokens, index, options);
     };
+
+  function routedImageSource(source) {
+    const scheme = window.previewmdLocalImageScheme;
+    if (!scheme || !source) return source;
+    const protocol = source.match(/^([a-z][a-z0-9+.-]*):/i);
+    if (protocol && protocol[1].toLowerCase() !== "file") return source;
+    return scheme + "://resource?source=" + encodeURIComponent(source);
+  }
+
+  function setImageSource(image, source) {
+    const originalSource = source || "";
+    const routedSource = routedImageSource(originalSource);
+    if (routedSource !== originalSource) {
+      image.dataset.previewmdSource = originalSource;
+    } else {
+      delete image.dataset.previewmdSource;
+    }
+    image.setAttribute("src", routedSource);
+  }
+
   md.renderer.rules.image = function (tokens, index, options, env, self) {
+    const source = tokens[index].attrGet("src") || "";
+    const routedSource = routedImageSource(source);
+    if (routedSource !== source) {
+      tokens[index].attrSet("data-previewmd-source", source);
+      tokens[index].attrSet("src", routedSource);
+    }
     tokens[index].attrSet("loading", "lazy");
     tokens[index].attrSet("decoding", "async");
     return defaultImage(tokens, index, options, env, self);
   };
+
+  window.previewmdOriginalImageSource = function (image) {
+    return image.dataset.previewmdSource || image.getAttribute("src") || "";
+  };
+  window.previewmdSetImageSource = setImageSource;
 
   const defaultLinkOpen =
     md.renderer.rules.link_open ||
