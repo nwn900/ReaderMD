@@ -7,7 +7,7 @@
    below only fixes up the live DOM — no-JS visitors, crawlers
    and the pre-JS paint read index.html as shipped.
    ============================================================ */
-const DOWNLOAD_FILE = "PreviewMD-1.5-7-macOS.zip";
+const DOWNLOAD_FILE = "PreviewMD-1.6-8-macOS.dmg";
 /* Document-relative on purpose: the page is served from the site root in local
    development and from a /<slug>/ subpath in production. A leading slash would
    miss the proxied endpoint there. */

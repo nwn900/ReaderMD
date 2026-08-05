@@ -238,8 +238,9 @@ spctl --assess --type open --context context:primary-signature --verbose=4 \
   dist/PreviewMD-<version>-<build>-macOS.dmg
 ```
 
-The most recently accepted release is PreviewMD `1.0 (6)`, notarization
-submission `2da326ef-f24d-4437-b793-6a86ed171de0`.
+The most recently accepted release is PreviewMD `1.6 (8)`. Its application
+notarization submission is `5a65e82b-6ea6-4fce-9f2a-d840ef0b9b67`; the final
+DMG submission is `e3f74877-eac9-4185-9876-0a9df4c96fa5`.
 
 ## Versioning
 

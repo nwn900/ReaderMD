@@ -20,7 +20,7 @@ build scripts are never web-reachable.
 ## Releasing a new version
 
 1. Build and notarize the app (`./scripts/release-app.sh`, see `AGENTS.md`).
-2. Drop the new `PreviewMD-<version>-macOS.dmg` into `site/`, delete the old
+2. Drop the new `PreviewMD-<version>-<build>-macOS.dmg` into `site/`, delete the old
    one, and update `DOWNLOAD_FILE` in `site/main.js` plus every literal
    filename in `site/index.html`.
 3. Commit and push to `main`.
