@@ -143,6 +143,10 @@ struct MarkdownWebView: NSViewRepresentable {
         configuration.userContentController.add(context.coordinator, name: "copyText")
         configuration.userContentController.add(context.coordinator, name: "editorChange")
         configuration.userContentController.add(context.coordinator, name: "pickImage")
+        configuration.setURLSchemeHandler(
+            context.coordinator.localImageSchemeHandler,
+            forURLScheme: LocalImageSchemeHandler.scheme
+        )
 
         let webView = MarkdownDropWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
@@ -167,6 +171,7 @@ struct MarkdownWebView: NSViewRepresentable {
         controller.attach(webView, documentID: documentID)
         context.coordinator.documentID = documentID
         context.coordinator.documentURL = documentURL
+        context.coordinator.localImageSchemeHandler.updateBaseURL(baseURL)
         context.coordinator.openMarkdown = state.open(url:)
         context.coordinator.onContentChange = onContentChange
         if let dropWebView = webView as? MarkdownDropWebView {
@@ -255,6 +260,7 @@ struct MarkdownWebView: NSViewRepresentable {
         var openMarkdown: (URL) -> Void
         var onContentChange: (UUID, String, Bool) -> Void
         var basePath = ""
+        let localImageSchemeHandler: LocalImageSchemeHandler
 
         private var isLoaded = false
         private var pendingPayload: RenderPayload?
@@ -271,6 +277,11 @@ struct MarkdownWebView: NSViewRepresentable {
             self.documentURL = documentURL
             self.openMarkdown = openMarkdown
             self.onContentChange = onContentChange
+            self.localImageSchemeHandler = LocalImageSchemeHandler(
+                baseURL: documentURL?.deletingLastPathComponent()
+                    ?? Bundle.module.resourceURL
+                    ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            )
         }
 
         func loadShell(
@@ -279,6 +290,7 @@ struct MarkdownWebView: NSViewRepresentable {
             in webView: WKWebView
         ) {
             basePath = baseURL.path
+            localImageSchemeHandler.updateBaseURL(baseURL)
             isLoaded = false
             lastPayload = nil
             pendingPayload = initialPayload
@@ -624,6 +636,7 @@ enum RendererAssets {
             <article id="preview-document"></article>
           </main>
           <div id="render-error" hidden></div>
+          <script>window.previewmdLocalImageScheme = "\(LocalImageSchemeHandler.scheme)";</script>
           <script>\(markdownIt)</script>
           <script>\(footnotes)</script>
           <script>\(highlight)</script>

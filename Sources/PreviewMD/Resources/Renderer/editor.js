@@ -1438,13 +1438,20 @@
 
   function editObject(node, type) {
     if (type === "image") {
-      const source = window.prompt("Image path or address", node.getAttribute("src") || "");
+      const currentSource = window.previewmdOriginalImageSource
+        ? window.previewmdOriginalImageSource(node)
+        : node.getAttribute("src") || "";
+      const source = window.prompt("Image path or address", currentSource);
       if (source === null) return;
       const alt = window.prompt("Alternative text", node.getAttribute("alt") || "");
       if (alt === null) return;
       const title = window.prompt("Image title (optional)", node.getAttribute("title") || "");
       if (title === null) return;
-      node.setAttribute("src", source.trim());
+      if (window.previewmdSetImageSource) {
+        window.previewmdSetImageSource(node, source.trim());
+      } else {
+        node.setAttribute("src", source.trim());
+      }
       node.setAttribute("alt", alt);
       if (title.trim()) node.setAttribute("title", title.trim());
       else node.removeAttribute("title");
@@ -1688,7 +1695,9 @@
 
   function serializeImage(node) {
     const alt = (node.getAttribute("alt") || "").replace(/]/g, "\\]");
-    const source = node.getAttribute("src") || "";
+    const source = window.previewmdOriginalImageSource
+      ? window.previewmdOriginalImageSource(node)
+      : node.getAttribute("src") || "";
     const title = node.getAttribute("title");
     return "![" + alt + "](" + source + (title ? ' "' + title.replace(/"/g, '\\"') + '"' : "") + ")";
   }
