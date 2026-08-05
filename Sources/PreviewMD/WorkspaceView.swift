@@ -734,20 +734,11 @@ private struct SidebarView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            List {
-                Section {
-                    SidebarRow(
-                        title: "Showcase",
-                        subtitle: "Explore every renderer",
-                        symbol: "sparkles.rectangle.stack",
-                        isSelected: state.sidebarSelection == "welcome"
-                    ) {
-                        state.openWelcome()
-                    }
-                } header: {
-                    BrandHeader()
-                }
+            BrandHeader()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
 
+            List {
                 if let folderURL = state.workspaceFolderURL {
                     Section {
                         if state.workspaceFolderItems.isEmpty {
