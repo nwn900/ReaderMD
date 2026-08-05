@@ -82,7 +82,7 @@ class QuietRequestHandler(landing.PreviewMDRequestHandler):
 
 
 class PreviewMDServerTests(unittest.TestCase):
-    archive_name = "PreviewMD-1.5-7-macOS.zip"
+    archive_name = "PreviewMD-1.5-7-macOS.dmg"
 
     def setUp(self) -> None:
         self.temporary_directory = TemporaryDirectory()
@@ -160,8 +160,11 @@ class PreviewMDServerTests(unittest.TestCase):
 
     def test_download_endpoint_rejects_unknown_or_unsafe_files(self) -> None:
         for file_name in (
+            "PreviewMD-missing-macOS.dmg",
             "PreviewMD-missing-macOS.zip",
+            "../PreviewMD-1.5-7-macOS.dmg",
             "../PreviewMD-1.5-7-macOS.zip",
+            "PreviewMD-1.5-7-macOS.pkg",
             "not-previewmd.zip",
         ):
             status, payload = self.post_json(

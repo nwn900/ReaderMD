@@ -5,6 +5,10 @@ project_dir="$(cd "$(dirname "$0")/.." && pwd)"
 app_dir="$project_dir/dist/PreviewMD.app"
 contents_dir="$app_dir/Contents"
 build_dir="$project_dir/.build/apple/Products/Release"
+quicklook_dir="$contents_dir/PlugIns/PreviewMDQuickLook.appex"
+quicklook_contents_dir="$quicklook_dir/Contents"
+quicklook_build_dir="$project_dir/.build/quicklook"
+quicklook_source="$project_dir/Sources/PreviewMDQuickLook/PreviewViewController.swift"
 iconset_dir="$project_dir/.build/AppIcon.iconset"
 master_icon="$project_dir/.build/AppIcon-1024.png"
 signing_identity="${PREVIEWMD_SIGNING_IDENTITY:-}"
@@ -21,13 +25,71 @@ swift build \
   --arch x86_64 \
   --disable-sandbox
 
-rm -rf "$app_dir"
-mkdir -p "$contents_dir/MacOS" "$contents_dir/Resources"
+rm -rf "$app_dir" "$quicklook_build_dir"
+mkdir -p \
+  "$contents_dir/MacOS" \
+  "$contents_dir/Resources" \
+  "$quicklook_contents_dir/MacOS" \
+  "$quicklook_contents_dir/Resources" \
+  "$quicklook_build_dir"
 
 cp "$build_dir/PreviewMD" "$contents_dir/MacOS/PreviewMD"
 cp -R "$build_dir/PreviewMD_PreviewMD.bundle" "$contents_dir/Resources/PreviewMD_PreviewMD.bundle"
 
 cp "scripts/Info.plist" "$contents_dir/Info.plist"
+
+for architecture in arm64 x86_64; do
+  xcrun swiftc \
+    -sdk "$SDKROOT" \
+    -target "$architecture-apple-macos14.0" \
+    -module-name PreviewMDQuickLook \
+    -application-extension \
+    -parse-as-library \
+    -O \
+    -module-cache-path "$project_dir/.build/ModuleCache" \
+    "$quicklook_source" \
+    -emit-executable \
+    -o "$quicklook_build_dir/PreviewMDQuickLook-$architecture" \
+    -framework AppKit \
+    -framework Quartz \
+    -framework WebKit \
+    -Xlinker -e \
+    -Xlinker _NSExtensionMain
+done
+
+lipo -create \
+  "$quicklook_build_dir/PreviewMDQuickLook-arm64" \
+  "$quicklook_build_dir/PreviewMDQuickLook-x86_64" \
+  -output "$quicklook_contents_dir/MacOS/PreviewMDQuickLook"
+chmod +x "$quicklook_contents_dir/MacOS/PreviewMDQuickLook"
+
+cp "scripts/QuickLook-Info.plist" "$quicklook_contents_dir/Info.plist"
+version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$contents_dir/Info.plist")"
+build_number="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$contents_dir/Info.plist")"
+/usr/libexec/PlistBuddy \
+  -c "Set :CFBundleShortVersionString $version" \
+  "$quicklook_contents_dir/Info.plist"
+/usr/libexec/PlistBuddy \
+  -c "Set :CFBundleVersion $build_number" \
+  "$quicklook_contents_dir/Info.plist"
+mkdir -p "$quicklook_contents_dir/Resources/Renderer"
+for renderer_file in \
+  auto-render.min.js \
+  highlight.min.js \
+  katex.min.css \
+  katex.min.js \
+  markdown-it-footnote.min.js \
+  markdown-it.min.js \
+  mermaid.min.js \
+  renderer.css \
+  renderer.js; do
+  cp \
+    "$project_dir/Sources/PreviewMD/Resources/Renderer/$renderer_file" \
+    "$quicklook_contents_dir/Resources/Renderer/$renderer_file"
+done
+ditto \
+  "$project_dir/Sources/PreviewMD/Resources/Renderer/fonts" \
+  "$quicklook_contents_dir/Resources/Renderer/fonts"
 
 rm -rf "$iconset_dir"
 mkdir -p "$iconset_dir"
@@ -46,10 +108,22 @@ if [[ -n "$signing_identity" ]]; then
     --force \
     --options runtime \
     --timestamp \
+    --entitlements "$project_dir/scripts/QuickLook.entitlements" \
+    --sign "$signing_identity" \
+    "$quicklook_dir"
+  codesign \
+    --force \
+    --options runtime \
+    --timestamp \
     --sign "$signing_identity" \
     "$app_dir"
   echo "Built and signed $app_dir"
 else
+  codesign \
+    --force \
+    --entitlements "$project_dir/scripts/QuickLook.entitlements" \
+    --sign - \
+    "$quicklook_dir"
   codesign --force --sign - "$app_dir"
   echo "Built $app_dir with an ad-hoc signature"
 fi

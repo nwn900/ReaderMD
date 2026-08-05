@@ -1596,6 +1596,9 @@ private struct DropOverlay: View {
 
 struct SettingsView: View {
     @EnvironmentObject private var state: AppState
+    @State private var isDefaultMarkdownApplication = false
+    @State private var isChangingDefaultApplication = false
+    @State private var defaultApplicationError: String?
 
     var body: some View {
         Form {
@@ -1640,6 +1643,34 @@ struct SettingsView: View {
                 LabeledContent("Math", value: "Inline & display")
                 LabeledContent("Code", value: "Syntax highlighted")
             }
+
+            Section("Files") {
+                LabeledContent("Open Markdown with") {
+                    Text(isDefaultMarkdownApplication ? "PreviewMD" : "Another app")
+                        .foregroundStyle(
+                            isDefaultMarkdownApplication ? Color.secondary : Color.primary
+                        )
+                }
+
+                Button(
+                    isDefaultMarkdownApplication
+                        ? "PreviewMD Is the Default"
+                        : "Use PreviewMD as Default"
+                ) {
+                    makeDefaultMarkdownApplication()
+                }
+                .disabled(isDefaultMarkdownApplication || isChangingDefaultApplication)
+
+                if let defaultApplicationError {
+                    Text(defaultApplicationError)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                } else if !isDefaultMarkdownApplication {
+                    Text("This also changes the Open button in Finder Quick Look.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
         .formStyle(.grouped)
         .padding()
@@ -1648,5 +1679,24 @@ struct SettingsView: View {
         .onChange(of: state.readingWidth) { state.updatePreferences() }
         .onChange(of: state.customReadingWidth) { state.updatePreferences() }
         .onChange(of: state.usesPaperCanvas) { state.updatePreferences() }
+        .onAppear {
+            refreshDefaultMarkdownApplication()
+        }
+    }
+
+    private func refreshDefaultMarkdownApplication() {
+        isDefaultMarkdownApplication = MarkdownDefaultApplication.isPreviewMD
+    }
+
+    private func makeDefaultMarkdownApplication() {
+        isChangingDefaultApplication = true
+        defaultApplicationError = nil
+        MarkdownDefaultApplication.makePreviewMD { error in
+            DispatchQueue.main.async {
+                isChangingDefaultApplication = false
+                defaultApplicationError = error?.localizedDescription
+                refreshDefaultMarkdownApplication()
+            }
+        }
     }
 }

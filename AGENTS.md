@@ -52,6 +52,21 @@ Preserve these behaviors unless the user explicitly requests a change:
   menu.
 - Tables, Mermaid diagrams, KaTeX, code highlighting, local images, and
   relative links must continue to render offline.
+- The application bundle includes a sandboxed Quick Look preview extension at
+  `Contents/PlugIns/PreviewMDQuickLook.appex`. It supports both
+  `pl.jesion.previewmd.markdown` and the common
+  `net.daringfireball.markdown` UTI, renders with bundled resources, and must
+  never require a separate plugin installation.
+- Copying PreviewMD to Applications and opening it once must be sufficient to
+  register Quick Look. Do not require users to run `pluginkit`, `qlmanage`, or
+  another command.
+- PreviewMD declares both Markdown UTIs as editable document types with the
+  `Default` handler rank. Settings provides an explicit action to make
+  PreviewMD the default Markdown app, which also controls Quick Look's Open
+  button. Never silently replace a user's existing default application.
+- Quick Look must replace inaccessible document-relative images with a clear
+  open-in-PreviewMD message, never a broken-image glyph. This Finder sandbox
+  limitation must not weaken local-image rendering inside the main app.
 - Focus mode (⇧⌘F) hides every piece of chrome — sidebar, inspector, tab bar,
   toolbar and status bar — leaving the document column and the reading-width
   ruler, and nothing else. Leaving it restores the display mode it was entered
@@ -85,8 +100,9 @@ change:
 - The modal opens after every download click, even if the visitor previously
   dismissed it. Do not suppress it with `sessionStorage`, `localStorage`, or a
   cookie.
-- Clicking Download must still start the native ZIP download; the signup modal
-  must not gate the download.
+- Clicking Download must still start the native release download; new releases
+  use the DMG produced by `scripts/release-app.sh`. The signup modal must not
+  gate the download.
 - Closing the modal resets its form, error, and success states so it is ready
   for the next download click.
 
@@ -108,9 +124,9 @@ table stores only the normalized email address and UTC signup time, treats
 addresses case-insensitively, and ignores duplicates. Download clicks are
 recorded in the same database as an aggregate count per release filename plus
 the UTC time of the latest click; do not store IP addresses or associate a
-click with a subscriber. Tracking is best-effort and must never gate the ZIP
-download. Production hosting must provide a persistent filesystem or volume
-for `.previewmd-data/` and must back it up; static-only or ephemeral serverless
+click with a subscriber. Tracking is best-effort and must never gate the
+release download. Production hosting must provide a persistent filesystem or
+volume for `.previewmd-data/` and must back it up; static-only or ephemeral serverless
 hosting will not preserve this SQLite database across deployments.
 
 The landing server supports:
@@ -122,8 +138,8 @@ The landing server supports:
 When changing landing JavaScript or CSS, bump the corresponding asset query
 version in `site/index.html` so deployed browsers do not retain stale behavior.
 When changing the released app version, update `DOWNLOAD_FILE` in
-`site/main.js`, every literal ZIP filename and version string in
-`site/index.html`, and the distributable ZIP in `site/`. See `site/README.md`
+`site/main.js`, every literal DMG filename and version string in
+`site/index.html`, and the distributable DMG in `site/`. See `site/README.md`
 for operational details.
 
 ## Building
@@ -145,6 +161,13 @@ lipo -info dist/PreviewMD.app/Contents/MacOS/PreviewMD
 ```
 
 The result must contain both `x86_64` and `arm64`.
+
+The embedded Quick Look executable must also remain Universal 2:
+
+```bash
+lipo -info \
+  dist/PreviewMD.app/Contents/PlugIns/PreviewMDQuickLook.appex/Contents/MacOS/PreviewMDQuickLook
+```
 
 ## Production signing and notarization
 
@@ -185,17 +208,28 @@ This script must continue to:
 5. Wait for an `Accepted` result.
 6. Staple and validate the notarization ticket.
 7. Verify Gatekeeper reports `source=Notarized Developer ID`.
-8. Produce the final distributable ZIP in `dist/`.
+8. Produce a fallback ZIP containing the stapled application.
+9. Create the drag-to-Applications DMG with its installation instructions.
+10. Sign, notarize, staple, and validate the final DMG.
+11. Verify Gatekeeper accepts the final DMG.
 
-Only distribute the archive ending in `-macOS.zip`. Never distribute the
-temporary archive ending in `-notarization.zip`.
+The primary public download is the image ending in `-macOS.dmg`. The archive
+ending in `-macOS.zip` may be retained as a fallback, but do not link it from
+the landing page. Never distribute the temporary archive ending in
+`-notarization.zip`.
 
 Before handing off a release, confirm:
 
 ```bash
 codesign --verify --deep --strict --verbose=4 dist/PreviewMD.app
+codesign --verify --strict --verbose=4 \
+  dist/PreviewMD.app/Contents/PlugIns/PreviewMDQuickLook.appex
 xcrun stapler validate dist/PreviewMD.app
 spctl --assess --type execute --verbose=4 dist/PreviewMD.app
+codesign --verify --verbose=2 dist/PreviewMD-<version>-<build>-macOS.dmg
+xcrun stapler validate dist/PreviewMD-<version>-<build>-macOS.dmg
+spctl --assess --type open --context context:primary-signature --verbose=4 \
+  dist/PreviewMD-<version>-<build>-macOS.dmg
 ```
 
 The most recently accepted release is PreviewMD `1.0 (6)`, notarization
@@ -209,14 +243,16 @@ Before each public release, update both values in `scripts/Info.plist`:
 - `CFBundleVersion` for the monotonically increasing build number.
 
 Do not reuse a previously distributed build number.
+`scripts/build-app.sh` copies these two values into the Quick Look extension;
+do not maintain a second independent release version there.
 
 ## Change discipline
 
-- Preserve bundled renderer resources and the embedded showcase when editing
-  packaging scripts.
+- Preserve bundled renderer resources, the embedded showcase, and the Quick
+  Look extension when editing packaging scripts.
 - Avoid adding network dependencies to Markdown rendering.
 - Do not weaken Hardened Runtime or Gatekeeper compatibility to work around a
   signing problem.
-- Do not commit generated `.app`, notarization archives, release ZIPs, signing
-  material, or credentials unless the user explicitly requests artifact
-  versioning.
+- Do not commit generated `.app`, notarization archives, release DMGs or ZIPs,
+  signing material, or credentials unless the user explicitly requests
+  artifact versioning.

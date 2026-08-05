@@ -25,7 +25,7 @@ PORT = int(os.environ.get("PORT", "4173"))
 MAX_BODY_BYTES = 4096
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 DOWNLOAD_FILE_PATTERN = re.compile(
-    r"^PreviewMD-[A-Za-z0-9][A-Za-z0-9._-]*-macOS\.zip$"
+    r"^PreviewMD-[A-Za-z0-9][A-Za-z0-9._-]*-macOS\.(?:dmg|zip)$"
 )
 
 
@@ -67,7 +67,7 @@ def store_email(email: str) -> bool:
 
 
 def record_download_click(file_name: str) -> None:
-    """Atomically increment the aggregate click count for a release archive."""
+    """Atomically increment the aggregate click count for a release file."""
     updated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     with sqlite3.connect(DB_PATH, timeout=5) as connection:
         connection.execute(

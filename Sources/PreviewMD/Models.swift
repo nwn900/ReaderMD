@@ -1,4 +1,6 @@
+import AppKit
 import Foundation
+import UniformTypeIdentifiers
 
 enum MarkdownFileSupport {
     static let supportedExtensions: Set<String> = [
@@ -8,6 +10,33 @@ enum MarkdownFileSupport {
     static func accepts(_ url: URL) -> Bool {
         url.isFileURL
             && supportedExtensions.contains(url.pathExtension.lowercased())
+    }
+}
+
+enum MarkdownDefaultApplication {
+    static let commonMarkdownType = UTType(
+        importedAs: "net.daringfireball.markdown",
+        conformingTo: .plainText
+    )
+
+    static var isPreviewMD: Bool {
+        guard let applicationURL = NSWorkspace.shared.urlForApplication(
+            toOpen: commonMarkdownType
+        ) else {
+            return false
+        }
+        return Bundle(url: applicationURL)?.bundleIdentifier
+            == Bundle.main.bundleIdentifier
+    }
+
+    static func makePreviewMD(
+        completion: @escaping @Sendable ((any Error)?) -> Void
+    ) {
+        NSWorkspace.shared.setDefaultApplication(
+            at: Bundle.main.bundleURL,
+            toOpen: commonMarkdownType,
+            completion: completion
+        )
     }
 }
 

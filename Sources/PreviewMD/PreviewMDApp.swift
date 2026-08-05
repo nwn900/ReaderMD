@@ -25,7 +25,7 @@ struct PreviewMDApp: App {
         Settings {
             SettingsView()
                 .environmentObject(state)
-                .frame(width: 520, height: 360)
+                .frame(width: 520, height: 450)
         }
 
         // Replaces the standard About panel, which cannot show the bundled

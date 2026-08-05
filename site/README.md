@@ -18,7 +18,7 @@ stored in:
 The database is outside the public `site/` directory and is ignored by Git.
 The `subscribers` table stores only the normalized email address and UTC signup
 time; duplicate addresses are ignored. The `downloads` table stores one
-aggregate click count per release archive and the UTC time when that count was
+aggregate click count per release file and the UTC time when that count was
 last updated. It does not store IP addresses or associate clicks with email
 addresses.
 
@@ -43,5 +43,5 @@ Environment variables:
 
 Both endpoints are requested document-relative, so the page works at the server
 root (local development) and under a `/<slug>/` subpath (production). Download
-tracking is best-effort and never gates the ZIP download. See
+tracking is best-effort and never gates the DMG or fallback ZIP download. See
 `deploy/README.md` for how the site is published and released.
