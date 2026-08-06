@@ -446,6 +446,160 @@ final class EditorWebViewTests: XCTestCase, WKNavigationDelegate {
         XCTAssertTrue(states.allSatisfy { $0["prevented"] as? Bool == true })
     }
 
+    func testWideTableKeepsReadableColumnsAndExpandsIndependently() async throws {
+        let markdown = """
+        Before
+
+        | Body | Size tier | Gravity (m/s²) | Hazard | Key resources | Signature feature |
+        | --- | --- | --- | --- | --- | --- |
+        | Earth's Moon | M (Ø 4 km shell) | 1.62 | Vacuum, razor dust | He-3 regolith, ilmenite, polar water ice | Shadowed ice craters |
+
+        | Name | Value |
+        | --- | --- |
+        | Alpha | 1 |
+
+        """
+        let webView = try await makeEditor(markdown: markdown)
+        let result = try await webView.callAsyncJavaScript(
+            """
+            const wrapper = document.querySelector(".table-scroll");
+            const viewport = wrapper.querySelector(".table-viewport");
+            const sizer = wrapper.querySelector(".table-sizer");
+            const table = viewport.querySelector("table");
+            const header = table.querySelector("th");
+            const button = wrapper.querySelector(".table-expand");
+            const textBlock = document.querySelector("#preview-document > p");
+            const otherWrapper = document.querySelectorAll(".table-scroll")[1];
+            const otherButton = document.querySelectorAll(".table-expand")[1];
+            const shell = document.querySelector("#preview-shell");
+            const shellStyle = getComputedStyle(shell);
+            const surfaceLeft = shell.getBoundingClientRect().left +
+              parseFloat(shellStyle.paddingLeft);
+            const surfaceRight = shell.getBoundingClientRect().right -
+              parseFloat(shellStyle.paddingRight);
+            const serializedBefore = window.previewmdSerializeEditor();
+            const initial = {
+              wrapperWidth: wrapper.getBoundingClientRect().width,
+              wrapperLeft: wrapper.getBoundingClientRect().left,
+              wrapperRight: wrapper.getBoundingClientRect().right,
+              textLeft: textBlock.getBoundingClientRect().left,
+              tableLeft: sizer.getBoundingClientRect().left,
+              surfaceLeft,
+              surfaceRight,
+              otherWrapperWidth: otherWrapper.getBoundingClientRect().width,
+              viewportWidth: viewport.clientWidth,
+              tableWidth: table.getBoundingClientRect().width,
+              minimumWidth: sizer.style.minWidth,
+              overflowWrap: getComputedStyle(header).overflowWrap,
+              wordBreak: getComputedStyle(header).wordBreak,
+              whiteSpace: getComputedStyle(header).whiteSpace,
+              expanded: button.getAttribute("aria-expanded"),
+              label: button.getAttribute("aria-label"),
+              usesWideSurface: wrapper.classList.contains("is-wide"),
+            };
+            viewport.scrollLeft = viewport.scrollWidth - viewport.clientWidth;
+            const scrolled = {
+              scrollLeft: viewport.scrollLeft,
+              tableLeft: sizer.getBoundingClientRect().left,
+              viewportLeft: viewport.getBoundingClientRect().left,
+            };
+            viewport.scrollLeft = 0;
+            button.click();
+            const expanded = {
+              wrapperWidth: wrapper.getBoundingClientRect().width,
+              wrapperLeft: wrapper.getBoundingClientRect().left,
+              tableWidth: table.getBoundingClientRect().width,
+              minimumWidth: sizer.style.minWidth,
+              expanded: button.getAttribute("aria-expanded"),
+              label: button.getAttribute("aria-label"),
+              otherExpanded: otherButton.getAttribute("aria-expanded"),
+              classApplied: wrapper.classList.contains("is-expanded"),
+            };
+            const serialized = window.previewmdSerializeEditor();
+            button.click();
+            const firstHeader = table.querySelector("th");
+            firstHeader.click();
+            document.querySelector('[data-object-action="add-column"]').click();
+            return {
+              initial,
+              scrolled,
+              expanded,
+              collapsedAgain: button.getAttribute("aria-expanded"),
+              serializedBefore,
+              serialized,
+              minimumWidthAfterAddingColumn: sizer.style.minWidth,
+            };
+            """,
+            contentWorld: .page
+        )
+        let response = try XCTUnwrap(result as? [String: Any])
+        let initial = try XCTUnwrap(response["initial"] as? [String: Any])
+        let scrolled = try XCTUnwrap(response["scrolled"] as? [String: Any])
+        let expanded = try XCTUnwrap(response["expanded"] as? [String: Any])
+        let initialWrapperWidth = try XCTUnwrap(initial["wrapperWidth"] as? Double)
+        let initialWrapperLeft = try XCTUnwrap(initial["wrapperLeft"] as? Double)
+        let initialWrapperRight = try XCTUnwrap(initial["wrapperRight"] as? Double)
+        let textLeft = try XCTUnwrap(initial["textLeft"] as? Double)
+        let initialTableLeft = try XCTUnwrap(initial["tableLeft"] as? Double)
+        let surfaceLeft = try XCTUnwrap(initial["surfaceLeft"] as? Double)
+        let surfaceRight = try XCTUnwrap(initial["surfaceRight"] as? Double)
+        let otherWrapperWidth = try XCTUnwrap(initial["otherWrapperWidth"] as? Double)
+        let initialViewportWidth = try XCTUnwrap(initial["viewportWidth"] as? Int)
+        let tableWidth = try XCTUnwrap(initial["tableWidth"] as? Double)
+        let expandedWrapperWidth = try XCTUnwrap(expanded["wrapperWidth"] as? Double)
+        let expandedWrapperLeft = try XCTUnwrap(expanded["wrapperLeft"] as? Double)
+        let expandedTableWidth = try XCTUnwrap(expanded["tableWidth"] as? Double)
+
+        XCTAssertGreaterThan(
+            tableWidth,
+            Double(initialViewportWidth),
+            "Initial table metrics: \(initial)"
+        )
+        XCTAssertEqual(initial["minimumWidth"] as? String, "864px")
+        XCTAssertEqual(initial["overflowWrap"] as? String, "break-word")
+        XCTAssertEqual(initial["wordBreak"] as? String, "normal")
+        XCTAssertEqual(initial["whiteSpace"] as? String, "nowrap")
+        XCTAssertEqual(initial["expanded"] as? String, "false")
+        XCTAssertEqual(initial["label"] as? String, "Expand table")
+        XCTAssertEqual(initial["usesWideSurface"] as? Bool, true)
+        XCTAssertEqual(initialWrapperLeft, surfaceLeft, accuracy: 0.5)
+        XCTAssertEqual(initialWrapperRight, surfaceRight, accuracy: 0.5)
+        XCTAssertLessThan(initialWrapperLeft, textLeft)
+        XCTAssertEqual(initialTableLeft, textLeft, accuracy: 0.5)
+        XCTAssertGreaterThan(initialWrapperWidth, otherWrapperWidth)
+        XCTAssertGreaterThan(scrolled["scrollLeft"] as? Double ?? 0, 0)
+        XCTAssertEqual(
+            scrolled["viewportLeft"] as? Double ?? .nan,
+            surfaceLeft,
+            accuracy: 0.5
+        )
+        XCTAssertLessThan(
+            scrolled["tableLeft"] as? Double ?? .infinity,
+            textLeft
+        )
+        XCTAssertLessThanOrEqual(
+            scrolled["tableLeft"] as? Double ?? .infinity,
+            surfaceLeft + 1
+        )
+        XCTAssertEqual(expandedWrapperWidth, initialWrapperWidth, accuracy: 0.5)
+        XCTAssertEqual(expandedWrapperLeft, initialWrapperLeft, accuracy: 0.5)
+        XCTAssertGreaterThan(expandedTableWidth, tableWidth)
+        XCTAssertEqual(expanded["minimumWidth"] as? String, "1320px")
+        XCTAssertEqual(expanded["expanded"] as? String, "true")
+        XCTAssertEqual(expanded["label"] as? String, "Collapse table")
+        XCTAssertEqual(expanded["otherExpanded"] as? String, "false")
+        XCTAssertEqual(expanded["classApplied"] as? Bool, true)
+        XCTAssertEqual(response["collapsedAgain"] as? String, "false")
+        XCTAssertEqual(
+            response["serialized"] as? String,
+            response["serializedBefore"] as? String
+        )
+        XCTAssertEqual(
+            response["minimumWidthAfterAddingColumn"] as? String,
+            "1008px"
+        )
+    }
+
     func testHorizontalArrowsPlaceCaretBesideInlineObject() async throws {
         let webView = try await makeEditor(
             markdown: "Before ![icon](file:///tmp/AppIcon.svg) after.\n"

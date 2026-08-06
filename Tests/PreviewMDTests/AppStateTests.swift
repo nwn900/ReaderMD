@@ -104,13 +104,8 @@ final class AppStateTests: XCTestCase {
         XCTAssertEqual(state.effectiveReadingWidth, 560)
     }
 
-    func testFitWideContentUsesTablePreset() throws {
-        let state = try makeState()
-
-        state.fitWideContent()
-
-        XCTAssertEqual(state.readingWidth, .data)
-        XCTAssertEqual(state.effectiveReadingWidth, 1_440)
+    func testTableDataReadingWidthPresetUsesWideLayout() {
+        XCTAssertEqual(ReadingWidth.data.cssValue, 1_440)
     }
 
     func testDropFilterAcceptsOnlySupportedLocalFiles() {

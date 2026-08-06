@@ -590,16 +590,95 @@ code {
 }
 
 .table-scroll {
+  position: relative;
+  width: 100%;
   max-width: 100%;
   margin: 1.55em 0;
+}
+
+.table-scroll.is-wide {
+  max-width: none;
+}
+
+.table-scroll.is-wide .table-sizer {
+  margin-left: var(--table-leading-gutter, 0px);
+}
+
+.table-scroll.is-wide > .table-expand,
+.table-scroll.is-expanded > .table-expand {
+  right: 8px;
+}
+
+.table-viewport {
+  max-width: 100%;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-viewport:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 72%, transparent);
+  outline-offset: 2px;
+}
+
+.table-sizer {
+  width: 100%;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 11px;
 }
 
+.table-expand {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  right: -38px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  color: var(--faint);
+  border: 1px solid color-mix(in srgb, var(--line-strong) 78%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--page) 92%, transparent);
+  box-shadow: 0 2px 8px rgba(30, 36, 55, 0.08);
+  cursor: pointer;
+  opacity: 0.72;
+  transition: color 120ms ease, background 120ms ease, opacity 120ms ease,
+    box-shadow 120ms ease;
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  backdrop-filter: blur(12px) saturate(120%);
+}
+
+.table-scroll:hover > .table-expand,
+.table-expand:hover,
+.table-expand:focus-visible,
+.table-expand[aria-expanded="true"] {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--page) 84%, var(--accent-soft));
+  opacity: 1;
+}
+
+.table-expand:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 72%, transparent);
+  outline-offset: 2px;
+}
+
+.table-expand svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.45;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 table {
   width: 100%;
-  min-width: 520px;
+  min-width: 100%;
   border-spacing: 0;
   border-collapse: separate;
   font-size: 0.9em;
@@ -608,7 +687,11 @@ table {
 
 th,
 td {
+  min-width: 9rem;
+  max-width: 28rem;
   padding: 0.76em 0.95em;
+  overflow-wrap: break-word;
+  word-break: normal;
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   text-align: left;
@@ -630,6 +713,7 @@ th {
   font-size: 0.82em;
   font-weight: 650;
   letter-spacing: 0.015em;
+  white-space: nowrap;
 }
 
 tbody tr {
@@ -796,6 +880,8 @@ sup {
 :root[data-style="classic"] .code-card,
 :root[data-style="classic"] .diagram-card,
 :root[data-style="classic"] .table-scroll,
+:root[data-style="classic"] .table-viewport,
+:root[data-style="classic"] .table-sizer,
 :root[data-style="classic"] .katex-display,
 :root[data-style="classic"] img {
   border-radius: 2px;
@@ -893,6 +979,8 @@ sup {
 :root[data-style="editorial"] .code-card,
 :root[data-style="editorial"] .diagram-card,
 :root[data-style="editorial"] .table-scroll,
+:root[data-style="editorial"] .table-viewport,
+:root[data-style="editorial"] .table-sizer,
 :root[data-style="editorial"] .katex-display,
 :root[data-style="editorial"] img {
   border-radius: 4px;
@@ -927,7 +1015,16 @@ sup {
 
 #preview-document.is-editable td,
 #preview-document.is-editable th {
-  min-width: 44px;
+  min-width: 9rem;
+}
+
+.table-scroll.editor-selected-object {
+  outline: 0 !important;
+}
+
+.table-scroll.editor-selected-object > .table-viewport > .table-sizer {
+  outline: 2px solid color-mix(in srgb, var(--accent) 82%, transparent) !important;
+  outline-offset: -2px;
 }
 
 #preview-document.is-editable .task-list-item > input,
@@ -1378,8 +1475,40 @@ th.editor-selected-object {
     box-shadow: none;
   }
 
+  .table-scroll.is-wide,
+  .table-scroll.is-expanded {
+    width: 100% !important;
+    max-width: 100%;
+    margin-left: 0;
+    --table-leading-gutter: 0px !important;
+  }
+
+  .table-viewport {
+    overflow-x: visible;
+  }
+
+  .table-sizer {
+    min-width: 0 !important;
+  }
+
+  table {
+    width: 100% !important;
+    min-width: 100%;
+  }
+
+  th,
+  td {
+    min-width: 0;
+    max-width: none;
+  }
+
+  th {
+    white-space: normal;
+  }
+
   #reading-progress,
   .copy-code,
+  .table-expand,
   .heading-anchor,
   .editor-bubble-toolbar,
   .editor-object-source,

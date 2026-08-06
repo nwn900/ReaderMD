@@ -779,10 +779,6 @@ final class AppState: ObservableObject {
         readingWidth = .custom
     }
 
-    func fitWideContent() {
-        readingWidth = .data
-    }
-
     func updatePreferences() {
         defaults.set(theme.rawValue, forKey: themeKey)
         defaults.set(readingStyle.rawValue, forKey: styleKey)

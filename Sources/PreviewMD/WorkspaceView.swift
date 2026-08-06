@@ -1323,28 +1323,38 @@ private struct ReadingWidthRuler: View {
             Divider()
                 .frame(height: 18)
 
-            Button {
-                withAnimation(.easeOut(duration: 0.18)) {
-                    state.fitWideContent()
+            Menu {
+                Picker("Reading width", selection: $state.readingWidth) {
+                    ForEach(ReadingWidth.allCases) { width in
+                        Label(
+                            width == .custom
+                                ? "Custom — \(Int(state.customReadingWidth)) px"
+                                : width.title,
+                            systemImage: width.symbol
+                        )
+                        .tag(width)
+                    }
                 }
+                .pickerStyle(.inline)
+                .labelsHidden()
             } label: {
                 ViewThatFits(in: .horizontal) {
-                    Label("Fit tables", systemImage: "tablecells")
-                    Image(systemName: "tablecells")
+                    Label(state.readingWidth.title, systemImage: state.readingWidth.symbol)
+                    Image(systemName: state.readingWidth.symbol)
                 }
                 .font(.system(size: 11, weight: .medium))
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(state.readingWidth == .data ? Color.accentColor : .secondary)
+            .menuStyle(.borderlessButton)
+            .foregroundStyle(.secondary)
             .padding(.horizontal, 7)
             .frame(height: 24)
-            .background(
-                state.readingWidth == .data
-                    ? Color.accentColor.opacity(0.12)
-                    : Color.clear,
-                in: Capsule()
+            .accessibilityLabel("Reading width presets")
+            .accessibilityValue(
+                state.readingWidth == .custom
+                    ? "Custom, \(state.effectiveReadingWidth) pixels"
+                    : state.readingWidth.title
             )
-            .help("Use a wide layout for large tables and diagrams")
+            .help("Choose a reading width preset")
         }
         .padding(.leading, 10)
         .padding(.trailing, 7)

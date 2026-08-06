@@ -142,12 +142,123 @@
     return defaultHeadingOpen(tokens, index, options, env, self);
   };
 
+  const tableExpandIcon =
+    '<svg viewBox="0 0 16 16" aria-hidden="true">' +
+    '<path d="M6.25 2.25h-4v4M2.5 2.5l4.1 4.1M9.75 13.75h4v-4M13.5 13.5l-4.1-4.1"/>' +
+    "</svg>";
+  const tableCollapseIcon =
+    '<svg viewBox="0 0 16 16" aria-hidden="true">' +
+    '<path d="M6.5 6.5h-4v-4M2.75 6.25l4.1-4.1M9.5 9.5h4v4M13.25 9.75l-4.1 4.1"/>' +
+    "</svg>";
+
   md.renderer.rules.table_open = function () {
-    return '<div class="table-scroll"><table>';
+    return (
+      '<div class="table-scroll">' +
+      '<div class="table-viewport" tabindex="0" role="region" aria-label="Scrollable table">' +
+      '<div class="table-sizer"><table>'
+    );
   };
   md.renderer.rules.table_close = function () {
-    return "</table></div>";
+    return (
+      "</table></div></div>" +
+      '<button class="table-expand" type="button" contenteditable="false" ' +
+      'aria-expanded="false" aria-label="Expand table" title="Expand table">' +
+      tableExpandIcon +
+      "</button></div>"
+    );
   };
+
+  function setTableExpanded(wrapper, expanded) {
+    const button = wrapper.querySelector(":scope > .table-expand");
+    if (!button) return;
+    wrapper.classList.toggle("is-expanded", expanded);
+    layoutTable(wrapper);
+    button.setAttribute("aria-expanded", expanded ? "true" : "false");
+    button.setAttribute("aria-label", expanded ? "Collapse table" : "Expand table");
+    button.setAttribute("title", expanded ? "Collapse table" : "Expand table");
+    button.innerHTML = expanded ? tableCollapseIcon : tableExpandIcon;
+  }
+
+  window.addEventListener("resize", function () {
+    enhanceTables();
+  });
+
+  function articleContentWidth() {
+    const style = window.getComputedStyle(article);
+    return Math.max(
+      0,
+      article.clientWidth -
+        parseFloat(style.paddingLeft || "0") -
+        parseFloat(style.paddingRight || "0")
+    );
+  }
+
+  function wideTableSurface() {
+    const shellStyle = window.getComputedStyle(shell);
+    const shellRect = shell.getBoundingClientRect();
+    const articleStyle = window.getComputedStyle(article);
+    const articleRect = article.getBoundingClientRect();
+    const surfaceLeft =
+      shellRect.left + parseFloat(shellStyle.paddingLeft || "0");
+    const surfaceRight =
+      shellRect.right - parseFloat(shellStyle.paddingRight || "0");
+    const textLeft =
+      articleRect.left + parseFloat(articleStyle.paddingLeft || "0");
+    return {
+      width: Math.max(0, surfaceRight - surfaceLeft),
+      leadingGutter: Math.max(0, textLeft - surfaceLeft),
+    };
+  }
+
+  function layoutTable(wrapper) {
+    const table = wrapper.querySelector("table");
+    const sizer = wrapper.querySelector(".table-sizer");
+    const firstRow = table && table.rows[0];
+    const columnCount = Math.max(1, firstRow ? firstRow.cells.length : 1);
+    const firstCell = firstRow && firstRow.cells[0];
+    const computedCellWidth = firstCell
+      ? parseFloat(window.getComputedStyle(firstCell).minWidth || "0")
+      : 0;
+    const readableColumnWidth = Math.max(144, computedCellWidth || 0);
+    const expanded = wrapper.classList.contains("is-expanded");
+    const contentWidth = articleContentWidth();
+    const baseTableWidth = columnCount * readableColumnWidth;
+    const tableWidth = columnCount *
+      (expanded ? Math.max(220, readableColumnWidth) : readableColumnWidth);
+    const shouldUseWideSurface = expanded || baseTableWidth > contentWidth + 1;
+
+    if (sizer) sizer.style.minWidth = tableWidth + "px";
+    wrapper.classList.toggle("is-wide", shouldUseWideSurface);
+    if (shouldUseWideSurface) {
+      const surface = wideTableSurface();
+      wrapper.style.width = Math.max(contentWidth, surface.width) + "px";
+      wrapper.style.marginLeft = -surface.leadingGutter + "px";
+      wrapper.style.setProperty(
+        "--table-leading-gutter",
+        surface.leadingGutter + "px"
+      );
+    } else {
+      wrapper.style.width = "";
+      wrapper.style.marginLeft = "";
+      wrapper.style.removeProperty("--table-leading-gutter");
+    }
+  }
+
+  function enhanceTables() {
+    article.querySelectorAll(".table-scroll").forEach(layoutTable);
+  }
+
+  window.previewmdRefreshTableLayout = enhanceTables;
+
+  article.addEventListener("click", function (event) {
+    const button = event.target.closest(".table-expand");
+    if (!button || !article.contains(button)) return;
+    const wrapper = button.closest(".table-scroll");
+    if (!wrapper) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setTableExpanded(wrapper, !wrapper.classList.contains("is-expanded"));
+  });
 
   const defaultImage =
     md.renderer.rules.image ||
@@ -426,6 +537,7 @@
     root.dataset.paper = paperCanvas ? "true" : "false";
     root.style.setProperty("--reading-width", readingWidth + "px");
     root.style.setProperty("--top-inset", (topInset || 0) + "px");
+    window.requestAnimationFrame(enhanceTables);
   };
 
   window.previewmdRender = async function (options) {
@@ -447,6 +559,7 @@
 
     try {
       article.innerHTML = md.render(options.markdown || "", { headingIndex: 0 });
+      enhanceTables();
       enhanceTaskLists();
       enhanceAlerts();
       addHeadingAnchors();

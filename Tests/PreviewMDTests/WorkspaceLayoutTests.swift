@@ -37,6 +37,26 @@ final class WorkspaceLayoutTests: XCTestCase {
         XCTAssertFalse(sidebar.contains("openWelcome"))
     }
 
+    func testReadingWidthRulerOffersPresetsInsteadOfFitTablesAction() throws {
+        let source = try workspaceSource()
+        let rulerStart = try XCTUnwrap(
+            source.range(of: "private struct ReadingWidthRuler")
+        )
+        let rulerTail = source[rulerStart.lowerBound...]
+        let rulerEnd = try XCTUnwrap(
+            rulerTail.range(of: "private struct SourceEditor")
+        )
+        let ruler = String(rulerTail[..<rulerEnd.lowerBound])
+
+        XCTAssertTrue(ruler.contains("Menu {"))
+        XCTAssertTrue(ruler.contains("Picker(\"Reading width\""))
+        XCTAssertTrue(ruler.contains("ReadingWidth.allCases"))
+        XCTAssertTrue(ruler.contains(".pickerStyle(.inline)"))
+        XCTAssertTrue(ruler.contains(".labelsHidden()"))
+        XCTAssertFalse(ruler.contains("Fit tables"))
+        XCTAssertFalse(ruler.contains("fitWideContent"))
+    }
+
     private func workspaceSource() throws -> String {
         let url = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

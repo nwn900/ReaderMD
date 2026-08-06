@@ -36,6 +36,26 @@ final class RendererStylesTests: XCTestCase {
         XCTAssertTrue(checkmarkRule.contains("solid var(--page)"))
     }
 
+    func testTablesKeepReadableColumnsInsideScrollableViewport() throws {
+        let css = try rendererCSS()
+        let viewportRule = try declarations(after: ".table-viewport", in: css)
+        let tableRule = try declarations(after: "table", in: css)
+        let cellsRule = try declarations(
+            after: """
+            th,
+            td
+            """,
+            in: css
+        )
+
+        XCTAssertTrue(viewportRule.contains("overflow-x: auto;"))
+        XCTAssertTrue(tableRule.contains("width: 100%;"))
+        XCTAssertTrue(tableRule.contains("min-width: 100%;"))
+        XCTAssertTrue(cellsRule.contains("min-width: 9rem;"))
+        XCTAssertTrue(cellsRule.contains("overflow-wrap: break-word;"))
+        XCTAssertTrue(cellsRule.contains("word-break: normal;"))
+    }
+
     private func rendererCSS() throws -> String {
         let url = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

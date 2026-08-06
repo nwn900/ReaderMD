@@ -1069,9 +1069,11 @@
     article.classList.toggle("is-editable", editable);
     document.documentElement.dataset.editable = editable ? "true" : "false";
 
-    article.querySelectorAll(".code-toolbar, .diagram-label, .copy-code").forEach((node) => {
-      node.setAttribute("contenteditable", "false");
-    });
+    article
+      .querySelectorAll(".code-toolbar, .diagram-label, .copy-code, .table-expand")
+      .forEach((node) => {
+        node.setAttribute("contenteditable", "false");
+      });
     article
       .querySelectorAll(
         ".code-card, .diagram-card, img, .katex, hr, .footnote-backref"
@@ -1586,6 +1588,9 @@
           if (tableRow.cells[cellIndex]) tableRow.cells[cellIndex].remove();
         });
       }
+    }
+    if (window.previewmdRefreshTableLayout) {
+      window.previewmdRefreshTableLayout();
     }
     scheduleChange(true, true);
     selectObject(cell && document.contains(cell) ? cell : table.closest(".table-scroll"));

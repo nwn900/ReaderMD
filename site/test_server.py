@@ -16,7 +16,7 @@ import server as landing
 
 class PreviewMDLandingContentTests(unittest.TestCase):
     analytics_id = "G-8YXDM1JJH2"
-    release_archive = "PreviewMD-1.6-9-macOS.dmg"
+    release_archive = "PreviewMD-1.6-10-macOS.dmg"
     site_dir = Path(__file__).resolve().parent
 
     def test_editing_is_presented_as_a_core_capability(self) -> None:
@@ -44,6 +44,8 @@ class PreviewMDLandingContentTests(unittest.TestCase):
         )
         self.assertNotIn("PreviewMD-1.6-8-macOS.dmg", html)
         self.assertNotIn("PreviewMD-1.6-8-macOS.dmg", javascript)
+        self.assertNotIn("PreviewMD-1.6-9-macOS.dmg", html)
+        self.assertNotIn("PreviewMD-1.6-9-macOS.dmg", javascript)
         self.assertNotIn("PreviewMD-1.5-7-macOS.zip", html)
         self.assertNotIn("PreviewMD-1.5-7-macOS.zip", javascript)
 
@@ -84,7 +86,7 @@ class QuietRequestHandler(landing.PreviewMDRequestHandler):
 
 
 class PreviewMDServerTests(unittest.TestCase):
-    archive_name = "PreviewMD-1.6-9-macOS.dmg"
+    archive_name = "PreviewMD-1.6-10-macOS.dmg"
 
     def setUp(self) -> None:
         self.temporary_directory = TemporaryDirectory()
@@ -164,9 +166,9 @@ class PreviewMDServerTests(unittest.TestCase):
         for file_name in (
             "PreviewMD-missing-macOS.dmg",
             "PreviewMD-missing-macOS.zip",
-            "../PreviewMD-1.6-9-macOS.dmg",
-            "../PreviewMD-1.6-9-macOS.zip",
-            "PreviewMD-1.6-9-macOS.pkg",
+            "../PreviewMD-1.6-10-macOS.dmg",
+            "../PreviewMD-1.6-10-macOS.zip",
+            "PreviewMD-1.6-10-macOS.pkg",
             "not-previewmd.zip",
         ):
             status, payload = self.post_json(
