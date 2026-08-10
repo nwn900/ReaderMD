@@ -1917,6 +1917,12 @@ private struct PreviewPane: View {
                 zoom: state.zoom,
                 searchText: state.searchText,
                 outlineTarget: state.outlineTarget,
+                externalChanges: document.externalChangeReview?.isApplied == true
+                    ? document.externalChangeReview?.hunks ?? []
+                    : [],
+                externalChangeSelection: document.externalChangeReview?.isApplied == true
+                    ? document.externalChangeReview?.selectedHunkIndex
+                    : nil,
                 topInset: state.isFocusMode ? FocusMetrics.toolbarHeight : 0,
                 controller: state.rendererController,
                 onContentChange: { documentID, markdown, historyBoundary in
@@ -2092,6 +2098,7 @@ private struct SourceEditor: View {
 
 private struct StatusBar: View {
     @EnvironmentObject private var state: AppState
+    @State private var presentedExternalChanges: ExternalChangeReview?
     let document: MarkdownDocument
 
     var body: some View {
@@ -2109,6 +2116,16 @@ private struct StatusBar: View {
             if document.hasExternalChanges {
                 Label("Changed on disk — save or reload", systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
+                if let review = document.externalChangeReview {
+                    Button("Diff") {
+                        presentedExternalChanges = review
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Compare incoming disk changes with the last saved version")
+                }
+            } else if let review = document.externalChangeReview,
+                      review.isApplied {
+                externalChangeControls(review)
             } else if document.url != nil, state.liveReloadEnabled {
                 Label("Live", systemImage: "bolt.fill")
             }
@@ -2129,6 +2146,174 @@ private struct StatusBar: View {
         .background(.bar)
         .overlay(alignment: .top) {
             Divider()
+        }
+        .sheet(item: $presentedExternalChanges) { review in
+            ExternalChangesDiffView(review: review)
+        }
+    }
+
+    @ViewBuilder
+    private func externalChangeControls(_ review: ExternalChangeReview) -> some View {
+        HStack(spacing: 5) {
+            Label(
+                "\(review.hunks.count) external \(review.hunks.count == 1 ? "edit" : "edits")",
+                systemImage: "sparkles"
+            )
+            .foregroundStyle(.secondary)
+
+            Button {
+                state.moveExternalChangeSelection(for: document.id, by: -1)
+            } label: {
+                Image(systemName: "chevron.up")
+            }
+            .buttonStyle(.borderless)
+            .help("Previous external change")
+
+            Text("\(review.selectedHunkIndex + 1)/\(review.hunks.count)")
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+
+            Button {
+                state.moveExternalChangeSelection(for: document.id, by: 1)
+            } label: {
+                Image(systemName: "chevron.down")
+            }
+            .buttonStyle(.borderless)
+            .help("Next external change")
+
+            Button("Diff") {
+                presentedExternalChanges = review
+            }
+            .buttonStyle(.borderless)
+            .help("Review all external changes")
+
+            Button {
+                state.dismissExternalChangeReview(for: document.id)
+            } label: {
+                Image(systemName: "checkmark")
+            }
+            .buttonStyle(.borderless)
+            .help("Mark external changes as reviewed")
+        }
+        .help("Changes written by an agent or another app")
+    }
+}
+
+private struct ExternalChangesDiffView: View {
+    @Environment(\.dismiss) private var dismiss
+    let review: ExternalChangeReview
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: review.isApplied ? "sparkles" : "exclamationmark.triangle")
+                    .font(.system(size: 22))
+                    .foregroundStyle(review.isApplied ? Color.accentColor : Color.orange)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(review.isApplied ? "External Changes" : "Incoming Disk Changes")
+                        .font(.title2.weight(.semibold))
+                    Text(review.isApplied
+                         ? "Detected after an agent or another app wrote this file."
+                         : "Compared with the last saved version. Your unsaved edits have not been replaced.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Text("\(review.hunks.count) \(review.hunks.count == 1 ? "change" : "changes")")
+                    .font(.callout.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            .padding(20)
+
+            Divider()
+
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(review.diffRows) { row in
+                        ExternalDiffRowView(row: row)
+                    }
+                }
+                .padding(.vertical, 10)
+            }
+            .background(Color(nsColor: .textBackgroundColor))
+
+            Divider()
+
+            HStack {
+                Text("Green lines were added; red lines were removed.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Done") {
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+            .padding(14)
+        }
+        .frame(minWidth: 760, minHeight: 520)
+    }
+}
+
+private struct ExternalDiffRowView: View {
+    let row: ExternalDiffRow
+
+    var body: some View {
+        HStack(spacing: 0) {
+            if row.kind == .header {
+                Text(row.text)
+                    .foregroundStyle(Color.accentColor)
+                    .padding(.horizontal, 14)
+            } else {
+                lineNumber(row.oldLine)
+                lineNumber(row.newLine)
+                Text(prefix)
+                    .foregroundStyle(prefixColor)
+                    .frame(width: 22, alignment: .center)
+                Text(verbatim: row.text.isEmpty ? " " : row.text)
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .font(.system(size: 11.5, design: .monospaced))
+        .frame(maxWidth: .infinity, minHeight: row.kind == .header ? 30 : 22, alignment: .leading)
+        .background(rowBackground)
+    }
+
+    private func lineNumber(_ value: Int?) -> some View {
+        Text(value.map(String.init) ?? "")
+            .foregroundStyle(.tertiary)
+            .monospacedDigit()
+            .frame(width: 48, alignment: .trailing)
+            .padding(.trailing, 8)
+    }
+
+    private var prefix: String {
+        switch row.kind {
+        case .addition: "+"
+        case .removal: "−"
+        case .context: " "
+        case .header: ""
+        }
+    }
+
+    private var prefixColor: Color {
+        switch row.kind {
+        case .addition: Color(nsColor: .systemGreen)
+        case .removal: Color(nsColor: .systemRed)
+        case .context, .header: .secondary
+        }
+    }
+
+    private var rowBackground: Color {
+        switch row.kind {
+        case .addition: Color(nsColor: .systemGreen).opacity(0.11)
+        case .removal: Color(nsColor: .systemRed).opacity(0.10)
+        case .header: Color.accentColor.opacity(0.07)
+        case .context: .clear
         }
     }
 }

@@ -1286,6 +1286,84 @@ final class EditorWebViewTests: XCTestCase, WKNavigationDelegate {
         XCTAssertEqual(output["markdown"] as? String, markdown + "\n")
     }
 
+    func testExternalChangesHighlightAffectedBlocksAndNavigateBetweenThem() async throws {
+        let markdown = """
+        ---
+        title: Revised
+        ---
+
+        # Title
+
+        Changed paragraph
+
+        ```swift
+        let value = 2
+        ```
+        """
+        let changes = [
+            ExternalChangeHunk(
+                oldStart: 1,
+                oldEnd: 2,
+                newStart: 1,
+                newEnd: 2,
+                kind: .modified
+            ),
+            ExternalChangeHunk(
+                oldStart: 6,
+                oldEnd: 7,
+                newStart: 6,
+                newEnd: 7,
+                kind: .modified
+            ),
+            ExternalChangeHunk(
+                oldStart: 8,
+                oldEnd: 8,
+                newStart: 8,
+                newEnd: 11,
+                kind: .added
+            ),
+        ]
+        let webView = try await makeEditor(
+            markdown: markdown,
+            externalChanges: changes,
+            externalChangeSelection: 1
+        )
+        let result = try await webView.callAsyncJavaScript(
+            """
+            const article = document.querySelector("#preview-document");
+            const targets = Array.from(
+              article.querySelectorAll("[data-previewmd-change-indexes]")
+            );
+            const initiallyActive = Array.from(
+              article.querySelectorAll(".is-active-external-change")
+            );
+            const selectedCode = window.previewmdSelectExternalChange(2, false);
+            return {
+              indexes: targets.map((target) => target.dataset.previewmdChangeIndexes),
+              kinds: targets.map((target) => target.dataset.previewmdChangeKind),
+              initialTags: initiallyActive.map((target) => target.tagName),
+              selectedCode: selectedCode,
+              activeClasses: Array.from(
+                article.querySelectorAll(".is-active-external-change")
+              ).map((target) => target.className),
+              markdown: window.previewmdSerializeEditor(),
+            };
+            """,
+            contentWorld: .page
+        )
+        let output = try XCTUnwrap(result as? [String: Any])
+
+        XCTAssertEqual(output["indexes"] as? [String], ["0", "1", "2"])
+        XCTAssertEqual(output["kinds"] as? [String], ["modified", "modified", "added"])
+        XCTAssertEqual(output["initialTags"] as? [String], ["P"])
+        XCTAssertEqual(output["selectedCode"] as? Bool, true)
+        XCTAssertTrue(
+            try XCTUnwrap(output["activeClasses"] as? [String])
+                .contains(where: { $0.contains("code-card") })
+        )
+        XCTAssertEqual(output["markdown"] as? String, markdown + "\n")
+    }
+
     func testTypingMarkdownHeadingMarkerTransformsVisualBlock() async throws {
         let webView = try await makeEditor(markdown: "")
         let result = try await webView.callAsyncJavaScript(
@@ -1344,7 +1422,9 @@ final class EditorWebViewTests: XCTestCase, WKNavigationDelegate {
 
     private func makeEditor(
         markdown: String,
-        documentURL: URL? = nil
+        documentURL: URL? = nil,
+        externalChanges: [ExternalChangeHunk] = [],
+        externalChangeSelection: Int? = nil
     ) async throws -> WKWebView {
         let payload = MarkdownWebView.RenderPayload(
             documentID: UUID().uuidString,
@@ -1361,6 +1441,8 @@ final class EditorWebViewTests: XCTestCase, WKNavigationDelegate {
             zoom: 1,
             searchText: "",
             outlineTarget: nil,
+            externalChanges: externalChanges,
+            externalChangeSelection: externalChangeSelection,
             topInset: 0
         )
         let configuration = WKWebViewConfiguration()

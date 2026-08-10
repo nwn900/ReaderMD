@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="20" role="img" aria-label="Rendering: Offline">
+  <title>Rendering: Offline</title>
+  <mask id="shape"><rect width="120" height="20" rx="3" fill="#fff"/></mask>
+  <g mask="url(#shape)">
+    <rect width="70" height="20" fill="#555"/>
+    <rect x="70" width="50" height="20" fill="#28a745"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana, Geneva, sans-serif" font-size="11">
+    <text x="35" y="14">Rendering</text>
+    <text x="95" y="14">Offline</text>
+  </g>
+</svg>

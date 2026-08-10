@@ -10,7 +10,7 @@ struct PreviewMDApp: App {
         Window("PreviewMD", id: "main") {
             WorkspaceView()
                 .environmentObject(state)
-                .preferredColorScheme(state.theme.preferredColorScheme)
+                .previewWindowAppearance(state.theme)
                 .frame(minWidth: 980, minHeight: 640)
                 .onAppear {
                     appDelegate.state = state
@@ -26,7 +26,7 @@ struct PreviewMDApp: App {
         Settings {
             SettingsView()
                 .environmentObject(state)
-                .preferredColorScheme(state.theme.preferredColorScheme)
+                .previewWindowAppearance(state.theme)
                 .frame(width: 520, height: 450)
         }
 
@@ -35,7 +35,7 @@ struct PreviewMDApp: App {
         // Window menu; it is reached only from the app menu.
         Window("About PreviewMD", id: AboutWindow.id) {
             AboutView()
-                .preferredColorScheme(state.theme.preferredColorScheme)
+                .previewWindowAppearance(state.theme)
         }
         .defaultSize(width: 560, height: 620)
         .windowResizability(.contentMinSize)

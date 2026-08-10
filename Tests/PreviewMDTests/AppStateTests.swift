@@ -66,10 +66,25 @@ final class AppStateTests: XCTestCase {
         XCTAssertEqual(state.readingStyle, .modern)
     }
 
-    func testPreviewThemeControlsTheNativeInterfaceAppearance() {
-        XCTAssertNil(PreviewTheme.system.preferredColorScheme)
-        XCTAssertEqual(PreviewTheme.light.preferredColorScheme, .light)
-        XCTAssertEqual(PreviewTheme.dark.preferredColorScheme, .dark)
+    func testWindowAppearanceReturnsExplicitThemesToSystem() {
+        let window = NSWindow(
+            contentRect: .zero,
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+
+        WindowAppearanceController.apply(.dark, to: window)
+        XCTAssertEqual(window.appearance?.name, .darkAqua)
+
+        WindowAppearanceController.apply(.system, to: window)
+        XCTAssertNil(window.appearance)
+
+        WindowAppearanceController.apply(.light, to: window)
+        XCTAssertEqual(window.appearance?.name, .aqua)
+
+        WindowAppearanceController.apply(.system, to: window)
+        XCTAssertNil(window.appearance)
     }
 
     func testReadingStylePersists() throws {
@@ -96,6 +111,13 @@ final class AppStateTests: XCTestCase {
         XCTAssertEqual(document.content, ShowcaseDocument.markdown)
         XCTAssertTrue(document.content.contains("```mermaid"))
         XCTAssertTrue(document.content.contains("| Native macOS shell |"))
+        XCTAssertTrue(document.content.contains("Renderer/badges/macos/badge.svg"))
+        XCTAssertTrue(document.content.contains("Renderer/badges/agent-edits/badge.svg"))
+        XCTAssertTrue(document.content.contains("## What PreviewMD can do"))
+        XCTAssertTrue(document.content.contains("## Built for agent workflows"))
+        XCTAssertTrue(document.content.contains("**Review agent edits.**"))
+        XCTAssertTrue(document.content.contains("**Author:** Adam Jesionkiewicz"))
+        XCTAssertTrue(document.content.contains("mailto:adam@jesion.pl"))
     }
 
     func testCustomReadingWidthIsClamped() throws {
@@ -269,6 +291,11 @@ final class AppStateTests: XCTestCase {
 
         XCTAssertEqual(state.currentDocument?.content, "Written by another tool\n")
         XCTAssertFalse(state.currentDocument?.hasExternalChanges ?? true)
+        XCTAssertTrue(state.currentDocument?.externalChangeReview?.isApplied == true)
+        XCTAssertEqual(
+            state.currentDocument?.externalChangeReview?.hunks.map(\.kind),
+            [.modified]
+        )
     }
 
     func testLiveReloadNeverOverwritesUnsavedLocalChanges() throws {
@@ -286,6 +313,11 @@ final class AppStateTests: XCTestCase {
 
         XCTAssertEqual(state.currentDocument?.content, "Local edit\n")
         XCTAssertTrue(state.currentDocument?.hasExternalChanges == true)
+        XCTAssertTrue(state.currentDocument?.externalChangeReview?.isApplied == false)
+        XCTAssertEqual(
+            state.currentDocument?.externalChangeReview?.updatedContent,
+            "External edit\n"
+        )
 
         var publicationCount = 0
         let observation = state.objectWillChange.sink {
@@ -299,6 +331,39 @@ final class AppStateTests: XCTestCase {
                 "An already-reported conflict must not invalidate open menus again"
             )
         }
+    }
+
+    func testExternalChangeNavigationWrapsAndCanBeMarkedReviewed() throws {
+        let state = try makeState()
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PreviewMD-review-\(UUID().uuidString).md")
+        defer { try? FileManager.default.removeItem(at: fileURL) }
+        try "One\nTwo\nThree\nFour\n".write(
+            to: fileURL,
+            atomically: true,
+            encoding: .utf8
+        )
+        state.open(url: fileURL)
+        let documentID = try XCTUnwrap(state.currentDocument?.id)
+
+        try "One changed\nTwo\nThree\nFour changed\n".write(
+            to: fileURL,
+            atomically: true,
+            encoding: .utf8
+        )
+        state.pollForExternalChanges()
+
+        XCTAssertEqual(state.currentDocument?.externalChangeReview?.hunks.count, 2)
+        state.displayMode = .source
+        state.moveExternalChangeSelection(for: documentID, by: -1)
+        XCTAssertEqual(state.currentDocument?.externalChangeReview?.selectedHunkIndex, 1)
+        XCTAssertEqual(state.displayMode, .preview)
+
+        state.moveExternalChangeSelection(for: documentID, by: 1)
+        XCTAssertEqual(state.currentDocument?.externalChangeReview?.selectedHunkIndex, 0)
+
+        state.dismissExternalChangeReview(for: documentID)
+        XCTAssertNil(state.currentDocument?.externalChangeReview)
     }
 
     func testFullWidthAndNamedCustomStylePersist() throws {
@@ -445,6 +510,76 @@ final class AppStateTests: XCTestCase {
         )
 
         XCTAssertTrue(reopened.requiresFullRender(comparedTo: first))
+    }
+
+    func testExternalChangeTargetsRenderOnceWhileSelectionMovesInPlace() {
+        let base = MarkdownWebView.RenderPayload(
+            documentID: UUID().uuidString,
+            markdown: "# Document\n\nChanged\n",
+            revision: 0,
+            editable: true,
+            theme: PreviewTheme.light.rawValue,
+            readingStyle: ReadingStyle.modern.rawValue,
+            customReadingPreset: nil,
+            systemDark: false,
+            readingWidth: 820,
+            readingWidthIsFluid: false,
+            paperCanvas: false,
+            zoom: 1,
+            searchText: "",
+            outlineTarget: nil,
+            topInset: 0
+        )
+        let changes = [
+            ExternalChangeHunk(
+                oldStart: 2,
+                oldEnd: 3,
+                newStart: 2,
+                newEnd: 3,
+                kind: .modified
+            ),
+        ]
+        let highlighted = MarkdownWebView.RenderPayload(
+            documentID: base.documentID,
+            markdown: base.markdown,
+            revision: base.revision,
+            editable: base.editable,
+            theme: base.theme,
+            readingStyle: base.readingStyle,
+            customReadingPreset: base.customReadingPreset,
+            systemDark: base.systemDark,
+            readingWidth: base.readingWidth,
+            readingWidthIsFluid: base.readingWidthIsFluid,
+            paperCanvas: base.paperCanvas,
+            zoom: base.zoom,
+            searchText: base.searchText,
+            outlineTarget: base.outlineTarget,
+            externalChanges: changes,
+            externalChangeSelection: 0,
+            topInset: base.topInset
+        )
+        let movedSelection = MarkdownWebView.RenderPayload(
+            documentID: highlighted.documentID,
+            markdown: highlighted.markdown,
+            revision: highlighted.revision,
+            editable: highlighted.editable,
+            theme: highlighted.theme,
+            readingStyle: highlighted.readingStyle,
+            customReadingPreset: highlighted.customReadingPreset,
+            systemDark: highlighted.systemDark,
+            readingWidth: highlighted.readingWidth,
+            readingWidthIsFluid: highlighted.readingWidthIsFluid,
+            paperCanvas: highlighted.paperCanvas,
+            zoom: highlighted.zoom,
+            searchText: highlighted.searchText,
+            outlineTarget: highlighted.outlineTarget,
+            externalChanges: changes,
+            externalChangeSelection: nil,
+            topInset: highlighted.topInset
+        )
+
+        XCTAssertTrue(highlighted.requiresFullRender(comparedTo: base))
+        XCTAssertFalse(movedSelection.requiresFullRender(comparedTo: highlighted))
     }
 
     func testDockOpenRequestWaitsForAppState() throws {

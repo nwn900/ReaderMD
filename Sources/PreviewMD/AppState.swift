@@ -159,6 +159,7 @@ final class AppState: ObservableObject {
             }
         }
         documents[index].redoHistory.removeAll()
+        documents[index].externalChangeReview = nil
         documents[index].content = content
         documents[index].contentRevision &+= 1
         documents[index].lastEditOrigin = origin
@@ -180,6 +181,7 @@ final class AppState: ObservableObject {
         else { return }
 
         documents[index].redoHistory.append(documents[index].content)
+        documents[index].externalChangeReview = nil
         documents[index].content = previous
         documents[index].contentRevision &+= 1
         documents[index].lastEditOrigin = nil
@@ -193,6 +195,7 @@ final class AppState: ObservableObject {
         else { return }
 
         documents[index].undoHistory.append(documents[index].content)
+        documents[index].externalChangeReview = nil
         documents[index].content = next
         documents[index].contentRevision &+= 1
         documents[index].lastEditOrigin = nil
@@ -820,17 +823,31 @@ final class AppState: ObservableObject {
             guard alert.runModal() == .alertFirstButtonReturn else { return }
         }
 
-        _ = reload(documentID: documentID)
+        _ = reload(documentID: documentID, tracksExternalChanges: true)
     }
 
     @discardableResult
-    private func reload(documentID: UUID) -> Bool {
+    private func reload(
+        documentID: UUID,
+        tracksExternalChanges: Bool = false
+    ) -> Bool {
         guard let index = documents.firstIndex(where: { $0.id == documentID }),
               let url = documents[index].url
         else { return false }
 
         do {
             let readResult = try MarkdownFileIO.read(from: url)
+            let previousReview = documents[index].externalChangeReview
+            let review = tracksExternalChanges
+                ? ExternalChangeReview(
+                    id: previousReview?.id ?? UUID(),
+                    originalContent: previousReview?.originalContent
+                        ?? documents[index].lastSavedContent,
+                    updatedContent: readResult.content,
+                    selectedHunkIndex: previousReview?.selectedHunkIndex ?? 0,
+                    isApplied: true
+                )
+                : nil
             documents[index].content = readResult.content
             documents[index].lastSavedContent = readResult.content
             documents[index].contentRevision &+= 1
@@ -842,11 +859,38 @@ final class AppState: ObservableObject {
             documents[index].diskSnapshot = readResult.snapshot
             documents[index].fileModifiedAt = readResult.snapshot.modificationDate
             documents[index].hasExternalChanges = false
+            documents[index].externalChangeReview = review
             return true
         } catch {
             present(error: "Couldn’t reload “\(url.lastPathComponent)”. \(error.localizedDescription)")
             return false
         }
+    }
+
+    func moveExternalChangeSelection(
+        for documentID: UUID,
+        by offset: Int
+    ) {
+        guard let index = documents.firstIndex(where: { $0.id == documentID }),
+              var review = documents[index].externalChangeReview,
+              !review.hunks.isEmpty,
+              review.isApplied
+        else { return }
+
+        review.selectedHunkIndex = (
+            review.selectedHunkIndex + offset + review.hunks.count
+        ) % review.hunks.count
+        documents[index].externalChangeReview = review
+        if displayMode == .source {
+            displayMode = .preview
+        }
+    }
+
+    func dismissExternalChangeReview(for documentID: UUID) {
+        guard let index = documents.firstIndex(where: { $0.id == documentID }) else {
+            return
+        }
+        documents[index].externalChangeReview = nil
     }
 
     private func write(
@@ -878,6 +922,7 @@ final class AppState: ObservableObject {
             documents[index].diskSnapshot = snapshot
             documents[index].fileModifiedAt = snapshot.modificationDate
             documents[index].hasExternalChanges = false
+            documents[index].externalChangeReview = nil
             touchRecent(url)
             if updatesLocation, isInsideWorkspaceFolder(url) {
                 refreshWorkspaceFolder()
@@ -930,7 +975,7 @@ final class AppState: ObservableObject {
             saveAs(documentID: documentID, completion: completion)
         case .alertThirdButtonReturn:
             selectedDocumentID = documentID
-            completion?(reload(documentID: documentID))
+            completion?(reload(documentID: documentID, tracksExternalChanges: true))
         default:
             completion?(false)
         }
@@ -1102,6 +1147,18 @@ final class AppState: ObservableObject {
             else { continue }
 
             if documents[index].isDirty {
+                if let readResult = try? MarkdownFileIO.read(from: url),
+                   documents[index].externalChangeReview?.updatedContent != readResult.content {
+                    let previousReview = documents[index].externalChangeReview
+                    documents[index].externalChangeReview = ExternalChangeReview(
+                        id: previousReview?.id ?? UUID(),
+                        originalContent: previousReview?.originalContent
+                            ?? documents[index].lastSavedContent,
+                        updatedContent: readResult.content,
+                        selectedHunkIndex: previousReview?.selectedHunkIndex ?? 0,
+                        isApplied: false
+                    )
+                }
                 // Keep the conflict visible without publishing the same value
                 // on every 750 ms polling pass. Repeated publication also
                 // invalidates open menu hierarchies.
@@ -1109,7 +1166,10 @@ final class AppState: ObservableObject {
                     documents[index].hasExternalChanges = true
                 }
             } else {
-                _ = reload(documentID: documents[index].id)
+                _ = reload(
+                    documentID: documents[index].id,
+                    tracksExternalChanges: true
+                )
             }
         }
 

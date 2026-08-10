@@ -755,6 +755,31 @@ img.markdown-badge {
   vertical-align: middle;
 }
 
+[data-previewmd-change-indexes] {
+  scroll-margin-block: 22vh;
+  border-radius: 6px;
+  outline: 1px solid color-mix(in srgb, var(--accent) 48%, transparent);
+  outline-offset: 3px;
+  background-color: color-mix(in srgb, var(--accent) 5%, transparent);
+  transition: background-color 140ms ease, outline-color 140ms ease;
+}
+
+[data-previewmd-change-kind="added"] {
+  outline-color: color-mix(in srgb, #2d9b61 62%, transparent);
+  background-color: color-mix(in srgb, #2d9b61 6%, transparent);
+}
+
+[data-previewmd-change-kind="removed"] {
+  outline-color: color-mix(in srgb, #d45858 62%, transparent);
+  background-color: color-mix(in srgb, #d45858 6%, transparent);
+}
+
+[data-previewmd-change-indexes].is-active-external-change {
+  outline: 2px solid color-mix(in srgb, var(--accent) 82%, transparent);
+  outline-offset: 4px;
+  background-color: color-mix(in srgb, var(--accent) 11%, transparent);
+}
+
 .frontmatter-card {
   display: block;
   margin: 0 0 2.2em;

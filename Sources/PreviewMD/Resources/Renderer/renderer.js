@@ -10,6 +10,7 @@
   let activeSearchText = "";
   let lastRenderOptions = null;
   let printRestoreOptions = null;
+  let externalChangeTargets = [];
 
   const escapeHtml = (value) =>
     value
@@ -21,10 +22,10 @@
   function extractFrontmatter(markdown) {
     const normalized = markdown || "";
     const lines = normalized.split("\n");
-    if (lines[0] !== "---") return { body: normalized, html: "" };
+    if (lines[0] !== "---") return { body: normalized, html: "", lineOffset: 0 };
 
     const closingIndex = lines.slice(1).findIndex((line) => line.trim() === "---");
-    if (closingIndex < 0) return { body: normalized, html: "" };
+    if (closingIndex < 0) return { body: normalized, html: "", lineOffset: 0 };
     const end = closingIndex + 1;
     const source = lines.slice(0, end + 1).join("\n");
     const fields = lines.slice(1, end);
@@ -47,8 +48,15 @@
     const fallback = fields.length
       ? '<pre class="frontmatter-raw">' + escapeHtml(fields.join("\n")) + "</pre>"
       : "";
+    const bodyLines = lines.slice(end + 1);
+    let lineOffset = end + 1;
+    if (bodyLines[0] === "") {
+      bodyLines.shift();
+      lineOffset += 1;
+    }
     return {
-      body: lines.slice(end + 1).join("\n").replace(/^\n/, ""),
+      body: bodyLines.join("\n"),
+      lineOffset: lineOffset,
       html:
         '<aside class="frontmatter-card" contenteditable="false" data-frontmatter-source="' +
         encodeURIComponent(source) +
@@ -104,12 +112,13 @@
   /// two empty fragments — one above the card and one below — each still
   /// carrying the padding, border and background of the inline-code style. Those
   /// were the small stubs that used to bracket every code block and diagram.
-  function renderCodeCard(source, language) {
+  function renderCodeCard(source, language, attributes) {
     const normalized = (language || "").trim().toLowerCase();
+    const tokenAttributes = attributes || "";
 
     if (normalized === "mermaid") {
       return (
-        '<div class="diagram-card">' +
+        '<div class="diagram-card"' + tokenAttributes + ">" +
         '<div class="diagram-label"><span>Diagram</span></div>' +
         '<pre class="mermaid">' +
         escapeHtml(source) +
@@ -131,7 +140,7 @@
 
     const label = normalized || "code";
     return (
-      '<div class="code-card">' +
+      '<div class="code-card"' + tokenAttributes + ">" +
       '<div class="code-toolbar"><span>' +
       escapeHtml(label) +
       '</span><button class="copy-code" type="button" aria-label="Copy code">' +
@@ -163,14 +172,18 @@
 
   // Own both code paths so nothing re-introduces the wrapper: fenced blocks and
   // the indented kind, which markdown-it renders through a separate rule.
-  md.renderer.rules.fence = function (tokens, index) {
+  md.renderer.rules.fence = function (tokens, index, options, env, self) {
     const token = tokens[index];
     const info = (token.info || "").trim();
-    return renderCodeCard(token.content, info.split(/\s+/)[0] || "");
+    return renderCodeCard(
+      token.content,
+      info.split(/\s+/)[0] || "",
+      self.renderAttrs(token)
+    );
   };
 
-  md.renderer.rules.code_block = function (tokens, index) {
-    return renderCodeCard(tokens[index].content, "");
+  md.renderer.rules.code_block = function (tokens, index, options, env, self) {
+    return renderCodeCard(tokens[index].content, "", self.renderAttrs(tokens[index]));
   };
 
   if (window.markdownitFootnote) {
@@ -229,9 +242,9 @@
     '<path d="M6.5 6.5h-4v-4M2.75 6.25l4.1-4.1M9.5 9.5h4v4M13.25 9.75l-4.1 4.1"/>' +
     "</svg>";
 
-  md.renderer.rules.table_open = function () {
+  md.renderer.rules.table_open = function (tokens, index, options, env, self) {
     return (
-      '<div class="table-scroll">' +
+      '<div class="table-scroll"' + self.renderAttrs(tokens[index]) + ">" +
       '<div class="table-viewport" tabindex="0" role="region" aria-label="Scrollable table">' +
       '<div class="table-sizer"><table>'
     );
@@ -244,6 +257,137 @@
       tableExpandIcon +
       "</button></div>"
     );
+  };
+
+  const externalChangeTokenTypes = new Set([
+    "heading_open",
+    "paragraph_open",
+    "table_open",
+    "fence",
+    "code_block",
+    "hr",
+  ]);
+
+  function preferredChangeKind(kinds) {
+    if (kinds.includes("modified")) return "modified";
+    if (kinds.includes("added")) return "added";
+    return "removed";
+  }
+
+  function markExternalChangeTokens(tokens, changes, lineOffset) {
+    const assignments = new Map();
+    const frontmatterIndexes = [];
+    const candidates = tokens
+      .map((token, index) => ({ token: token, index: index }))
+      .filter(
+        (candidate) =>
+          externalChangeTokenTypes.has(candidate.token.type) &&
+          Array.isArray(candidate.token.map)
+      );
+
+    (changes || []).forEach((change, changeIndex) => {
+      const newStart = Math.max(0, Number(change.newStart) || 0);
+      const newEnd = Math.max(newStart, Number(change.newEnd) || newStart);
+
+      if (newStart < lineOffset && newEnd <= lineOffset) {
+        frontmatterIndexes.push(changeIndex);
+        return;
+      }
+
+      const bodyStart = Math.max(0, newStart - lineOffset);
+      const bodyEnd = Math.max(bodyStart, newEnd - lineOffset);
+      const overlapping = candidates.filter((candidate) => {
+        const tokenStart = candidate.token.map[0];
+        const tokenEnd = candidate.token.map[1];
+        if (bodyEnd === bodyStart) {
+          return tokenStart <= bodyStart && tokenEnd >= bodyStart;
+        }
+        return tokenStart < bodyEnd && tokenEnd > bodyStart;
+      });
+
+      let targets = overlapping;
+      if (!targets.length && candidates.length) {
+        const distance = (candidate) => {
+          const tokenStart = candidate.token.map[0];
+          const tokenEnd = candidate.token.map[1];
+          if (bodyStart < tokenStart) return tokenStart - bodyStart;
+          if (bodyStart > tokenEnd) return bodyStart - tokenEnd;
+          return 0;
+        };
+        const nearestDistance = Math.min.apply(null, candidates.map(distance));
+        const nearest = candidates.filter(
+          (candidate) => distance(candidate) === nearestDistance
+        );
+        const shortestSpan = Math.min.apply(
+          null,
+          nearest.map((candidate) => candidate.token.map[1] - candidate.token.map[0])
+        );
+        targets = nearest.filter(
+          (candidate) =>
+            candidate.token.map[1] - candidate.token.map[0] === shortestSpan
+        ).slice(0, 1);
+      }
+
+      targets.forEach((candidate) => {
+        const assignment = assignments.get(candidate.index) || [];
+        assignment.push(changeIndex);
+        assignments.set(candidate.index, assignment);
+      });
+    });
+
+    assignments.forEach((indexes, tokenIndex) => {
+      const token = tokens[tokenIndex];
+      token.attrSet("data-previewmd-change-indexes", indexes.join(" "));
+      token.attrSet(
+        "data-previewmd-change-kind",
+        preferredChangeKind(indexes.map((index) => changes[index].kind))
+      );
+    });
+
+    return frontmatterIndexes;
+  }
+
+  function indexExternalChangeTargets(changes, frontmatterIndexes) {
+    externalChangeTargets = (changes || []).map(() => []);
+    const frontmatter = article.querySelector(".frontmatter-card");
+    if (frontmatter && frontmatterIndexes.length) {
+      frontmatter.dataset.previewmdChangeIndexes = frontmatterIndexes.join(" ");
+      frontmatter.dataset.previewmdChangeKind = preferredChangeKind(
+        frontmatterIndexes.map((index) => changes[index].kind)
+      );
+    }
+
+    article
+      .querySelectorAll("[data-previewmd-change-indexes]")
+      .forEach((element) => {
+        (element.dataset.previewmdChangeIndexes || "")
+          .split(/\s+/)
+          .filter(Boolean)
+          .map(Number)
+          .forEach((index) => {
+            if (externalChangeTargets[index]) {
+              externalChangeTargets[index].push(element);
+            }
+          });
+      });
+  }
+
+  window.previewmdSelectExternalChange = function (index, shouldScroll) {
+    article
+      .querySelectorAll(".is-active-external-change")
+      .forEach((element) => element.classList.remove("is-active-external-change"));
+
+    const normalizedIndex = Number(index);
+    if (!Number.isInteger(normalizedIndex) || !externalChangeTargets[normalizedIndex]) {
+      return false;
+    }
+
+    const targets = externalChangeTargets[normalizedIndex];
+    targets.forEach((element) => element.classList.add("is-active-external-change"));
+    if (shouldScroll && targets[0]) {
+      targets[0].scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    return targets.length > 0;
   };
 
   function setTableExpanded(wrapper, expanded) {
@@ -711,8 +855,19 @@
 
     try {
       const frontmatter = extractFrontmatter(options.markdown || "");
+      const renderEnvironment = { headingIndex: 0 };
+      const tokens = md.parse(frontmatter.body, renderEnvironment);
+      const frontmatterChangeIndexes = markExternalChangeTokens(
+        tokens,
+        options.externalChanges || [],
+        frontmatter.lineOffset
+      );
       article.innerHTML =
-        frontmatter.html + md.render(frontmatter.body, { headingIndex: 0 });
+        frontmatter.html + md.renderer.render(tokens, md.options, renderEnvironment);
+      indexExternalChangeTargets(
+        options.externalChanges || [],
+        frontmatterChangeIndexes
+      );
       enhanceTables();
       enhanceTaskLists();
       enhanceAlerts();
@@ -722,6 +877,7 @@
       await renderDiagrams(version, isDark);
 
       if (version !== renderVersion) return;
+      window.previewmdSelectExternalChange(options.externalChangeSelection, false);
       findInDocument(activeSearchText);
       if (options.outlineTarget) {
         window.previewmdScrollTo(options.outlineTarget);
@@ -755,6 +911,8 @@
       topInset: 0,
       searchText: "",
       outlineTarget: null,
+      externalChanges: [],
+      externalChangeSelection: null,
     });
     await window.previewmdRender(printOptions);
   };

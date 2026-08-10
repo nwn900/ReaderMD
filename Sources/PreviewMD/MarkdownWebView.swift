@@ -428,6 +428,8 @@ struct MarkdownWebView: NSViewRepresentable {
     let zoom: Double
     let searchText: String
     let outlineTarget: String?
+    let externalChanges: [ExternalChangeHunk]
+    let externalChangeSelection: Int?
     let topInset: Double
     let controller: RendererController
     let onContentChange: (UUID, String, Bool) -> Void
@@ -462,6 +464,8 @@ struct MarkdownWebView: NSViewRepresentable {
             zoom: zoom,
             searchText: searchText,
             outlineTarget: outlineTarget,
+            externalChanges: externalChanges,
+            externalChangeSelection: externalChangeSelection,
             topInset: topInset
         )
     }
@@ -555,10 +559,50 @@ struct MarkdownWebView: NSViewRepresentable {
         let zoom: Double
         let searchText: String
         let outlineTarget: String?
+        let externalChanges: [ExternalChangeHunk]
+        let externalChangeSelection: Int?
         /// Height of the window toolbar the page has to clear in focus mode,
         /// where the web view extends underneath it. Layout-only, so it travels
         /// through `previewmdSetLayout` and never forces a re-render.
         let topInset: Double
+
+        init(
+            documentID: String,
+            markdown: String,
+            revision: Int,
+            editable: Bool,
+            theme: String,
+            readingStyle: String,
+            customReadingPreset: CustomReadingPreset?,
+            systemDark: Bool,
+            readingWidth: Int,
+            readingWidthIsFluid: Bool,
+            paperCanvas: Bool,
+            zoom: Double,
+            searchText: String,
+            outlineTarget: String?,
+            externalChanges: [ExternalChangeHunk] = [],
+            externalChangeSelection: Int? = nil,
+            topInset: Double
+        ) {
+            self.documentID = documentID
+            self.markdown = markdown
+            self.revision = revision
+            self.editable = editable
+            self.theme = theme
+            self.readingStyle = readingStyle
+            self.customReadingPreset = customReadingPreset
+            self.systemDark = systemDark
+            self.readingWidth = readingWidth
+            self.readingWidthIsFluid = readingWidthIsFluid
+            self.paperCanvas = paperCanvas
+            self.zoom = zoom
+            self.searchText = searchText
+            self.outlineTarget = outlineTarget
+            self.externalChanges = externalChanges
+            self.externalChangeSelection = externalChangeSelection
+            self.topInset = topInset
+        }
 
         func requiresFullRender(comparedTo other: Self) -> Bool {
             documentID != other.documentID
@@ -567,6 +611,7 @@ struct MarkdownWebView: NSViewRepresentable {
                 || readingStyle != other.readingStyle
                 || customReadingPreset != other.customReadingPreset
                 || systemDark != other.systemDark
+                || externalChanges != other.externalChanges
         }
 
         var initialTheme: String {
@@ -852,6 +897,13 @@ struct MarkdownWebView: NSViewRepresentable {
                 if payload.editable != previous.editable {
                     webView.evaluateJavaScript(
                         "window.previewmdSetEditable && window.previewmdSetEditable(\(payload.editable));"
+                    )
+                }
+
+                if payload.externalChangeSelection != previous.externalChangeSelection,
+                   let selectionJSON = javaScriptJSON(payload.externalChangeSelection) {
+                    webView.evaluateJavaScript(
+                        "window.previewmdSelectExternalChange && window.previewmdSelectExternalChange(\(selectionJSON), true);"
                     )
                 }
                 return
