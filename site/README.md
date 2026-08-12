@@ -38,8 +38,8 @@ sqlite3 .readermd-data/subscribers.sqlite3 \
 Environment variables:
 
 - `PORT` changes the listening port (default: `4173`).
-- `PREVIEWMD_SITE_HOST` changes the bind address (default: `127.0.0.1`).
-- `PREVIEWMD_SUBSCRIBERS_DB` changes the SQLite database path.
+- `READERMD_SITE_HOST` changes the bind address (default: `127.0.0.1`).
+- `READERMD_SUBSCRIBERS_DB` changes the SQLite database path.
 
 Both endpoints are requested document-relative, so the page works at the server
 root (local development) and under a `/<slug>/` subpath (production). Download

@@ -12,11 +12,11 @@ quicklook_build_dir="$project_dir/.build/quicklook"
 quicklook_source="$project_dir/Sources/ReaderMDQuickLook/PreviewViewController.swift"
 iconset_dir="$project_dir/.build/AppIcon.iconset"
 master_icon="$project_dir/.build/AppIcon-1024.png"
-signing_identity="${PREVIEWMD_SIGNING_IDENTITY:-}"
+signing_identity="${READERMD_SIGNING_IDENTITY:-}"
 
 cd "$project_dir"
 
-export SDKROOT="${PREVIEWMD_SDKROOT:-$(xcrun --sdk macosx --show-sdk-path)}"
+export SDKROOT="${READERMD_SDKROOT:-$(xcrun --sdk macosx --show-sdk-path)}"
 export SWIFTPM_MODULECACHE_OVERRIDE="$project_dir/.build/ModuleCache"
 export CLANG_MODULE_CACHE_PATH="$project_dir/.build/ModuleCache"
 

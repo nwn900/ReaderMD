@@ -17,9 +17,9 @@ from urllib.parse import urlsplit
 SITE_DIR = Path(__file__).resolve().parent
 DEFAULT_DB_PATH = SITE_DIR.parent / ".readermd-data" / "subscribers.sqlite3"
 DB_PATH = Path(
-    os.environ.get("PREVIEWMD_SUBSCRIBERS_DB", str(DEFAULT_DB_PATH))
+    os.environ.get("READERMD_SUBSCRIBERS_DB", str(DEFAULT_DB_PATH))
 ).expanduser().resolve()
-HOST = os.environ.get("PREVIEWMD_SITE_HOST", "127.0.0.1")
+HOST = os.environ.get("READERMD_SITE_HOST", "127.0.0.1")
 PORT = int(os.environ.get("PORT", "4173"))
 
 MAX_BODY_BYTES = 4096

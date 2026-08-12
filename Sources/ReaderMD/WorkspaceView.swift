@@ -896,9 +896,9 @@ private struct HexColorPicker: View {
 
     private var colorBinding: Binding<Color> {
         Binding(
-            get: { Color(nsColor: NSColor(previewMDHex: hex) ?? .controlAccentColor) },
+            get: { Color(nsColor: NSColor(readerMDHex: hex) ?? .controlAccentColor) },
             set: { color in
-                if let value = NSColor(color).usingColorSpace(.sRGB)?.previewMDHex {
+                if let value = NSColor(color).usingColorSpace(.sRGB)?.readerMDHex {
                     hex = value
                 }
             }
@@ -907,8 +907,8 @@ private struct HexColorPicker: View {
 }
 
 private extension NSColor {
-    convenience init?(previewMDHex: String) {
-        let value = previewMDHex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+    convenience init?(readerMDHex: String) {
+        let value = readerMDHex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
         guard value.count == 6, let number = Int(value, radix: 16) else { return nil }
         let red = CGFloat((number >> 16) & 0xff) / 255
         let green = CGFloat((number >> 8) & 0xff) / 255
@@ -921,7 +921,7 @@ private extension NSColor {
         )
     }
 
-    var previewMDHex: String {
+    var readerMDHex: String {
         let color = usingColorSpace(.sRGB) ?? self
         return String(
             format: "#%02X%02X%02X",

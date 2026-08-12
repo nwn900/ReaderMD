@@ -150,8 +150,8 @@ hosting will not preserve this SQLite database across deployments.
 The landing server supports:
 
 - `PORT` for the listening port (default `4173`).
-- `PREVIEWMD_SITE_HOST` for the bind address (default `127.0.0.1`).
-- `PREVIEWMD_SUBSCRIBERS_DB` for an alternate persistent database path.
+- `READERMD_SITE_HOST` for the bind address (default `127.0.0.1`).
+- `READERMD_SUBSCRIBERS_DB` for an alternate persistent database path.
 
 When changing landing JavaScript or CSS, bump the corresponding asset query
 version in `site/index.html` so deployed browsers do not retain stale behavior.
@@ -169,7 +169,7 @@ For a local application bundle:
 ```
 
 The local script builds Universal 2. Without
-`PREVIEWMD_SIGNING_IDENTITY`, it uses an ad-hoc signature.
+`READERMD_SIGNING_IDENTITY`, it uses an ad-hoc signature.
 
 Do not replace the Universal 2 build with an architecture-specific binary.
 After changing build configuration, verify:

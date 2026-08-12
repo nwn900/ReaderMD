@@ -35,7 +35,7 @@ final class WorkspaceLayoutTests: XCTestCase {
         XCTAssertTrue(sidebar.contains("SidebarModePicker(selection: $state.sidebarMode)"))
         XCTAssertTrue(sidebar.contains("SidebarMode.allCases"))
         XCTAssertFalse(sidebar.contains("BrandHeader()"))
-        XCTAssertFalse(sidebar.contains("PREVIEWMD"))
+        XCTAssertFalse(sidebar.contains("READERMD"))
         XCTAssertFalse(sidebar.contains("by Jesion"))
         XCTAssertFalse(sidebar.contains("Showcase"))
         XCTAssertFalse(sidebar.contains("openWelcome"))
@@ -132,14 +132,14 @@ final class WorkspaceLayoutTests: XCTestCase {
             )
         )
 
-        let appSource = try previewMDAppSource()
+        let appSource = try readerMDAppSource()
         let shortcut = #".keyboardShortcut("t", modifiers: [.command, .option])"#
         let occurrences = (source + appSource).components(separatedBy: shortcut).count - 1
         XCTAssertEqual(occurrences, 1, "The shortcut must have one active menu owner")
     }
 
     func testCommandsOfferAdvancedCopyAndSemanticDOCXExport() throws {
-        let source = try previewMDAppSource()
+        let source = try readerMDAppSource()
 
         XCTAssertTrue(source.contains(#"Button("Export as DOCX…")"#))
         XCTAssertTrue(source.contains(#"Menu("Advanced Copy")"#))
@@ -159,7 +159,7 @@ final class WorkspaceLayoutTests: XCTestCase {
         return try String(contentsOf: url, encoding: .utf8)
     }
 
-    private func previewMDAppSource() throws -> String {
+    private func readerMDAppSource() throws -> String {
         let url = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()

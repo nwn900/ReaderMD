@@ -13,10 +13,10 @@ ExecStart=/usr/bin/python3 /home/ubuntu/experiments/readermd/site/server.py
 
 # Loopback only — nginx is the sole way in, so the static file handler that
 # ships with the server is never reachable from the internet.
-Environment=PREVIEWMD_SITE_HOST=127.0.0.1
+Environment=READERMD_SITE_HOST=127.0.0.1
 Environment=PORT=8419
 # Outside the git working tree so `exp-deploy update` never touches it.
-Environment=PREVIEWMD_SUBSCRIBERS_DB=/home/ubuntu/experiments/.data/readermd-subscribers.sqlite3
+Environment=READERMD_SUBSCRIBERS_DB=/home/ubuntu/experiments/.data/readermd-subscribers.sqlite3
 Environment=PYTHONUNBUFFERED=1
 
 Restart=on-failure

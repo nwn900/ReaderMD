@@ -4,8 +4,8 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "$0")/.." && pwd)"
 app_dir="$project_dir/dist/ReaderMD.app"
 info_plist="$project_dir/scripts/Info.plist"
-signing_identity="${PREVIEWMD_SIGNING_IDENTITY:-Developer ID Application: Astrography Sp. z o.o. (4NZF9USX28)}"
-notary_profile="${PREVIEWMD_NOTARY_PROFILE:-ReaderMD-Notary}"
+signing_identity="${READERMD_SIGNING_IDENTITY:-Developer ID Application: Astrography Sp. z o.o. (4NZF9USX28)}"
+notary_profile="${READERMD_NOTARY_PROFILE:-ReaderMD-Notary}"
 version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$info_plist")"
 build_number="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$info_plist")"
 notary_archive="$project_dir/dist/ReaderMD-$version-$build_number-notarization.zip"
@@ -19,7 +19,7 @@ if ! security find-identity -v -p codesigning | grep -Fq "\"$signing_identity\""
   exit 1
 fi
 
-PREVIEWMD_SIGNING_IDENTITY="$signing_identity" "$project_dir/scripts/build-app.sh"
+READERMD_SIGNING_IDENTITY="$signing_identity" "$project_dir/scripts/build-app.sh"
 
 codesign --verify --deep --strict --verbose=2 "$app_dir"
 codesign --display --verbose=2 "$app_dir"
