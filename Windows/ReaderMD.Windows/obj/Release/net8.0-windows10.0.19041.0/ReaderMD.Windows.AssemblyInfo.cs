@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ReaderMD")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0d08e6d00a1381e4390125b61ac90ecd13f03497")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+39af3c4d5aeda69ad820f19d649d694b8d3f5fdb")]
 [assembly: System.Reflection.AssemblyProductAttribute("ReaderMD")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ReaderMD")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
