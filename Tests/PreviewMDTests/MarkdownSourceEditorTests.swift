@@ -108,7 +108,7 @@ final class MarkdownSourceEditorTests: XCTestCase {
     }
 
     @MainActor
-    func testSourceEditorSynchronizesSelectionAndScrollWithPreview() throws {
+    func testSourceEditorSynchronizesSelectionAndScrollWithPreview() async throws {
         _ = NSApplication.shared
         let source = (0..<80)
             .map { "Line \($0) with enough source text" }
@@ -139,8 +139,17 @@ final class MarkdownSourceEditorTests: XCTestCase {
         let textView = try XCTUnwrap(scrollView.documentView as? NSTextView)
         textView.layoutManager?.ensureLayout(for: textView.textContainer!)
         let localSelection = (source as NSString).range(of: "Line 4")
+        let selectionPublished = expectation(
+            description: "source selection synchronized with preview"
+        )
+        preview.onSelection = { [weak preview] selection in
+            if selection.range == localSelection {
+                preview?.onSelection = nil
+                selectionPublished.fulfill()
+            }
+        }
         textView.setSelectedRange(localSelection)
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.02))
+        await fulfillment(of: [selectionPublished], timeout: 1)
 
         XCTAssertEqual(
             preview.selections.last,
@@ -148,6 +157,15 @@ final class MarkdownSourceEditorTests: XCTestCase {
         )
 
         let targetScrollLine = 30
+        let scrollPublished = expectation(
+            description: "source scroll synchronized with preview"
+        )
+        preview.onScrollPosition = { [weak preview] position in
+            if abs(position.sourceLine - Double(targetScrollLine)) <= 1 {
+                preview?.onScrollPosition = nil
+                scrollPublished.fulfill()
+            }
+        }
         let targetScrollRange = (source as NSString).range(
             of: "Line \(targetScrollLine) "
         )
@@ -167,7 +185,7 @@ final class MarkdownSourceEditorTests: XCTestCase {
             )
         )
         scrollView.reflectScrolledClipView(scrollView.contentView)
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
+        await fulfillment(of: [scrollPublished], timeout: 1)
         XCTAssertEqual(
             preview.scrollPositions.last?.sourceLine ?? .nan,
             Double(targetScrollLine),
@@ -389,13 +407,17 @@ private final class SourceEditorPreviewEndpointSpy:
 {
     var scrollPositions: [SplitEditorScrollPosition] = []
     var selections: [SplitEditorSelection] = []
+    var onScrollPosition: ((SplitEditorScrollPosition) -> Void)?
+    var onSelection: ((SplitEditorSelection) -> Void)?
 
     func applySourceScrollPosition(_ position: SplitEditorScrollPosition) {
         scrollPositions.append(position)
+        onScrollPosition?(position)
     }
 
     func applySourceSelection(_ selection: SplitEditorSelection) {
         selections.append(selection)
+        onSelection?(selection)
     }
 }
 #endif
