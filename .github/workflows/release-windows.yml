@@ -21,6 +21,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: windows-release-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   release:
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release-windows]')
@@ -99,7 +103,7 @@ jobs:
           $smokeDir = Join-Path $env:RUNNER_TEMP 'ReaderMD-Smoke'
           $process = Start-Process `
             -FilePath $setup.FullName `
-            -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NOICONS',"/DIR=$smokeDir" `
+            -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NOICONS','/SKIPWEBVIEW2',"/DIR=$smokeDir" `
             -Wait `
             -PassThru
           if ($process.ExitCode -ne 0) {
