@@ -1,0 +1,162 @@
+name: Windows Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version without the v prefix
+        required: true
+        default: '1.0.0'
+  push:
+    branches:
+      - main
+    paths:
+      - 'Windows/installer/**'
+      - '.github/workflows/release-windows.yml'
+  pull_request:
+    paths:
+      - 'Windows/installer/**'
+      - '.github/workflows/release-windows.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release-windows]')
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '1.0.0' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish self-contained Windows app
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts/publish | Out-Null
+          dotnet publish Windows/ReaderMD.Windows/ReaderMD.Windows.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:Version=$env:VERSION `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -o artifacts/publish
+
+      - name: Download WebView2 bootstrapper
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts/prereqs | Out-Null
+          Invoke-WebRequest `
+            -Uri 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' `
+            -OutFile 'artifacts/prereqs/MicrosoftEdgeWebview2Setup.exe'
+          if ((Get-Item 'artifacts/prereqs/MicrosoftEdgeWebview2Setup.exe').Length -lt 100000) {
+            throw 'WebView2 bootstrapper download is unexpectedly small.'
+          }
+
+      - name: Install Inno Setup compiler
+        shell: pwsh
+        run: |
+          $installer = Join-Path $env:RUNNER_TEMP 'innosetup-7.1.0-x64.exe'
+          $installDir = Join-Path $env:RUNNER_TEMP 'InnoSetup'
+          Invoke-WebRequest `
+            -Uri 'https://github.com/jrsoftware/issrc/releases/download/is-7_1_0/innosetup-7.1.0-x64.exe' `
+            -OutFile $installer
+          $process = Start-Process `
+            -FilePath $installer `
+            -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$installDir" `
+            -Wait `
+            -PassThru
+          if ($process.ExitCode -ne 0) {
+            throw "Inno Setup installation failed with exit code $($process.ExitCode)."
+          }
+          if (-not (Test-Path (Join-Path $installDir 'ISCC.exe'))) {
+            throw 'ISCC.exe was not installed.'
+          }
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = Join-Path $env:RUNNER_TEMP 'InnoSetup/ISCC.exe'
+          & $iscc "/DAppVersion=$env:VERSION" 'Windows/installer/ReaderMD.iss'
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+      - name: Smoke-test installer
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem 'artifacts/installer/ReaderMD-*-Windows-x64-Setup.exe' | Select-Object -First 1
+          if (-not $setup) {
+            throw 'Installer was not produced.'
+          }
+          $smokeDir = Join-Path $env:RUNNER_TEMP 'ReaderMD-Smoke'
+          $process = Start-Process `
+            -FilePath $setup.FullName `
+            -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NOICONS','/SKIPWEBVIEW2',"/DIR=$smokeDir" `
+            -Wait `
+            -PassThru
+          if ($process.ExitCode -ne 0) {
+            throw "Installer smoke test failed with exit code $($process.ExitCode)."
+          }
+          if (-not (Test-Path (Join-Path $smokeDir 'ReaderMD.exe'))) {
+            throw 'Installed ReaderMD.exe was not found.'
+          }
+
+      - name: Generate checksum
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem 'artifacts/installer/ReaderMD-*-Windows-x64-Setup.exe' | Select-Object -First 1
+          $hash = Get-FileHash $setup.FullName -Algorithm SHA256
+          "$($hash.Hash.ToLowerInvariant())  $($setup.Name)" | Set-Content 'artifacts/installer/SHA256SUMS.txt' -Encoding ascii
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReaderMD-${{ env.VERSION }}-Windows-x64
+          path: |
+            artifacts/installer/*.exe
+            artifacts/installer/SHA256SUMS.txt
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        if: github.event_name != 'pull_request'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v$env:VERSION"
+          $setup = Get-ChildItem 'artifacts/installer/ReaderMD-*-Windows-x64-Setup.exe' | Select-Object -First 1
+          $checksum = Resolve-Path 'artifacts/installer/SHA256SUMS.txt'
+          $notes = @"
+          ReaderMD $env:VERSION for Windows x64.
+
+          - Native WPF application with the bundled offline Markdown renderer.
+          - Self-contained .NET 8 deployment. No separate .NET installation is required.
+          - The setup program installs or updates the Microsoft Edge WebView2 Evergreen Runtime when needed.
+          - Includes an uninstall entry and Start menu shortcut.
+
+          The installer is currently unsigned, so Windows may display a SmartScreen warning on first launch.
+          "@
+
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag $setup.FullName $checksum.Path --clobber --repo $env:GITHUB_REPOSITORY
+            gh release edit $tag --title "ReaderMD $env:VERSION" --notes $notes --repo $env:GITHUB_REPOSITORY
+          } else {
+            gh release create $tag $setup.FullName $checksum.Path `
+              --target $env:GITHUB_SHA `
+              --title "ReaderMD $env:VERSION" `
+              --notes $notes `
+              --repo $env:GITHUB_REPOSITORY
+          }
