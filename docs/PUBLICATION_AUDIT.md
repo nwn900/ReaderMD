@@ -1,4 +1,4 @@
-# Pre-publication audit
+# Publication audit
 
 Date: 2026-08-12
 
@@ -6,10 +6,14 @@ Date: 2026-08-12
 
 The repository and all reachable Git history were reviewed before the
 open-source preparation. No credentials, private keys, Apple signing material,
-subscriber databases, or known-format service tokens were found.
+subscriber databases, or known-format service tokens were found. The repository
+was published at <https://github.com/ashtree74/PreviewMD> under Adam
+Jesionkiewicz's personal GitHub account and is identified by GitHub as
+Apache-2.0 licensed.
 
 No critical, high, or medium publication blockers were identified. Rewriting
-Git history is not recommended on the present evidence.
+Git history is not recommended on the present evidence. Post-publication
+verification completed successfully.
 
 ## Scope
 
@@ -152,20 +156,38 @@ pinning is not available for the dynamically served analytics script.
 - [x] validate GitHub workflow, issue-form, Dependabot, and citation YAML;
 - [x] resolve every local Markdown link in the project documentation.
 
-## GitHub checklist before changing visibility
+## Publication verification
 
-- [ ] after the repository becomes public, enable GitHub secret scanning and
-  push protection (GitHub does not offer them for this repository while it is
-  private);
-- [ ] after the repository becomes public, enable private vulnerability
-  reporting (GitHub exposes this feature for public repositories);
+- [x] publish the repository from Adam Jesionkiewicz's personal GitHub account;
+- [x] expose the project under the Apache-2.0 license while documenting
+  Astrography Sp. z o.o. only as a macOS signing and distribution provider;
+- [x] enable GitHub secret scanning and push protection;
+- [x] enable private vulnerability reporting;
 - [x] protect `main` with required pull requests, CI, and DCO checks;
 - [x] require CODEOWNERS review, with a PR-only founder bypass to prevent a
   single-maintainer lockout;
 - [x] enable GitHub Discussions, because the community links point there;
-- [ ] confirm the public download points to the intended notarized release;
-- [ ] after publication, make an anonymous fresh clone and inspect it once from
-  an outsider's perspective.
+- [x] confirm the public download points to the intended notarized release;
+- [x] make an anonymous fresh clone and inspect it from an outsider's
+  perspective.
+
+The final GitHub API verification reported public visibility, owner
+`ashtree74`, Apache-2.0, Discussions enabled, secret scanning enabled, push
+protection enabled, private vulnerability reporting enabled, read-only default
+Actions permissions, and the active `Protect main` ruleset. The secret-scanning
+alert endpoint returned zero alerts.
+
+The hosted `PreviewMD-1.7-11-macOS.dmg` was byte-identical to the audited file
+at SHA-256
+`4291f8e7a13af647e8f864b780d49b51d79f01097575992573f191d288fa4641`.
+Its code signature was valid, its stapled notarization ticket validated, and
+Gatekeeper accepted it as `Notarized Developer ID`.
+
+An unauthenticated shallow clone with credential helpers and GitHub tokens
+disabled resolved `main` to `c1b3faf91fc7972a2f9fd80fdb708e1c808d5570`.
+From that clone, all 135 XCTest tests, all 5 Swift Testing tests, all 9 landing
+page tests, shell syntax checks, and property-list validations passed. The
+post-merge GitHub Actions run for the same commit also passed.
 
 ## When history rewriting would become necessary
 
