@@ -7,7 +7,7 @@ Date: 2026-08-12
 The repository and all reachable Git history were reviewed before the
 open-source preparation. No credentials, private keys, Apple signing material,
 subscriber databases, or known-format service tokens were found. The repository
-was published at <https://github.com/ashtree74/PreviewMD> under Adam
+was published at <https://github.com/ashtree74/ReaderMD> under Adam
 Jesionkiewicz's personal GitHub account and is identified by GitHub as
 Apache-2.0 licensed.
 
@@ -40,8 +40,8 @@ patterns.
 
 **Severity:** Low
 
-**Location:** Git history; historical `site/PreviewMD-*-macOS.dmg` and
-`site/PreviewMD-*-macOS.zip` blobs
+**Location:** Git history; historical `site/ReaderMD-*-macOS.dmg` and
+`site/ReaderMD-*-macOS.zip` blobs
 
 **Evidence:** reachable release artifacts range from approximately 3.5 MB to
 7.2 MB each. The current landing page intentionally serves one current DMG.
@@ -112,7 +112,7 @@ personal-data leak.
 
 **Severity:** Low
 
-**Location:** `site/index.html:22` and `deploy/nginx-previewmd.conf:78`
+**Location:** `site/index.html:22` and `deploy/nginx-readermd.conf:78`
 
 **Evidence:** the landing page loads Google Analytics from an origin explicitly
 allowed by the production Content Security Policy.
@@ -177,7 +177,7 @@ protection enabled, private vulnerability reporting enabled, read-only default
 Actions permissions, and the active `Protect main` ruleset. The secret-scanning
 alert endpoint returned zero alerts.
 
-The hosted `PreviewMD-1.7-11-macOS.dmg` was byte-identical to the audited file
+The hosted `ReaderMD-1.7-11-macOS.dmg` was byte-identical to the audited file
 at SHA-256
 `4291f8e7a13af647e8f864b780d49b51d79f01097575992573f191d288fa4641`.
 Its code signature was valid, its stapled notarization ticket validated, and

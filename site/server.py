@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve PreviewMD and store newsletter signups and download counts in SQLite."""
+"""Serve ReaderMD and store newsletter signups and download counts in SQLite."""
 
 from __future__ import annotations
 
@@ -15,17 +15,17 @@ from urllib.parse import urlsplit
 
 
 SITE_DIR = Path(__file__).resolve().parent
-DEFAULT_DB_PATH = SITE_DIR.parent / ".previewmd-data" / "subscribers.sqlite3"
+DEFAULT_DB_PATH = SITE_DIR.parent / ".readermd-data" / "subscribers.sqlite3"
 DB_PATH = Path(
-    os.environ.get("PREVIEWMD_SUBSCRIBERS_DB", str(DEFAULT_DB_PATH))
+    os.environ.get("READERMD_SUBSCRIBERS_DB", str(DEFAULT_DB_PATH))
 ).expanduser().resolve()
-HOST = os.environ.get("PREVIEWMD_SITE_HOST", "127.0.0.1")
+HOST = os.environ.get("READERMD_SITE_HOST", "127.0.0.1")
 PORT = int(os.environ.get("PORT", "4173"))
 
 MAX_BODY_BYTES = 4096
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 DOWNLOAD_FILE_PATTERN = re.compile(
-    r"^PreviewMD-[A-Za-z0-9][A-Za-z0-9._-]*-macOS\.(?:dmg|zip)$"
+    r"^ReaderMD-[A-Za-z0-9][A-Za-z0-9._-]*-macOS\.(?:dmg|zip)$"
 )
 
 
@@ -83,8 +83,8 @@ def record_download_click(file_name: str) -> None:
         connection.commit()
 
 
-class PreviewMDRequestHandler(SimpleHTTPRequestHandler):
-    server_version = "PreviewMDLanding/1.0"
+class ReaderMDRequestHandler(SimpleHTTPRequestHandler):
+    server_version = "ReaderMDLanding/1.0"
 
     def end_headers(self) -> None:
         self.send_header("X-Content-Type-Options", "nosniff")
@@ -188,9 +188,9 @@ class PreviewMDRequestHandler(SimpleHTTPRequestHandler):
 def main() -> None:
     os.umask(0o077)
     initialize_database()
-    handler = partial(PreviewMDRequestHandler, directory=str(SITE_DIR))
+    handler = partial(ReaderMDRequestHandler, directory=str(SITE_DIR))
     server = ThreadingHTTPServer((HOST, PORT), handler)
-    print(f"PreviewMD landing: http://{HOST}:{PORT}")
+    print(f"ReaderMD landing: http://{HOST}:{PORT}")
     print(f"Landing database: {DB_PATH}")
     try:
         server.serve_forever()

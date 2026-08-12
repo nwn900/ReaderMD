@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for making PreviewMD sturdier. Use a minimal synthetic document when possible and remove private information before uploading anything.
+        Thanks for making ReaderMD sturdier. Use a minimal synthetic document when possible and remove private information before uploading anything.
   - type: dropdown
     id: area
     attributes:
@@ -29,8 +29,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: PreviewMD version
-      description: Use About PreviewMD, a commit SHA, or "main".
+      label: ReaderMD version
+      description: Use About ReaderMD, a commit SHA, or "main".
       placeholder: "1.7 (11)"
     validations:
       required: true

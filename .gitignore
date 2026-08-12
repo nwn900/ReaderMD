@@ -2,7 +2,7 @@
 .build/
 .swiftpm/
 dist/
-.previewmd-data/
+.readermd-data/
 .playwright-mcp/
 
 # Local configuration and logs

@@ -42,13 +42,13 @@ func drawBackground() {
     NSBezierPath(ovalIn: NSRect(x: -120, y: -95, width: 390, height: 290)).fill()
 
     drawText(
-        "Install PreviewMD",
+        "Install ReaderMD",
         in: NSRect(x: 100, y: 465, width: 600, height: 42),
         font: .systemFont(ofSize: 30, weight: .semibold),
         color: NSColor(calibratedWhite: 0.12, alpha: 1)
     )
     drawText(
-        "Drag PreviewMD to Applications",
+        "Drag ReaderMD to Applications",
         in: NSRect(x: 100, y: 427, width: 600, height: 25),
         font: .systemFont(ofSize: 16, weight: .regular),
         color: NSColor(calibratedWhite: 0.35, alpha: 1)
@@ -113,7 +113,7 @@ func drawBackground() {
     arrowHead.fill()
 
     drawText(
-        "After copying, open PreviewMD once to finish setup.",
+        "After copying, open ReaderMD once to finish setup.",
         in: NSRect(x: 100, y: 83, width: 600, height: 25),
         font: .systemFont(ofSize: 14, weight: .medium),
         color: NSColor(calibratedWhite: 0.30, alpha: 1)

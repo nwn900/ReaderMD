@@ -1,6 +1,6 @@
 # Community code of conduct
 
-PreviewMD should be a place where careful work and ambitious ideas feel safe to
+ReaderMD should be a place where careful work and ambitious ideas feel safe to
 share.
 
 ## Our standard
@@ -23,7 +23,7 @@ permission.
 ## Scope
 
 This standard applies to repository activity, discussions, reviews, project
-events, and public spaces where someone is representing PreviewMD.
+events, and public spaces where someone is representing ReaderMD.
 
 ## Reporting and enforcement
 

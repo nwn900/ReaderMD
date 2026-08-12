@@ -1,13 +1,13 @@
 "use strict";
 
 /* ============================================================
-   PreviewMD — Galley
+   ReaderMD — Galley
    Release bumps: update DOWNLOAD_FILE *and* every literal
    filename in index.html (hrefs + visible text). The rewrite
    below only fixes up the live DOM — no-JS visitors, crawlers
    and the pre-JS paint read index.html as shipped.
    ============================================================ */
-const DOWNLOAD_FILE = "PreviewMD-1.7-11-macOS.dmg";
+const DOWNLOAD_FILE = "ReaderMD-1.7-11-macOS.dmg";
 /* Document-relative on purpose: the page is served from the site root in local
    development and from a /<slug>/ subpath in production. A leading slash would
    miss the proxied endpoint there. */
@@ -279,7 +279,7 @@ const liveStatus = $("#liveStatus");
 function showCard() {
   if (card.open) return;
   card.showModal(); // native <dialog>: focus trap, Escape and backdrop for free
-  liveStatus.textContent = "An optional PreviewMD updates signup appeared.";
+  liveStatus.textContent = "An optional ReaderMD updates signup appeared.";
 }
 
 function dismissCard() {
@@ -321,7 +321,7 @@ function recordDownloadClick() {
       if (!response.ok) throw new Error("HTTP " + response.status);
     })
     .catch((err) => {
-      console.warn("PreviewMD: download tracking failed —", err);
+      console.warn("ReaderMD: download tracking failed —", err);
     });
 }
 
@@ -358,7 +358,7 @@ notifyForm.addEventListener("submit", (e) => {
       showSignupSuccess();
     })
     .catch((err) => {
-      console.warn("PreviewMD: newsletter signup failed —", err);
+      console.warn("ReaderMD: newsletter signup failed —", err);
       cardError.hidden = false; // keep the form so retry is possible
     })
     .finally(() => {

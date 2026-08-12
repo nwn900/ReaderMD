@@ -2,7 +2,7 @@
 set -euo pipefail
 
 project_dir="$(cd "$(dirname "$0")/.." && pwd)"
-app_dir="${1:-$project_dir/dist/PreviewMD.app}"
+app_dir="${1:-$project_dir/dist/ReaderMD.app}"
 info_plist="$app_dir/Contents/Info.plist"
 
 if [[ ! -d "$app_dir" || ! -f "$info_plist" ]]; then
@@ -12,15 +12,15 @@ fi
 
 version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$info_plist")"
 build_number="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$info_plist")"
-output_dmg="${2:-$project_dir/dist/PreviewMD-$version-$build_number-macOS.dmg}"
+output_dmg="${2:-$project_dir/dist/ReaderMD-$version-$build_number-macOS.dmg}"
 output_dir="$(dirname "$output_dmg")"
 app_filename="$(basename "$app_dir")"
-volume_name="PreviewMD $version ($build_number)"
+volume_name="ReaderMD $version ($build_number)"
 
 mkdir -p "$project_dir/.build" "$output_dir"
 work_dir="$(mktemp -d "$project_dir/.build/dmg.XXXXXX")"
 staging_dir="$work_dir/staging"
-rw_dmg="$work_dir/PreviewMD-rw.dmg"
+rw_dmg="$work_dir/ReaderMD-rw.dmg"
 mount_dir=""
 
 cleanup() {

@@ -3,16 +3,16 @@
 import PackageDescription
 
 let package = Package(
-    name: "PreviewMD",
+    name: "ReaderMD",
     platforms: [
         .macOS(.v14)
     ],
     products: [
-        .executable(name: "PreviewMD", targets: ["PreviewMD"])
+        .executable(name: "ReaderMD", targets: ["ReaderMD"])
     ],
     targets: [
         .executableTarget(
-            name: "PreviewMD",
+            name: "ReaderMD",
             resources: [
                 .copy("Resources/Renderer")
             ],
@@ -21,7 +21,7 @@ let package = Package(
             ]
         ),
         .target(
-            name: "PreviewMDQuickLook",
+            name: "ReaderMDQuickLook",
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("Quartz"),
@@ -29,8 +29,8 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "PreviewMDTests",
-            dependencies: ["PreviewMD", "PreviewMDQuickLook"]
+            name: "ReaderMDTests",
+            dependencies: ["ReaderMD", "ReaderMDQuickLook"]
         )
     ]
 )

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="149" height="20" role="img" aria-label="Agent edits: Reviewable">
+  <title>Agent edits: Reviewable</title>
+  <mask id="shape"><rect width="149" height="20" rx="3" fill="#fff"/></mask>
+  <g mask="url(#shape)">
+    <rect width="73" height="20" fill="#555"/>
+    <rect x="73" width="76" height="20" fill="#5e5ce6"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana, Geneva, sans-serif" font-size="11">
+    <text x="36.5" y="14">Agent edits</text>
+    <text x="111" y="14">Reviewable</text>
+  </g>
+</svg>

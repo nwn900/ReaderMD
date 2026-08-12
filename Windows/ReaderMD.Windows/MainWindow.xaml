@@ -1,0 +1,150 @@
+<Window x:Class="ReaderMD.Windows.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="ReaderMD" Width="1320" Height="860" MinWidth="900" MinHeight="600"
+        AllowDrop="True" Drop="Window_Drop" DragOver="Window_DragOver"
+        Background="{DynamicResource WindowBackgroundBrush}">
+  <Window.Resources>
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F3F3F3" />
+    <SolidColorBrush x:Key="PanelBrush" Color="#FAFAFA" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#D8D8D8" />
+    <Style TargetType="Button">
+      <Setter Property="Padding" Value="10,5" />
+      <Setter Property="Margin" Value="2" />
+      <Setter Property="MinHeight" Value="30" />
+    </Style>
+  </Window.Resources>
+
+  <DockPanel>
+    <Menu DockPanel.Dock="Top">
+      <MenuItem Header="_File">
+        <MenuItem Header="_Open Markdown..." InputGestureText="Ctrl+O" Click="OpenFile_Click" />
+        <MenuItem Header="Open _Folder..." Click="OpenFolder_Click" />
+        <Separator />
+        <MenuItem Header="_Save" InputGestureText="Ctrl+S" Click="Save_Click" />
+        <MenuItem Header="Save _As..." InputGestureText="Ctrl+Shift+S" Click="SaveAs_Click" />
+        <Separator />
+        <MenuItem Header="Export _PDF..." Click="ExportPdf_Click" />
+        <MenuItem Header="_Print..." InputGestureText="Ctrl+P" Click="Print_Click" />
+        <Separator />
+        <MenuItem Header="E_xit" Click="Exit_Click" />
+      </MenuItem>
+      <MenuItem Header="_Edit">
+        <MenuItem Header="_Undo" InputGestureText="Ctrl+Z" Click="Undo_Click" />
+        <MenuItem Header="_Redo" InputGestureText="Ctrl+Y" Click="Redo_Click" />
+        <Separator />
+        <MenuItem Header="_Find" InputGestureText="Ctrl+F" Click="Find_Click" />
+      </MenuItem>
+      <MenuItem Header="_View">
+        <MenuItem Header="Document" Click="DocumentMode_Click" />
+        <MenuItem Header="Split" Click="SplitMode_Click" />
+        <MenuItem Header="Source" Click="SourceMode_Click" />
+        <Separator />
+        <MenuItem Header="Focus Mode" InputGestureText="F11" Click="FocusMode_Click" />
+      </MenuItem>
+    </Menu>
+
+    <Border x:Name="Toolbar" DockPanel.Dock="Top" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource PanelBrush}">
+      <Grid Margin="8,5">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0" Orientation="Horizontal">
+          <Button Content="Open" Click="OpenFile_Click" />
+          <Button Content="Folder" Click="OpenFolder_Click" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
+          <Button x:Name="DocumentModeButton" Content="Document" Click="DocumentMode_Click" />
+          <Button x:Name="SplitModeButton" Content="Split" Click="SplitMode_Click" />
+          <Button x:Name="SourceModeButton" Content="Source" Click="SourceMode_Click" />
+        </StackPanel>
+        <CheckBox Grid.Column="2" x:Name="RichEditCheckBox" Content="Edit rendered document" VerticalAlignment="Center" Margin="16,0" Checked="RichEditChanged" Unchecked="RichEditChanged" />
+        <TextBox Grid.Column="3" x:Name="FindBox" Width="220" HorizontalAlignment="Right" VerticalContentAlignment="Center" Margin="8,0" ToolTip="Find in document" TextChanged="FindBox_TextChanged" />
+        <ComboBox Grid.Column="4" x:Name="ThemeBox" Width="105" Margin="4,0" SelectionChanged="ThemeBox_SelectionChanged">
+          <ComboBoxItem Content="System" Tag="system" IsSelected="True" />
+          <ComboBoxItem Content="Light" Tag="light" />
+          <ComboBoxItem Content="Dark" Tag="dark" />
+        </ComboBox>
+        <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0">
+          <TextBlock Text="Width" VerticalAlignment="Center" Margin="0,0,6,0" />
+          <Slider x:Name="WidthSlider" Width="120" Minimum="560" Maximum="1600" Value="820" TickFrequency="20" ValueChanged="WidthSlider_ValueChanged" />
+        </StackPanel>
+        <Button Grid.Column="6" Content="Focus" Click="FocusMode_Click" />
+      </Grid>
+    </Border>
+
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition x:Name="SidebarColumn" Width="240" />
+        <ColumnDefinition Width="5" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="5" />
+        <ColumnDefinition x:Name="OutlineColumn" Width="220" />
+      </Grid.ColumnDefinitions>
+
+      <Border Grid.Column="0" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Files" FontSize="13" FontWeight="SemiBold" Margin="12,10,12,6" />
+          <ListBox x:Name="FileList" Margin="6" BorderThickness="0" MouseDoubleClick="FileList_MouseDoubleClick" />
+        </DockPanel>
+      </Border>
+      <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent" />
+
+      <Grid Grid.Column="2">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TabControl Grid.Row="0" x:Name="DocumentTabs" Height="36" SelectionChanged="DocumentTabs_SelectionChanged" />
+
+        <Grid Grid.Row="1" x:Name="DocumentArea">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="SourceColumn" Width="0" />
+            <ColumnDefinition x:Name="SplitDividerColumn" Width="0" />
+            <ColumnDefinition x:Name="PreviewColumn" Width="*" />
+          </Grid.ColumnDefinitions>
+
+          <TextBox Grid.Column="0" x:Name="SourceEditor" FontFamily="Cascadia Mono, Consolas" FontSize="14" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" BorderThickness="0" TextChanged="SourceEditor_TextChanged" />
+          <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}" />
+          <wv2:WebView2 Grid.Column="2" x:Name="PreviewWebView" />
+
+          <Grid x:Name="EmptyState" Grid.ColumnSpan="3" Background="{DynamicResource WindowBackgroundBrush}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="420">
+              <TextBlock Text="ReaderMD" FontSize="32" FontWeight="SemiBold" HorizontalAlignment="Center" />
+              <TextBlock Text="Open a Markdown file or folder to begin." FontSize="16" Opacity="0.7" HorizontalAlignment="Center" Margin="0,10,0,22" />
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Content="Open Markdown..." Click="OpenFile_Click" />
+                <Button Content="Open Folder..." Click="OpenFolder_Click" />
+              </StackPanel>
+            </StackPanel>
+          </Grid>
+        </Grid>
+
+        <StatusBar Grid.Row="2">
+          <StatusBarItem><TextBlock x:Name="PathStatus" Text="No document" /></StatusBarItem>
+          <Separator />
+          <StatusBarItem><TextBlock x:Name="StatsStatus" /></StatusBarItem>
+          <Separator />
+          <StatusBarItem><TextBlock Text="Offline renderer" /></StatusBarItem>
+        </StatusBar>
+      </Grid>
+
+      <GridSplitter Grid.Column="3" Width="5" HorizontalAlignment="Stretch" Background="Transparent" />
+      <Border Grid.Column="4" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,0,0,0">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Outline" FontSize="13" FontWeight="SemiBold" Margin="12,10,12,6" />
+          <ListBox x:Name="OutlineList" Margin="6" BorderThickness="0" SelectionChanged="OutlineList_SelectionChanged" />
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</Window>

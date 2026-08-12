@@ -5,15 +5,15 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>PreviewMD</string>
+    <string>ReaderMD</string>
     <key>CFBundleExecutable</key>
-    <string>PreviewMD</string>
+    <string>ReaderMD</string>
     <key>CFBundleIdentifier</key>
-	<string>pl.jesion.previewmd</string>
+	<string>pl.jesion.readermd</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>PreviewMD</string>
+    <string>ReaderMD</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundlePackageType</key>
@@ -46,7 +46,7 @@
             <string>Default</string>
             <key>LSItemContentTypes</key>
             <array>
-                <string>pl.jesion.previewmd.markdown</string>
+                <string>pl.jesion.readermd.markdown</string>
                 <string>net.daringfireball.markdown</string>
             </array>
         </dict>
@@ -77,7 +77,7 @@
             <key>UTTypeDescription</key>
             <string>Markdown Document</string>
             <key>UTTypeIdentifier</key>
-			<string>pl.jesion.previewmd.markdown</string>
+			<string>pl.jesion.readermd.markdown</string>
             <key>UTTypeTagSpecification</key>
             <dict>
                 <key>public.filename-extension</key>

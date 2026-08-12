@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-style="modern" data-paper="true" data-width="fixed" style="--reading-width: 820px; --top-inset: 0px;">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <base href="https://readermd-document.local/">
+  <link rel="stylesheet" href="https://readermd.local/Renderer/katex.min.css">
+  <link rel="stylesheet" href="https://readermd.local/Renderer/renderer.css">
+</head>
+<body>
+  <div id="reading-progress"></div>
+  <div id="top-blur" aria-hidden="true"></div>
+  <main id="preview-shell" aria-live="polite">
+    <article id="preview-document"></article>
+  </main>
+  <div id="render-error" hidden></div>
+
+  <script>
+    window.readermdPostNative = function (name, body) {
+      if (window.chrome && window.chrome.webview) {
+        window.chrome.webview.postMessage({ name: name, body: body });
+      }
+    };
+    window.webkit = {
+      messageHandlers: {
+        copyText: { postMessage: function (body) { window.readermdPostNative("copyText", body); } },
+        copyRichText: { postMessage: function (body) { window.readermdPostNative("copyRichText", body); } },
+        editorChange: { postMessage: function (body) { window.readermdPostNative("editorChange", body); } },
+        pickImage: { postMessage: function (body) { window.readermdPostNative("pickImage", body); } },
+        splitSync: { postMessage: function (body) { window.readermdPostNative("splitSync", body); } }
+      }
+    };
+    window.readermdLocalImageScheme = null;
+    window.readermdRender = null;
+  </script>
+  <script src="https://readermd.local/Renderer/markdown-it.min.js"></script>
+  <script src="https://readermd.local/Renderer/markdown-it-footnote.min.js"></script>
+  <script src="https://readermd.local/Renderer/highlight.min.js"></script>
+  <script src="https://readermd.local/Renderer/katex.min.js"></script>
+  <script src="https://readermd.local/Renderer/auto-render.min.js"></script>
+  <script src="https://readermd.local/Renderer/mermaid.min.js"></script>
+  <script src="https://readermd.local/Renderer/renderer.js"></script>
+  <script src="https://readermd.local/Renderer/diagram-editor.js"></script>
+  <script src="https://readermd.local/Renderer/editor.js"></script>
+</body>
+</html>
