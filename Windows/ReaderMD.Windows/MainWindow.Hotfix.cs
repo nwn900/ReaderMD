@@ -37,6 +37,10 @@ public partial class MainWindow
         RichEditCheckBox.Checked += Hotfix_RichEditChanged;
         RichEditCheckBox.Unchecked += Hotfix_RichEditChanged;
 
+        // Collapse the HWND-backed document surfaces before WebView2 can paint over
+        // the WPF welcome card. A selected document will restore the correct view.
+        ApplyHotfixWorkspaceVisibility();
+
         await AttachHotfixDropHandlingAsync(PreviewWebView);
         await AttachHotfixDropHandlingAsync(SecondaryPreviewWebView);
 
