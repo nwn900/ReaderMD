@@ -1,0 +1,15 @@
+# The founder currently reviews every area. Add trusted area maintainers here
+# as the community grows.
+* @ashtree74
+
+# Changes to project governance, release trust, and ownership always require
+# founder review, including changes to this file itself.
+/.github/ @ashtree74
+/AGENTS.md @ashtree74
+/AUTHORS.md @ashtree74
+/GOVERNANCE.md @ashtree74
+/LICENSE @ashtree74
+/NOTICE @ashtree74
+/SECURITY.md @ashtree74
+/TRADEMARKS.md @ashtree74
+/scripts/ @ashtree74

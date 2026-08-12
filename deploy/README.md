@@ -9,7 +9,7 @@ Code reaches the server through GitHub only — nothing is copied by hand.
 ## Layout on the server
 
 ```text
-/home/ubuntu/experiments/previewmd/                 # git clone (private repo)
+/home/ubuntu/experiments/previewmd/                 # git clone
 /home/ubuntu/experiments/.data/                     # SQLite, outside the tree
 /home/ubuntu/sites/experiments.frontierslab.ai/previewmd -> …/previewmd/site
 ```
@@ -35,8 +35,9 @@ DMG is tracked in git precisely so this one command is the whole deployment.
 
 ## First-time setup (already done — kept for reference)
 
-Cloning a private repo needs a read-only deploy key, matching the convention
-used by the other experiments:
+The original deployment used a read-only deploy key, matching the convention
+used by the other experiments. A public clone no longer requires the key, but
+the restricted setup remains a reasonable deployment choice:
 
 ```bash
 ssh ovh-vps 'ssh-keygen -t ed25519 -N "" -C previewmd-deploy -f ~/.ssh/previewmd_deploy'

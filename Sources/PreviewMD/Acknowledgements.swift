@@ -1,6 +1,6 @@
 import Foundation
 
-/// The third-party notices shown in the About window.
+/// The open-source and third-party notices shown in the About window.
 ///
 /// Embedded as a string literal rather than a bundled resource on purpose. The
 /// MIT and BSD licenses below require their notices to travel with every copy
@@ -24,6 +24,18 @@ enum Acknowledgements {
     ]
 
     static let text = #"""
+    PreviewMD is open source under the Apache License, Version 2.0.
+
+    Copyright 2026 Adam Jesionkiewicz and PreviewMD contributors.
+    Originally created by Adam Jesionkiewicz.
+
+    The complete Apache-2.0 license and project NOTICE are included in every
+    application bundle under Contents/Resources/Legal and in the source
+    repository at https://github.com/ashtree74/PreviewMD.
+
+
+    ════════════════════════════════════════════════════════════════════════
+
     PreviewMD sets your documents with a handful of open-source libraries,
     bundled as local copies so rendering never needs a network connection.
 

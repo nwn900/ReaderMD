@@ -1,0 +1,59 @@
+name: Platform port proposal
+description: Start a thin, native experiment on another operating system.
+title: "[Port]: PreviewMD on "
+labels:
+  - port
+  - discussion
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is exciting. Read docs/PORTING.md first, then propose the smallest vertical slice that opens and renders one local document completely offline.
+  - type: input
+    id: platform
+    attributes:
+      label: Target platform
+      placeholder: "Windows 11"
+    validations:
+      required: true
+  - type: input
+    id: stack
+    attributes:
+      label: Proposed native stack and embedded web view
+      placeholder: "WinUI 3 + WebView2"
+    validations:
+      required: true
+  - type: textarea
+    id: slice
+    attributes:
+      label: First vertical slice
+      description: How will it open a local file, render offline, resolve an image, and exercise one native bridge action?
+    validations:
+      required: true
+  - type: textarea
+    id: native
+    attributes:
+      label: How will this feel native to the platform?
+    validations:
+      required: true
+  - type: textarea
+    id: security
+    attributes:
+      label: Files, sandboxing, links, and updates
+      description: Describe the platform security model and how renderer assets will stay offline and pinned.
+    validations:
+      required: true
+  - type: textarea
+    id: maintenance
+    attributes:
+      label: Maintenance plan
+      description: Who is experimenting, and what commitment is realistic after the prototype?
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Before submitting
+      options:
+        - label: I read docs/PORTING.md and will begin with a thin experiment rather than rewriting the macOS app.
+          required: true
+        - label: I understand that public use of the PreviewMD name and icon follows TRADEMARKS.md.
+          required: true

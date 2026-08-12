@@ -10,6 +10,22 @@ import XCTest
 /// that from happening again — in particular, to fail loudly when a vendored
 /// library is upgraded without its notice being updated in the same commit.
 final class AcknowledgementsTests: XCTestCase {
+    func testProjectLicenseAndOriginalAuthorAreAcknowledged() {
+        let required = [
+            "Apache License, Version 2.0",
+            "Copyright 2026 Adam Jesionkiewicz and PreviewMD contributors",
+            "Originally created by Adam Jesionkiewicz",
+            "Contents/Resources/Legal"
+        ]
+
+        for fragment in required {
+            XCTAssertTrue(
+                Acknowledgements.text.contains(fragment),
+                "project acknowledgements are missing: \(fragment)"
+            )
+        }
+    }
+
     func testEveryVendoredLibraryIsNamedInTheNotices() {
         for library in Acknowledgements.vendoredLibraries {
             XCTAssertTrue(

@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Swift and site tests
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Show toolchain
+        run: swift --version
+
+      - name: Run Swift tests
+        run: swift test
+
+      - name: Run landing-page tests
+        run: python3 -m unittest discover -s site -p 'test_*.py'
+
+      - name: Check scripts and property lists
+        run: |
+          zsh -n scripts/*.sh
+          plutil -lint scripts/Info.plist scripts/QuickLook-Info.plist scripts/QuickLook.entitlements
+
+  dco:
+    name: DCO sign-off
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out complete history
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify every pull-request commit
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          missing=0
+          for commit in $(git rev-list "$BASE_SHA..$HEAD_SHA"); do
+            if ! git show -s --format=%B "$commit" | grep -Eq '^Signed-off-by: .+ <[^>]+>$'; then
+              echo "::error::Commit ${commit:0:12} is missing a valid Signed-off-by line. Use git commit -s."
+              missing=1
+            fi
+          done
+          exit "$missing"

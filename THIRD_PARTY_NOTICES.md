@@ -1,5 +1,8 @@
 # Third-party notices
 
+PreviewMD itself is available under the Apache License 2.0; see `LICENSE` and
+`NOTICE`. This document covers software incorporated from other projects.
+
 PreviewMD includes local browser distributions of the following open-source
 projects, bundled so documents render without a network connection:
 
@@ -19,9 +22,10 @@ These licenses require the copyright and license texts to travel with every copy
 of the app, so they live in `Sources/PreviewMD/Acknowledgements.swift` and are
 shown in full under **PreviewMD ▸ About PreviewMD**.
 
-This file is a summary for the repository. It is *not* what satisfies the
-licenses — nothing copies it into the app bundle. Do not treat editing it as
-updating the notices.
+This file is the repository summary and is also copied into the app's
+`Contents/Resources/Legal` directory. The complete third-party license texts
+that satisfy the renderer notice requirements remain compiled into
+`Acknowledgements.swift`, so editing this summary alone is not enough.
 
 ## When upgrading a vendored library
 

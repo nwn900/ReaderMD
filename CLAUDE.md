@@ -17,12 +17,13 @@ run from the repo root.
 
 ```bash
 swift run PreviewMD          # build + launch the app for development
-swift build                 # debug build (the only automated correctness gate)
+swift build                 # compile a debug build
 swift test                  # run the XCTest suite (Tests/PreviewMDTests)
 swift test --filter testCustomReadingWidthIsClamped   # run a single test
 ```
 
-There is no configured linter/formatter; `swift build` is the compile gate.
+There is no configured linter/formatter. Pull requests run `swift test`, the
+landing-page tests, and syntax checks through GitHub Actions.
 
 For a distributable macOS app bundle and for signed/notarized releases, use
 `./scripts/build-app.sh` and `./scripts/release-app.sh` — see `AGENTS.md` for the

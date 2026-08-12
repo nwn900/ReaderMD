@@ -1,0 +1,83 @@
+name: Bug report
+description: Help us turn a surprising behavior into a reproducible fix.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for making PreviewMD sturdier. Use a minimal synthetic document when possible and remove private information before uploading anything.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Reading and rendering
+        - Rich editing
+        - Source or split view
+        - Files, tabs, or folders
+        - Quick Look
+        - Export, print, or clipboard
+        - Accessibility or keyboard control
+        - Build, packaging, or release
+        - Landing page
+        - Community port or experiment
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: PreviewMD version
+      description: Use About PreviewMD, a commit SHA, or "main".
+      placeholder: "1.7 (11)"
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: System
+      description: Include OS version, architecture, and relevant hardware.
+      placeholder: "macOS 15.6, Apple Silicon"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Open this minimal document…
+        2. Switch to…
+        3. Observe…
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Minimal document, screenshots, or logs
+      description: Never include credentials, private documents, subscriber data, or identifying paths.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for this behavior.
+          required: true
+        - label: I removed private and sensitive information from attachments and logs.
+          required: true
+        - label: This is not a security vulnerability; security reports follow SECURITY.md.
+          required: true
