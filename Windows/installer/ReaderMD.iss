@@ -4,6 +4,7 @@
 
 #define AppName "ReaderMD"
 #define AppExeName "ReaderMD.exe"
+#define AppProgId "ReaderMD.Markdown"
 
 [Setup]
 AppId={{A9ED0F5C-24D2-4E5E-B0F0-89D5B7B3F751}
@@ -32,6 +33,7 @@ UninstallDisplayIcon={app}\{#AppExeName}
 LicenseFile=..\..\LICENSE
 CloseApplications=yes
 RestartApplications=no
+ChangesAssociations=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -47,8 +49,21 @@ Source: "..\..\artifacts\prereqs\MicrosoftEdgeWebview2Setup.exe"; DestDir: "{tmp
 Name: "{group}\ReaderMD"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"
 Name: "{autodesktop}\ReaderMD"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
+[Registry]
+Root: HKCU; Subkey: "Software\Classes\{#AppProgId}"; ValueType: string; ValueName: ""; ValueData: "Markdown Document"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\{#AppProgId}\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#AppExeName},0"
+Root: HKCU; Subkey: "Software\Classes\{#AppProgId}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExeName}"" ""%1"""
+Root: HKCU; Subkey: "Software\ReaderMD\Capabilities"; ValueType: string; ValueName: "ApplicationName"; ValueData: "ReaderMD"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\ReaderMD\Capabilities"; ValueType: string; ValueName: "ApplicationDescription"; ValueData: "ReaderMD Markdown reader and editor"
+Root: HKCU; Subkey: "Software\ReaderMD\Capabilities\FileAssociations"; ValueType: string; ValueName: ".md"; ValueData: "{#AppProgId}"
+Root: HKCU; Subkey: "Software\ReaderMD\Capabilities\FileAssociations"; ValueType: string; ValueName: ".markdown"; ValueData: "{#AppProgId}"
+Root: HKCU; Subkey: "Software\ReaderMD\Capabilities\FileAssociations"; ValueType: string; ValueName: ".mdown"; ValueData: "{#AppProgId}"
+Root: HKCU; Subkey: "Software\ReaderMD\Capabilities\FileAssociations"; ValueType: string; ValueName: ".mkd"; ValueData: "{#AppProgId}"
+Root: HKCU; Subkey: "Software\RegisteredApplications"; ValueType: string; ValueName: "ReaderMD"; ValueData: "Software\ReaderMD\Capabilities"; Flags: uninsdeletevalue
+
 [Run]
 Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; StatusMsg: "Ensuring Microsoft Edge WebView2 Runtime is installed..."; Flags: runhidden waituntilterminated skipifdoesntexist; Check: ShouldInstallWebView2
+Filename: "ms-settings:defaultapps?registeredAppUser=ReaderMD"; Description: "Choose ReaderMD as the default app for Markdown files"; Flags: shellexec postinstall skipifsilent unchecked
 Filename: "{app}\{#AppExeName}"; Description: "Launch ReaderMD"; Flags: nowait postinstall skipifsilent
 
 [Code]
