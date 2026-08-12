@@ -7,8 +7,10 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
+using Wpf.Ui.Appearance;
 
 namespace ReaderMD.Windows;
 
@@ -17,25 +19,36 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<DocumentTab> _documents = [];
     private readonly ObservableCollection<WorkspaceFile> _workspaceFiles = [];
     private readonly ObservableCollection<OutlineItem> _outline = [];
+    private readonly DispatcherTimer _sourceRenderTimer = new()
+    {
+        Interval = TimeSpan.FromMilliseconds(110)
+    };
+
     private bool _webReady;
     private bool _updatingSource;
     private bool _isFocusMode;
     private DisplayMode _displayMode = DisplayMode.Document;
+    private DocumentTab? _pendingSourceDocument;
+    private string? _lastRenderKey;
 
     public MainWindow()
     {
         InitializeComponent();
         FileList.ItemsSource = _workspaceFiles;
         OutlineList.ItemsSource = _outline;
+        _sourceRenderTimer.Tick += SourceRenderTimer_Tick;
         Loaded += MainWindow_Loaded;
         Closing += MainWindow_Closing;
         PreviewKeyDown += MainWindow_PreviewKeyDown;
+        UpdateModeButtonAppearance();
     }
 
     private DocumentTab? CurrentDocument => DocumentTabs.SelectedItem is TabItem item ? item.Tag as DocumentTab : null;
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        ApplyNativeTheme();
+
         try
         {
             await PreviewWebView.EnsureCoreWebView2Async();
@@ -64,11 +77,13 @@ public partial class MainWindow : Window
                 MessageBoxImage.Error);
         }
 
+        OpenCommandLineDocuments();
         UpdateWorkspaceState();
     }
 
     private void MainWindow_Closing(object? sender, CancelEventArgs e)
     {
+        _sourceRenderTimer.Stop();
         foreach (var document in _documents.ToArray())
         {
             if (!ConfirmDiscard(document))
@@ -126,6 +141,7 @@ public partial class MainWindow : Window
     private async void Core_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
     {
         _webReady = e.IsSuccess;
+        _lastRenderKey = null;
         if (_webReady)
         {
             await RenderCurrentDocumentAsync(force: true);
@@ -221,6 +237,8 @@ public partial class MainWindow : Window
             return;
         }
 
+        _sourceRenderTimer.Stop();
+        _pendingSourceDocument = null;
         document.Content = markdown;
         document.Revision++;
         document.IsDirty = true;
@@ -260,7 +278,7 @@ public partial class MainWindow : Window
 
         var baseFolder = Path.GetDirectoryName(documentPath)!;
         var relative = Path.GetRelativePath(baseFolder, imagePath).Replace('\\', '/');
-        return Uri.EscapeUriString(relative);
+        return string.Join("/", relative.Split('/').Select(Uri.EscapeDataString));
     }
 
     private void OpenFile_Click(object sender, RoutedEventArgs e) => OpenFile();
@@ -292,6 +310,17 @@ public partial class MainWindow : Window
             return;
         }
         LoadWorkspaceFolder(dialog.FolderName);
+    }
+
+    private void OpenCommandLineDocuments()
+    {
+        foreach (var argument in Environment.GetCommandLineArgs().Skip(1))
+        {
+            if (File.Exists(argument) && IsMarkdownFile(argument))
+            {
+                OpenDocument(argument);
+            }
+        }
     }
 
     private void LoadWorkspaceFolder(string folder)
@@ -364,6 +393,8 @@ public partial class MainWindow : Window
     private async Task ActivateCurrentDocumentAsync()
     {
         var document = CurrentDocument;
+        _sourceRenderTimer.Stop();
+        _pendingSourceDocument = null;
         _updatingSource = true;
         SourceEditor.Text = document?.Content ?? string.Empty;
         _updatingSource = false;
@@ -400,9 +431,25 @@ public partial class MainWindow : Window
         document.Revision++;
         document.IsDirty = document.Content != document.LastSavedContent;
         RefreshTabHeader(document);
+
+        _pendingSourceDocument = document;
+        _sourceRenderTimer.Stop();
+        _sourceRenderTimer.Start();
+    }
+
+    private async void SourceRenderTimer_Tick(object? sender, EventArgs e)
+    {
+        _sourceRenderTimer.Stop();
+        var document = _pendingSourceDocument;
+        _pendingSourceDocument = null;
+        if (document is null || !ReferenceEquals(CurrentDocument, document))
+        {
+            return;
+        }
+
         RefreshOutline(document.Content);
         UpdateDocumentStats(document);
-        _ = RenderCurrentDocumentAsync(force: false);
+        await RenderCurrentDocumentAsync(force: false);
     }
 
     private void RefreshOutline(string markdown)
@@ -609,6 +656,21 @@ public partial class MainWindow : Window
                 PreviewColumn.Width = new GridLength(0);
                 break;
         }
+
+        UpdateModeButtonAppearance();
+    }
+
+    private void UpdateModeButtonAppearance()
+    {
+        DocumentModeButton.Appearance = _displayMode == DisplayMode.Document
+            ? Wpf.Ui.Controls.ControlAppearance.Primary
+            : Wpf.Ui.Controls.ControlAppearance.Secondary;
+        SplitModeButton.Appearance = _displayMode == DisplayMode.Split
+            ? Wpf.Ui.Controls.ControlAppearance.Primary
+            : Wpf.Ui.Controls.ControlAppearance.Secondary;
+        SourceModeButton.Appearance = _displayMode == DisplayMode.Source
+            ? Wpf.Ui.Controls.ControlAppearance.Primary
+            : Wpf.Ui.Controls.ControlAppearance.Secondary;
     }
 
     private async void RichEditChanged(object sender, RoutedEventArgs e)
@@ -619,6 +681,7 @@ public partial class MainWindow : Window
     private async void ThemeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         ApplyNativeTheme();
+        _lastRenderKey = null;
         await RenderCurrentDocumentAsync(force: true);
     }
 
@@ -633,17 +696,31 @@ public partial class MainWindow : Window
 
     private void ApplyNativeTheme()
     {
-        var theme = SelectedTheme();
-        var dark = theme == "dark";
-        Resources["WindowBackgroundBrush"] = new System.Windows.Media.SolidColorBrush(
-            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(dark ? "#1D1E22" : "#F3F3F3"));
-        Resources["PanelBrush"] = new System.Windows.Media.SolidColorBrush(
-            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(dark ? "#24252A" : "#FAFAFA"));
-        Resources["BorderBrush"] = new System.Windows.Media.SolidColorBrush(
-            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(dark ? "#3B3D43" : "#D8D8D8"));
+        switch (SelectedTheme())
+        {
+            case "dark":
+                ApplicationThemeManager.Apply(ApplicationTheme.Dark);
+                break;
+            case "light":
+                ApplicationThemeManager.Apply(ApplicationTheme.Light);
+                break;
+            default:
+                ApplicationThemeManager.ApplySystemTheme();
+                break;
+        }
+    }
+
+    private bool IsDarkTheme()
+    {
+        return ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
     }
 
     private string SelectedTheme() => (ThemeBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "system";
+
+    private void DefaultApps_Click(object sender, RoutedEventArgs e)
+    {
+        OpenExternal("ms-settings:defaultapps?registeredAppUser=ReaderMD");
+    }
 
     private void FocusMode_Click(object sender, RoutedEventArgs e) => ToggleFocusMode();
 
@@ -651,8 +728,8 @@ public partial class MainWindow : Window
     {
         _isFocusMode = !_isFocusMode;
         Toolbar.Visibility = _isFocusMode ? Visibility.Collapsed : Visibility.Visible;
-        SidebarColumn.Width = _isFocusMode ? new GridLength(0) : new GridLength(240);
-        OutlineColumn.Width = _isFocusMode ? new GridLength(0) : new GridLength(220);
+        SidebarColumn.Width = _isFocusMode ? new GridLength(0) : new GridLength(250);
+        OutlineColumn.Width = _isFocusMode ? new GridLength(0) : new GridLength(230);
         WindowStyle = _isFocusMode ? WindowStyle.None : WindowStyle.SingleBorderWindow;
         WindowState = _isFocusMode ? WindowState.Maximized : WindowState.Normal;
     }
@@ -661,16 +738,27 @@ public partial class MainWindow : Window
 
     private void Window_DragOver(object sender, DragEventArgs e)
     {
-        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+        if (e.Data.GetData(DataFormats.FileDrop) is string[] paths &&
+            paths.Any(path => Directory.Exists(path) || (File.Exists(path) && IsMarkdownFile(path))))
+        {
+            e.Effects = DragDropEffects.Copy;
+        }
+        else
+        {
+            e.Effects = DragDropEffects.None;
+        }
+
         e.Handled = true;
     }
 
     private void Window_Drop(object sender, DragEventArgs e)
     {
+        e.Handled = true;
         if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths)
         {
             return;
         }
+
         foreach (var path in paths)
         {
             if (Directory.Exists(path))
@@ -703,6 +791,14 @@ public partial class MainWindow : Window
             return;
         }
 
+        var systemDark = IsDarkTheme();
+        var renderKey = $"{document.Id:N}:{document.Revision}:{RichEditCheckBox.IsChecked == true}:{SelectedTheme()}:{systemDark}";
+        if (!force && string.Equals(renderKey, _lastRenderKey, StringComparison.Ordinal))
+        {
+            return;
+        }
+        _lastRenderKey = renderKey;
+
         var payload = new
         {
             documentID = document.Id.ToString(),
@@ -712,7 +808,7 @@ public partial class MainWindow : Window
             theme = SelectedTheme(),
             readingStyle = "modern",
             customReadingPreset = (object?)null,
-            systemDark = false,
+            systemDark,
             readingWidth = (int)WidthSlider.Value,
             readingWidthIsFluid = false,
             paperCanvas = true,
@@ -763,9 +859,9 @@ public partial class MainWindow : Window
 
     private void UpdateDocumentStats(DocumentTab document)
     {
-        var words = Regex.Matches(document.Content, @"\S+").Count;
-        var minutes = Math.Max(1, (int)Math.Ceiling(words / 220.0));
-        StatsStatus.Text = $"{words:N0} words · {document.Content.Length:N0} characters · {minutes} min read";
+        var stats = FastTextMetrics.Measure(document.Content);
+        var minutes = Math.Max(1, (int)Math.Ceiling(stats.Words / 220.0));
+        StatsStatus.Text = $"{stats.Words:N0} words · {stats.Characters:N0} characters · {minutes} min read";
     }
 
     private static bool IsMarkdownFile(string path)
