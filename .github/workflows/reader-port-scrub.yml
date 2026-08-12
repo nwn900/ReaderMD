@@ -36,7 +36,11 @@ jobs:
           root = Path.cwd()
           old = "Pre" + "viewMD"
           new = "ReaderMD"
-          pairs = [(old, new), (old.lower(), new.lower())]
+          pairs = [
+              (old, new),
+              (old.lower(), new.lower()),
+              (old.upper(), new.upper()),
+          ]
 
           for path in [p for p in root.rglob("*") if p.is_file() and ".git" not in p.parts]:
               try:
@@ -62,10 +66,6 @@ jobs:
                   path.rename(path.with_name(renamed))
           '@ | python -
 
-      - name: Remove temporary branch workflow
-        shell: pwsh
-        run: Remove-Item -Force .github/workflows/port-and-scrub.yml -ErrorAction SilentlyContinue
-
       - name: Build Windows app
         shell: pwsh
         run: dotnet build Windows/ReaderMD.Windows/ReaderMD.Windows.csproj -c Release
@@ -78,20 +78,19 @@ jobs:
           import sys
 
           root = Path.cwd()
-          old = "Pre" + "viewMD"
-          needles = (old, old.lower())
+          old = ("Pre" + "viewMD").casefold()
           hits = []
           for path in root.rglob("*"):
               if not path.is_file() or ".git" in path.parts:
                   continue
-              if any(needle in str(path) for needle in needles):
+              if old in str(path).casefold():
                   hits.append(str(path))
                   continue
               try:
                   text = path.read_text(encoding="utf-8")
               except UnicodeDecodeError:
                   continue
-              if any(needle in text for needle in needles):
+              if old in text.casefold():
                   hits.append(str(path))
           if hits:
               print("Inherited branding remains:")
@@ -106,5 +105,5 @@ jobs:
           if (git diff --cached --quiet) { exit 0 }
           git config user.name "ReaderMD Port Bot"
           git config user.email "actions@github.com"
-          git commit -m "Complete ReaderMD Windows port and rebrand" -m "Signed-off-by: ReaderMD Port Bot <actions@github.com>"
+          git commit -m "Finish ReaderMD branding scrub" -m "Signed-off-by: ReaderMD Port Bot <actions@github.com>"
           git push origin HEAD:agent/windows-port
