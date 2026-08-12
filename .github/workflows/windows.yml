@@ -20,3 +20,29 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build ReaderMD
         run: dotnet build Windows/ReaderMD.Windows/ReaderMD.Windows.csproj -c Release
+      - name: Verify branding
+        shell: pwsh
+        run: |
+          @'
+          from pathlib import Path
+          import sys
+
+          old = ("Pre" + "viewMD").casefold()
+          hits = []
+          for path in Path.cwd().rglob("*"):
+              if not path.is_file() or ".git" in path.parts:
+                  continue
+              if old in str(path).casefold():
+                  hits.append(str(path))
+                  continue
+              try:
+                  text = path.read_text(encoding="utf-8")
+              except UnicodeDecodeError:
+                  continue
+              if old in text.casefold():
+                  hits.append(str(path))
+          if hits:
+              print("Inherited branding remains:")
+              print("\n".join(hits))
+              sys.exit(1)
+          '@ | python -
