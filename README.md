@@ -29,6 +29,16 @@ interesting version of this idea is bigger than one app and one platform.
 **The macOS app is ready today. Ports, shared foundations, new workflows, and
 surprising ideas are welcome.**
 
+<p align="center">
+  <a href="assets/screenshots/previewmd-reading-workspace.png">
+    <img src="assets/screenshots/previewmd-reading-workspace.png" width="1200" alt="PreviewMD on macOS displaying a polished Markdown document with tabs, search, badges, and a project table">
+  </a>
+</p>
+
+<p align="center">
+  <sub>A calm native workspace for reading, navigating, and understanding Markdown.</sub>
+</p>
+
 ## Why it is fun to work on
 
 PreviewMD sits at an unusually good intersection:
@@ -59,6 +69,21 @@ porting experiment can all be excellent first changes.
 - A sandboxed Finder Quick Look extension bundled with the app
 - PDF export, printing, rich copy, and DOCX export
 - Fully local rendering with pinned resources — documents never leave the Mac
+
+## Source and preview stay in sync
+
+Move between source, split, and document views without giving up typography,
+math, syntax highlighting, callouts, or diagrams.
+
+<p align="center">
+  <a href="assets/screenshots/previewmd-split-view.png">
+    <img src="assets/screenshots/previewmd-split-view.png" width="1200" alt="PreviewMD split view showing Markdown source beside rendered math, Swift code, a callout, and a sequence diagram">
+  </a>
+</p>
+
+<p align="center">
+  <sub>Source on the left, finished document on the right — rendered entirely offline.</sub>
+</p>
 
 ## Try it locally
 
