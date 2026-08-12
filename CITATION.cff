@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If PreviewMD helps your work, please cite the project and its original author."
+title: PreviewMD
+type: software
+authors:
+  - family-names: Jesionkiewicz
+    given-names: Adam
+    email: adam@jesion.pl
+version: "1.7"
+date-released: 2026-08-11
+repository-code: "https://github.com/ashtree74/PreviewMD"
+url: "https://github.com/ashtree74/PreviewMD"
+license: Apache-2.0
+abstract: >-
+  A native, offline-first Markdown reading and editing workspace, originally
+  created for macOS and designed to grow into a cross-platform foundation.
+keywords:
+  - Markdown
+  - macOS
+  - document reader
+  - offline
+  - Swift

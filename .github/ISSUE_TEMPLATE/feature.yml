@@ -1,0 +1,43 @@
+name: Feature idea
+description: Describe a reader or writer problem worth solving.
+title: "[Idea]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Great features often begin with a sharp problem, not a finished control. Show us the moment that feels harder than it should.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Who encounters it, and during which workflow?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What would a great outcome feel like?
+      description: Describe the result before prescribing the implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Possible approach
+      description: Optional — sketches, examples, and alternatives are welcome.
+  - type: textarea
+    id: contribution
+    attributes:
+      label: Would you like to help?
+      description: Tell us whether you can test, design, document, or implement part of it.
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Project fit
+      options:
+        - label: I considered offline behavior and document privacy.
+          required: true
+        - label: I searched existing issues and discussions.
+          required: true

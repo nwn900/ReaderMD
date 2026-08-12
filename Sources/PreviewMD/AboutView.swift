@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// Replaces the standard AppKit About panel, which is too small to carry the
-/// third-party license texts the bundled renderers require us to ship.
+/// project and third-party license texts distributed with the app.
 struct AboutView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -41,7 +41,7 @@ struct AboutView: View {
 
     private var acknowledgements: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Acknowledgements")
+            Text("Licenses & Acknowledgements")
                 .font(.headline)
                 .padding(.horizontal, 20)
                 .padding(.top, 16)

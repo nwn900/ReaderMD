@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions and show-and-tell
+    url: https://github.com/ashtree74/PreviewMD/discussions
+    about: Ask for help, share a document workflow, or float an early idea.
+  - name: Private security report
+    url: https://github.com/ashtree74/PreviewMD/security/advisories/new
+    about: Report a vulnerability privately; do not open a public issue.

@@ -2,8 +2,12 @@
 
 ## Product
 
-PreviewMD is a native, professional macOS Markdown reader owned by Astrography
-Sp. z o.o. and authored by Adam Jesionkiewicz (`adam@jesion.pl`).
+PreviewMD is a native, professional macOS Markdown reader created, owned, and
+maintained independently by Adam Jesionkiewicz (`adam@jesion.pl`). It is
+licensed under Apache-2.0. Astrography Sp. z o.o. has no ownership or governance
+rights in the project; its Apple Developer account is currently used only to
+sign and distribute macOS builds under the same public license as everyone
+else.
 
 - Keep the interface native, minimal, and consistent with current macOS design.
 - The application targets macOS 14 or newer.
@@ -11,6 +15,14 @@ Sp. z o.o. and authored by Adam Jesionkiewicz (`adam@jesion.pl`).
 - The bundle identifier is `pl.jesion.previewmd`.
 - The exported Markdown UTI is `pl.jesion.previewmd.markdown`.
 - The About window must show the author, email, and copyright year 2026.
+- The source code is Apache-2.0 and external contributions use DCO 1.1. Keep
+  `LICENSE`, `NOTICE`, `AUTHORS.md`, and the original-author attribution intact.
+- Every assembled `.app` must include the project `LICENSE`, `NOTICE`, and
+  `THIRD_PARTY_NOTICES.md` under `Contents/Resources/Legal`; the About window
+  must continue to identify Apache-2.0 and the original author.
+- The PreviewMD name and icon identify the official project. Forks and public
+  ports follow `TRADEMARKS.md`; a signing, hosting, or distribution provider
+  does not gain ownership or project authority.
 - The About window must also carry the bundled renderers' full license texts
   and copyright lines. The MIT and BSD licenses require those notices to ship
   with every copy, so they are compiled into the binary
@@ -175,9 +187,9 @@ lipo -info \
   dist/PreviewMD.app/Contents/PlugIns/PreviewMDQuickLook.appex/Contents/MacOS/PreviewMDQuickLook
 ```
 
-## Production signing and notarization
+## Maintainer signing and notarization
 
-The production signing identity is:
+The signing identity currently used to distribute official maintainer builds is:
 
 ```text
 Developer ID Application: Astrography Sp. z o.o. (4NZF9USX28)
@@ -238,9 +250,7 @@ spctl --assess --type open --context context:primary-signature --verbose=4 \
   dist/PreviewMD-<version>-<build>-macOS.dmg
 ```
 
-The most recently accepted release is PreviewMD `1.7 (11)`. Its application
-notarization submission is `b1b8a901-4935-4443-a503-75653e545c9c`; the final
-DMG submission is `1a455671-f7c8-4a6d-b8bf-97f2daf58410`.
+The most recently accepted release is PreviewMD `1.7 (11)`.
 
 ## Versioning
 

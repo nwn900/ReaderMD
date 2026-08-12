@@ -4,6 +4,7 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "$0")/.." && pwd)"
 app_dir="$project_dir/dist/PreviewMD.app"
 contents_dir="$app_dir/Contents"
+legal_dir="$contents_dir/Resources/Legal"
 build_dir="$project_dir/.build/apple/Products/Release"
 quicklook_dir="$contents_dir/PlugIns/PreviewMDQuickLook.appex"
 quicklook_contents_dir="$quicklook_dir/Contents"
@@ -29,6 +30,7 @@ rm -rf "$app_dir" "$quicklook_build_dir"
 mkdir -p \
   "$contents_dir/MacOS" \
   "$contents_dir/Resources" \
+  "$legal_dir" \
   "$quicklook_contents_dir/MacOS" \
   "$quicklook_contents_dir/Resources" \
   "$quicklook_build_dir"
@@ -37,6 +39,9 @@ cp "$build_dir/PreviewMD" "$contents_dir/MacOS/PreviewMD"
 cp -R "$build_dir/PreviewMD_PreviewMD.bundle" "$contents_dir/Resources/PreviewMD_PreviewMD.bundle"
 
 cp "scripts/Info.plist" "$contents_dir/Info.plist"
+cp "LICENSE" "$legal_dir/LICENSE"
+cp "NOTICE" "$legal_dir/NOTICE"
+cp "THIRD_PARTY_NOTICES.md" "$legal_dir/THIRD_PARTY_NOTICES.md"
 
 for architecture in arm64 x86_64; do
   xcrun swiftc \
