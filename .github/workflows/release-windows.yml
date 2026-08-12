@@ -13,13 +13,17 @@ on:
     paths:
       - 'Windows/installer/**'
       - '.github/workflows/release-windows.yml'
+  pull_request:
+    paths:
+      - 'Windows/installer/**'
+      - '.github/workflows/release-windows.yml'
 
 permissions:
   contents: write
 
 jobs:
   release:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release-windows]')
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release-windows]')
     runs-on: windows-latest
     timeout-minutes: 30
     env:
@@ -122,6 +126,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish GitHub release
+        if: github.event_name != 'pull_request'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
