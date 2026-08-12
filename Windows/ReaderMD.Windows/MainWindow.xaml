@@ -1,21 +1,37 @@
 <Window x:Class="ReaderMD.Windows.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ReaderMD.Windows"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Title="ReaderMD" Width="1320" Height="860" MinWidth="900" MinHeight="600"
+        WindowStyle="None" ResizeMode="CanResize"
+        SourceInitialized="IntegratedChrome_SourceInitialized"
+        StateChanged="IntegratedChrome_StateChanged"
         AllowDrop="True" Drop="Window_Drop" DragOver="Window_DragOver"
         Background="{DynamicResource ApplicationBackgroundBrush}"
         Foreground="{DynamicResource TextFillColorPrimaryBrush}"
         FontFamily="Segoe UI Variable Text, Segoe UI"
         TextOptions.TextFormattingMode="Display">
+  <shell:WindowChrome.WindowChrome>
+    <shell:WindowChrome CaptionHeight="36"
+                        ResizeBorderThickness="6"
+                        GlassFrameThickness="0"
+                        CornerRadius="0"
+                        UseAeroCaptionButtons="False" />
+  </shell:WindowChrome.WindowChrome>
+
   <Window.Resources>
+    <local:FileNameConverter x:Key="FileNameConverter" />
+
     <Style x:Key="SectionHeading" TargetType="TextBlock">
       <Setter Property="FontSize" Value="12" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
       <Setter Property="Margin" Value="12,12,12,7" />
     </Style>
+
     <Style x:Key="SidebarList" TargetType="ListBox">
       <Setter Property="Margin" Value="6,0,6,8" />
       <Setter Property="BorderThickness" Value="0" />
@@ -23,40 +39,231 @@
       <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
       <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
     </Style>
+
+    <Style x:Key="CaptionButtonStyle" TargetType="Button">
+      <Setter Property="Width" Value="46" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="CaptionBackground" Background="{TemplateBinding Background}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="CaptionBackground" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="CaptionBackground" Property="Background" Value="{DynamicResource ControlFillColorTertiaryBrush}" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="CloseCaptionButtonStyle" TargetType="Button">
+      <Setter Property="Width" Value="46" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="CloseCaptionBackground" Background="{TemplateBinding Background}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="CloseCaptionBackground" Property="Background" Value="#C42B1C" />
+                <Setter Property="Foreground" Value="White" />
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="CloseCaptionBackground" Property="Background" Value="#A51D10" />
+                <Setter Property="Foreground" Value="White" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="TabCloseButtonStyle" TargetType="Button">
+      <Setter Property="Width" Value="22" />
+      <Setter Property="Height" Value="22" />
+      <Setter Property="Margin" Value="7,0,0,0" />
+      <Setter Property="Padding" Value="0,0,0,1" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="TabCloseBackground" CornerRadius="4" Background="{TemplateBinding Background}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="TabCloseBackground" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <DataTemplate x:Key="ClosableTabHeaderTemplate">
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <TextBlock Text="{Binding}"
+                   MaxWidth="220"
+                   VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis" />
+        <Button Content="×"
+                Style="{StaticResource TabCloseButtonStyle}"
+                Tag="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabItem}}}"
+                ToolTip="Close tab"
+                Click="CloseTab_Click" />
+      </StackPanel>
+    </DataTemplate>
+
+    <Style x:Key="ClosableTabItemStyle"
+           TargetType="TabItem"
+           BasedOn="{StaticResource {x:Type TabItem}}">
+      <Setter Property="HeaderTemplate" Value="{StaticResource ClosableTabHeaderTemplate}" />
+    </Style>
+
+    <Style x:Key="ThemeAwareSlider" TargetType="Slider">
+      <Setter Property="Height" Value="28" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Slider">
+            <Grid Height="28" VerticalAlignment="Center">
+              <Track x:Name="PART_Track"
+                     VerticalAlignment="Center"
+                     IsDirectionReversed="{TemplateBinding IsDirectionReversed}">
+                <Track.DecreaseRepeatButton>
+                  <RepeatButton Command="{x:Static Slider.DecreaseLarge}"
+                                CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                                Height="4" IsTabStop="False"
+                                Background="{DynamicResource AccentFillColorDefaultBrush}">
+                    <RepeatButton.Template>
+                      <ControlTemplate TargetType="RepeatButton">
+                        <Border Height="4" CornerRadius="2" Background="{TemplateBinding Background}" />
+                      </ControlTemplate>
+                    </RepeatButton.Template>
+                  </RepeatButton>
+                </Track.DecreaseRepeatButton>
+                <Track.IncreaseRepeatButton>
+                  <RepeatButton Command="{x:Static Slider.IncreaseLarge}"
+                                CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                                Height="4" IsTabStop="False"
+                                Background="{DynamicResource ControlStrokeColorDefaultBrush}">
+                    <RepeatButton.Template>
+                      <ControlTemplate TargetType="RepeatButton">
+                        <Border Height="4" CornerRadius="2" Background="{TemplateBinding Background}" />
+                      </ControlTemplate>
+                    </RepeatButton.Template>
+                  </RepeatButton>
+                </Track.IncreaseRepeatButton>
+                <Track.Thumb>
+                  <Thumb Width="16" Height="16" Background="{DynamicResource ApplicationBackgroundBrush}">
+                    <Thumb.Template>
+                      <ControlTemplate TargetType="Thumb">
+                        <Ellipse Fill="{DynamicResource ApplicationBackgroundBrush}"
+                                 Stroke="{DynamicResource AccentFillColorDefaultBrush}"
+                                 StrokeThickness="4" />
+                      </ControlTemplate>
+                    </Thumb.Template>
+                  </Thumb>
+                </Track.Thumb>
+              </Track>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
   </Window.Resources>
 
   <DockPanel>
-    <Menu DockPanel.Dock="Top"
-          Background="{DynamicResource LayerFillColorDefaultBrush}"
-          Foreground="{DynamicResource TextFillColorPrimaryBrush}">
-      <MenuItem Header="_File">
-        <MenuItem Header="_Open Markdown..." InputGestureText="Ctrl+O" Click="OpenFile_Click" />
-        <MenuItem Header="Open _Folder..." Click="OpenFolder_Click" />
-        <Separator />
-        <MenuItem Header="_Save" InputGestureText="Ctrl+S" Click="Save_Click" />
-        <MenuItem Header="Save _As..." InputGestureText="Ctrl+Shift+S" Click="SaveAs_Click" />
-        <Separator />
-        <MenuItem Header="Export _PDF..." Click="ExportPdf_Click" />
-        <MenuItem Header="_Print..." InputGestureText="Ctrl+P" Click="Print_Click" />
-        <Separator />
-        <MenuItem Header="Default _apps settings..." Click="DefaultApps_Click" />
-        <Separator />
-        <MenuItem Header="E_xit" Click="Exit_Click" />
-      </MenuItem>
-      <MenuItem Header="_Edit">
-        <MenuItem Header="_Undo" InputGestureText="Ctrl+Z" Click="Undo_Click" />
-        <MenuItem Header="_Redo" InputGestureText="Ctrl+Y" Click="Redo_Click" />
-        <Separator />
-        <MenuItem Header="_Find" InputGestureText="Ctrl+F" Click="Find_Click" />
-      </MenuItem>
-      <MenuItem Header="_View">
-        <MenuItem Header="Document" Click="DocumentMode_Click" />
-        <MenuItem Header="Split" Click="SplitMode_Click" />
-        <MenuItem Header="Source" Click="SourceMode_Click" />
-        <Separator />
-        <MenuItem Header="Focus Mode" InputGestureText="F11" Click="FocusMode_Click" />
-      </MenuItem>
-    </Menu>
+    <Grid x:Name="IntegratedTitleBar"
+          DockPanel.Dock="Top"
+          Height="36"
+          Background="{DynamicResource LayerFillColorDefaultBrush}">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+
+      <Menu Grid.Column="0"
+            Height="36"
+            VerticalAlignment="Stretch"
+            Background="Transparent"
+            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+            shell:WindowChrome.IsHitTestVisibleInChrome="True">
+        <MenuItem Header="_File">
+          <MenuItem Header="_Open Markdown..." InputGestureText="Ctrl+O" Click="OpenFile_Click" />
+          <MenuItem Header="Open _Folder..." Click="OpenFolder_Click" />
+          <Separator />
+          <MenuItem Header="_Save" InputGestureText="Ctrl+S" Click="Save_Click" />
+          <MenuItem Header="Save _As..." InputGestureText="Ctrl+Shift+S" Click="SaveAs_Click" />
+          <Separator />
+          <MenuItem Header="Export _PDF..." Click="ExportPdfPolished_Click" />
+          <MenuItem Header="_Print..." InputGestureText="Ctrl+P" Click="Print_Click" />
+          <Separator />
+          <MenuItem Header="E_xit" Click="Exit_Click" />
+        </MenuItem>
+        <MenuItem Header="_Edit">
+          <MenuItem Header="_Undo" InputGestureText="Ctrl+Z" Click="Undo_Click" />
+          <MenuItem Header="_Redo" InputGestureText="Ctrl+Y" Click="Redo_Click" />
+          <Separator />
+          <MenuItem Header="_Find" InputGestureText="Ctrl+F" Click="Find_Click" />
+        </MenuItem>
+        <MenuItem Header="_View">
+          <MenuItem Header="Document" Click="DocumentMode_Click" />
+          <MenuItem Header="Split" Click="SplitMode_Click" />
+          <MenuItem Header="Source" Click="SourceMode_Click" />
+          <Separator />
+          <MenuItem Header="Focus Mode" InputGestureText="F11" Click="FocusMode_Click" />
+        </MenuItem>
+      </Menu>
+
+      <Border Grid.Column="1"
+              Background="Transparent"
+              MouseLeftButtonDown="TitleBarDrag_MouseLeftButtonDown" />
+
+      <StackPanel Grid.Column="2"
+                  Orientation="Horizontal"
+                  shell:WindowChrome.IsHitTestVisibleInChrome="True">
+        <Button Style="{StaticResource CaptionButtonStyle}"
+                ToolTip="Minimize"
+                Click="MinimizeWindow_Click">
+          <TextBlock Text="—" FontSize="13" FontWeight="SemiBold" />
+        </Button>
+        <Button x:Name="MaximizeButton"
+                Style="{StaticResource CaptionButtonStyle}"
+                ToolTip="Maximize"
+                Click="MaximizeWindow_Click">
+          <TextBlock x:Name="MaximizeGlyph" Text="□" FontSize="13" />
+        </Button>
+        <Button Style="{StaticResource CloseCaptionButtonStyle}"
+                ToolTip="Close"
+                Click="CloseWindow_Click">
+          <TextBlock Text="×" FontSize="17" />
+        </Button>
+      </StackPanel>
+    </Grid>
 
     <Border x:Name="Toolbar" DockPanel.Dock="Top"
             BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
@@ -86,8 +293,17 @@
         <TextBox Grid.Column="3" x:Name="FindBox" Width="220" Height="32"
                  HorizontalAlignment="Right" VerticalContentAlignment="Center" Margin="8,0"
                  ToolTip="Find in document" TextChanged="FindBox_TextChanged" />
-        <ComboBox Grid.Column="4" x:Name="ThemeBox" Width="112" Height="32" Margin="4,0"
+        <ComboBox Grid.Column="4" x:Name="ThemeBox" MinWidth="126" Height="36" Margin="4,0"
+                  Padding="10,0,8,0"
+                  VerticalContentAlignment="Center"
                   SelectionChanged="ThemeBox_SelectionChanged">
+          <ComboBox.Resources>
+            <Style TargetType="ComboBoxItem">
+              <Setter Property="MinHeight" Value="32" />
+              <Setter Property="VerticalContentAlignment" Value="Center" />
+              <Setter Property="Padding" Value="10,4" />
+            </Style>
+          </ComboBox.Resources>
           <ComboBoxItem Content="System" Tag="system" IsSelected="True" />
           <ComboBoxItem Content="Light" Tag="light" />
           <ComboBoxItem Content="Dark" Tag="dark" />
@@ -96,6 +312,7 @@
           <TextBlock Text="Width" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                      VerticalAlignment="Center" Margin="0,0,7,0" />
           <Slider x:Name="WidthSlider" Width="120" Minimum="560" Maximum="1600" Value="820"
+                  Style="{StaticResource ThemeAwareSlider}"
                   TickFrequency="20" ValueChanged="WidthSlider_ValueChanged" />
         </StackPanel>
         <ui:Button Grid.Column="6" Content="Focus" Click="FocusMode_Click" />
@@ -117,7 +334,17 @@
               BorderThickness="0,0,1,0">
         <DockPanel>
           <TextBlock DockPanel.Dock="Top" Text="FILES" Style="{StaticResource SectionHeading}" />
-          <ListBox x:Name="FileList" Style="{StaticResource SidebarList}" MouseDoubleClick="FileList_MouseDoubleClick" />
+          <ListBox x:Name="FileList" Style="{StaticResource SidebarList}" MouseDoubleClick="FileList_MouseDoubleClick">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding Path, Converter={StaticResource FileNameConverter}}"
+                           ToolTip="{Binding Path}"
+                           Padding="6,4"
+                           TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
         </DockPanel>
       </Border>
       <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent" />
@@ -130,6 +357,7 @@
         </Grid.RowDefinitions>
 
         <TabControl Grid.Row="0" x:Name="DocumentTabs" Height="38"
+                    ItemContainerStyle="{StaticResource ClosableTabItemStyle}"
                     Background="{DynamicResource LayerFillColorDefaultBrush}"
                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                     BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
@@ -144,8 +372,8 @@
 
           <TextBox Grid.Column="0" x:Name="SourceEditor"
                    FontFamily="Cascadia Mono, Consolas" FontSize="14"
-                   AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
-                   VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                   AcceptsReturn="True" AcceptsTab="True" TextWrapping="Wrap"
+                   VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                    BorderThickness="0" Padding="18,16"
                    Background="{DynamicResource ApplicationBackgroundBrush}"
                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"

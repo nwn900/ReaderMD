@@ -1,0 +1,103 @@
+/* Windows host refinements. Kept separate from the shared renderer theme so
+   the native Windows shell can evolve without changing the macOS presentation. */
+html,
+body,
+#preview-shell {
+  max-width: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+#preview-document {
+  min-width: 0;
+  max-width: 100%;
+}
+
+#preview-document p,
+#preview-document li,
+#preview-document blockquote,
+#preview-document dd,
+#preview-document dt,
+#preview-document a,
+#preview-document h1,
+#preview-document h2,
+#preview-document h3,
+#preview-document h4,
+#preview-document h5,
+#preview-document h6 {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+#preview-document > *,
+#preview-document img,
+#preview-document svg,
+#preview-document video,
+#preview-document canvas {
+  max-width: 100%;
+}
+
+.code-card pre,
+.code-card pre code,
+.frontmatter-raw {
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.code-card pre {
+  overflow-x: hidden;
+}
+
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  html,
+  body,
+  #preview-shell,
+  #preview-document {
+    color: var(--ink) !important;
+    background: var(--page) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    width: 100% !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  #preview-shell {
+    width: 100% !important;
+    min-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  #preview-document {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 100vh !important;
+    margin: 0 !important;
+    padding: 12mm 14mm 14mm !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .code-card pre,
+  .code-card pre code,
+  .frontmatter-raw {
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+  }
+}
