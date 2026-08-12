@@ -55,6 +55,12 @@ Root: HKCU; Subkey: "Software\Classes\{#AppProgId}"; ValueType: string; ValueNam
 Root: HKCU; Subkey: "Software\Classes\{#AppProgId}\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#AppExeName},0"
 Root: HKCU; Subkey: "Software\Classes\{#AppProgId}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExeName}"" ""%1"""
 
+Root: HKCU; Subkey: "Software\Classes\Applications\{#AppExeName}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExeName}"" ""%1"""; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\Applications\{#AppExeName}\SupportedTypes"; ValueType: string; ValueName: ".md"; ValueData: ""; Tasks: associate
+Root: HKCU; Subkey: "Software\Classes\Applications\{#AppExeName}\SupportedTypes"; ValueType: string; ValueName: ".markdown"; ValueData: ""; Tasks: associate
+Root: HKCU; Subkey: "Software\Classes\Applications\{#AppExeName}\SupportedTypes"; ValueType: string; ValueName: ".mdown"; ValueData: ""; Tasks: associate
+Root: HKCU; Subkey: "Software\Classes\Applications\{#AppExeName}\SupportedTypes"; ValueType: string; ValueName: ".mkd"; ValueData: ""; Tasks: associate
+
 Root: HKCU; Subkey: "Software\Classes\.md"; ValueType: string; ValueName: ""; ValueData: "{#AppProgId}"; Flags: uninsdeletevalue; Tasks: associate
 Root: HKCU; Subkey: "Software\Classes\.markdown"; ValueType: string; ValueName: ""; ValueData: "{#AppProgId}"; Flags: uninsdeletevalue; Tasks: associate
 Root: HKCU; Subkey: "Software\Classes\.mdown"; ValueType: string; ValueName: ""; ValueData: "{#AppProgId}"; Flags: uninsdeletevalue; Tasks: associate
@@ -108,10 +114,13 @@ procedure ForceMarkdownAssociation(Extension: String);
 var
   UserChoiceKey: String;
   OpenWithListKey: String;
+  OpenWithProgidsKey: String;
   ResultCode: Integer;
+  ExecSucceeded: Boolean;
 begin
   UserChoiceKey := 'Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\' + Extension + '\UserChoice';
   OpenWithListKey := 'Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\' + Extension + '\OpenWithList';
+  OpenWithProgidsKey := 'Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\' + Extension + '\OpenWithProgids';
 
   if RegKeyExists(HKCU, UserChoiceKey) then
   begin
@@ -132,7 +141,21 @@ begin
     RegDeleteKeyIncludingSubkeys(HKCU, OpenWithListKey);
 
   RegWriteStringValue(HKCU, 'Software\Classes\' + Extension, '', '{#AppProgId}');
-  Log('Reasserted ReaderMD association for ' + Extension + '.');
+
+  ExecSucceeded := Exec(
+    ExpandConstant('{sys}\reg.exe'),
+    'add "HKCU\' + OpenWithProgidsKey + '" /v "{#AppProgId}" /t REG_NONE /d "" /f',
+    '',
+    SW_HIDE,
+    ewWaitUntilTerminated,
+    ResultCode);
+  if (not ExecSucceeded) or (ResultCode <> 0) then
+  begin
+    Log('REG_NONE Explorer OpenWithProgids write failed for ' + Extension + '; falling back to a string marker.');
+    RegWriteStringValue(HKCU, OpenWithProgidsKey, '{#AppProgId}', '');
+  end;
+
+  Log('Reasserted ReaderMD association and Explorer Open With entry for ' + Extension + '.');
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
