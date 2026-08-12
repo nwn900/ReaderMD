@@ -67,17 +67,33 @@
       </Setter>
     </Style>
 
-    <Style x:Key="CloseCaptionButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyle}">
-      <Style.Triggers>
-        <Trigger Property="IsMouseOver" Value="True">
-          <Setter Property="Background" Value="#C42B1C" />
-          <Setter Property="Foreground" Value="White" />
-        </Trigger>
-        <Trigger Property="IsPressed" Value="True">
-          <Setter Property="Background" Value="#A51D10" />
-          <Setter Property="Foreground" Value="White" />
-        </Trigger>
-      </Style.Triggers>
+    <Style x:Key="CloseCaptionButtonStyle" TargetType="Button">
+      <Setter Property="Width" Value="46" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="CloseCaptionBackground" Background="{TemplateBinding Background}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="CloseCaptionBackground" Property="Background" Value="#C42B1C" />
+                <Setter Property="Foreground" Value="White" />
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="CloseCaptionBackground" Property="Background" Value="#A51D10" />
+                <Setter Property="Foreground" Value="White" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
     </Style>
 
     <Style x:Key="TabCloseButtonStyle" TargetType="Button">
@@ -105,6 +121,26 @@
           </ControlTemplate>
         </Setter.Value>
       </Setter>
+    </Style>
+
+    <DataTemplate x:Key="ClosableTabHeaderTemplate">
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <TextBlock Text="{Binding}"
+                   MaxWidth="220"
+                   VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis" />
+        <Button Content="×"
+                Style="{StaticResource TabCloseButtonStyle}"
+                Tag="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabItem}}}"
+                ToolTip="Close tab"
+                Click="CloseTab_Click" />
+      </StackPanel>
+    </DataTemplate>
+
+    <Style x:Key="ClosableTabItemStyle"
+           TargetType="TabItem"
+           BasedOn="{StaticResource {x:Type TabItem}}">
+      <Setter Property="HeaderTemplate" Value="{StaticResource ClosableTabHeaderTemplate}" />
     </Style>
 
     <Style x:Key="ThemeAwareSlider" TargetType="Slider">
@@ -321,26 +357,11 @@
         </Grid.RowDefinitions>
 
         <TabControl Grid.Row="0" x:Name="DocumentTabs" Height="38"
+                    ItemContainerStyle="{StaticResource ClosableTabItemStyle}"
                     Background="{DynamicResource LayerFillColorDefaultBrush}"
                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                     BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
-                    SelectionChanged="DocumentTabs_SelectionChanged">
-          <TabControl.HeaderTemplate>
-            <DataTemplate>
-              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="{Binding}"
-                           MaxWidth="220"
-                           VerticalAlignment="Center"
-                           TextTrimming="CharacterEllipsis" />
-                <Button Content="×"
-                        Style="{StaticResource TabCloseButtonStyle}"
-                        Tag="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabItem}}}"
-                        ToolTip="Close tab"
-                        Click="CloseTab_Click" />
-              </StackPanel>
-            </DataTemplate>
-          </TabControl.HeaderTemplate>
-        </TabControl>
+                    SelectionChanged="DocumentTabs_SelectionChanged" />
 
         <Grid Grid.Row="1" x:Name="DocumentArea">
           <Grid.ColumnDefinitions>
