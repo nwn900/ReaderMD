@@ -39,7 +39,7 @@ ChangesAssociations=yes
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "associate"; Description: "Open Markdown files with ReaderMD"; GroupDescription: "File associations:"; Flags: checkedonce
+Name: "associate"; Description: "Open Markdown files with ReaderMD"; GroupDescription: "File associations:"
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
 
 [Files]
