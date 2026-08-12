@@ -9,13 +9,16 @@
         WindowStyle="None" ResizeMode="CanResize"
         SourceInitialized="IntegratedChrome_SourceInitialized"
         StateChanged="IntegratedChrome_StateChanged"
+        Loaded="Enhanced_Loaded"
+        Closing="Enhanced_Closing"
+        PreviewKeyDown="Enhanced_PreviewKeyDown"
         AllowDrop="True" Drop="Window_Drop" DragOver="Window_DragOver"
         Background="{DynamicResource ApplicationBackgroundBrush}"
         Foreground="{DynamicResource TextFillColorPrimaryBrush}"
         FontFamily="Segoe UI Variable Text, Segoe UI"
         TextOptions.TextFormattingMode="Display">
   <shell:WindowChrome.WindowChrome>
-    <shell:WindowChrome CaptionHeight="36"
+    <shell:WindowChrome CaptionHeight="42"
                         ResizeBorderThickness="6"
                         GlassFrameThickness="0"
                         CornerRadius="0"
@@ -40,9 +43,17 @@
       <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
     </Style>
 
+    <Style x:Key="TitleMenuItemStyle" TargetType="MenuItem">
+      <Setter Property="Height" Value="42" />
+      <Setter Property="MinHeight" Value="42" />
+      <Setter Property="Padding" Value="13,7,13,7" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+
     <Style x:Key="CaptionButtonStyle" TargetType="Button">
       <Setter Property="Width" Value="46" />
-      <Setter Property="Height" Value="36" />
+      <Setter Property="Height" Value="42" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Background" Value="Transparent" />
@@ -69,7 +80,7 @@
 
     <Style x:Key="CloseCaptionButtonStyle" TargetType="Button">
       <Setter Property="Width" Value="46" />
-      <Setter Property="Height" Value="36" />
+      <Setter Property="Height" Value="42" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Background" Value="Transparent" />
@@ -133,7 +144,7 @@
                 Style="{StaticResource TabCloseButtonStyle}"
                 Tag="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabItem}}}"
                 ToolTip="Close tab"
-                Click="CloseTab_Click" />
+                Click="Enhanced_CloseTab_Click" />
       </StackPanel>
     </DataTemplate>
 
@@ -195,240 +206,435 @@
     </Style>
   </Window.Resources>
 
-  <DockPanel>
-    <Grid x:Name="IntegratedTitleBar"
-          DockPanel.Dock="Top"
-          Height="36"
-          Background="{DynamicResource LayerFillColorDefaultBrush}">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="Auto" />
-        <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="Auto" />
-      </Grid.ColumnDefinitions>
-
-      <Menu Grid.Column="0"
-            Height="36"
-            VerticalAlignment="Stretch"
-            Background="Transparent"
-            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-            shell:WindowChrome.IsHitTestVisibleInChrome="True">
-        <MenuItem Header="_File">
-          <MenuItem Header="_Open Markdown..." InputGestureText="Ctrl+O" Click="OpenFile_Click" />
-          <MenuItem Header="Open _Folder..." Click="OpenFolder_Click" />
-          <Separator />
-          <MenuItem Header="_Save" InputGestureText="Ctrl+S" Click="Save_Click" />
-          <MenuItem Header="Save _As..." InputGestureText="Ctrl+Shift+S" Click="SaveAs_Click" />
-          <Separator />
-          <MenuItem Header="Export _PDF..." Click="ExportPdfPolished_Click" />
-          <MenuItem Header="_Print..." InputGestureText="Ctrl+P" Click="Print_Click" />
-          <Separator />
-          <MenuItem Header="E_xit" Click="Exit_Click" />
-        </MenuItem>
-        <MenuItem Header="_Edit">
-          <MenuItem Header="_Undo" InputGestureText="Ctrl+Z" Click="Undo_Click" />
-          <MenuItem Header="_Redo" InputGestureText="Ctrl+Y" Click="Redo_Click" />
-          <Separator />
-          <MenuItem Header="_Find" InputGestureText="Ctrl+F" Click="Find_Click" />
-        </MenuItem>
-        <MenuItem Header="_View">
-          <MenuItem Header="Document" Click="DocumentMode_Click" />
-          <MenuItem Header="Split" Click="SplitMode_Click" />
-          <MenuItem Header="Source" Click="SourceMode_Click" />
-          <Separator />
-          <MenuItem Header="Focus Mode" InputGestureText="F11" Click="FocusMode_Click" />
-        </MenuItem>
-      </Menu>
-
-      <Border Grid.Column="1"
-              Background="Transparent"
-              MouseLeftButtonDown="TitleBarDrag_MouseLeftButtonDown" />
-
-      <StackPanel Grid.Column="2"
-                  Orientation="Horizontal"
-                  shell:WindowChrome.IsHitTestVisibleInChrome="True">
-        <Button Style="{StaticResource CaptionButtonStyle}"
-                ToolTip="Minimize"
-                Click="MinimizeWindow_Click">
-          <TextBlock Text="—" FontSize="13" FontWeight="SemiBold" />
-        </Button>
-        <Button x:Name="MaximizeButton"
-                Style="{StaticResource CaptionButtonStyle}"
-                ToolTip="Maximize"
-                Click="MaximizeWindow_Click">
-          <TextBlock x:Name="MaximizeGlyph" Text="□" FontSize="13" />
-        </Button>
-        <Button Style="{StaticResource CloseCaptionButtonStyle}"
-                ToolTip="Close"
-                Click="CloseWindow_Click">
-          <TextBlock Text="×" FontSize="17" />
-        </Button>
-      </StackPanel>
-    </Grid>
-
-    <Border x:Name="Toolbar" DockPanel.Dock="Top"
-            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
-            BorderThickness="0,0,0,1"
+  <Grid>
+    <DockPanel>
+      <Grid x:Name="IntegratedTitleBar"
+            DockPanel.Dock="Top"
+            Height="42"
             Background="{DynamicResource LayerFillColorDefaultBrush}">
-      <Grid Margin="12,8">
         <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="Auto" />
-          <ColumnDefinition Width="Auto" />
           <ColumnDefinition Width="Auto" />
           <ColumnDefinition Width="*" />
           <ColumnDefinition Width="Auto" />
-          <ColumnDefinition Width="Auto" />
-          <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <StackPanel Grid.Column="0" Orientation="Horizontal">
-          <ui:Button Appearance="Primary" Content="Open" Click="OpenFile_Click" Margin="0,0,6,0" />
-          <ui:Button Content="Folder" Click="OpenFolder_Click" />
+
+        <StackPanel Grid.Column="0" Orientation="Horizontal"
+                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+          <Menu Height="42"
+                Padding="0"
+                VerticalAlignment="Stretch"
+                Background="Transparent"
+                Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+            <MenuItem Header="_File" Style="{StaticResource TitleMenuItemStyle}">
+              <MenuItem Header="_Open Markdown..." InputGestureText="Ctrl+O" Click="OpenFile_Click" />
+              <MenuItem Header="Open _Folder..." Click="OpenFolder_Click" />
+              <Separator />
+              <MenuItem Header="_Save" InputGestureText="Ctrl+S" Click="Enhanced_Save_Click" />
+              <MenuItem Header="Save _As..." InputGestureText="Ctrl+Shift+S" Click="Enhanced_SaveAs_Click" />
+              <Separator />
+              <MenuItem Header="Export _PDF..." Click="ExportPdfPolished_Click" />
+              <MenuItem Header="_Print..." InputGestureText="Ctrl+P" Click="Print_Click" />
+              <Separator />
+              <MenuItem Header="E_xit" Click="Exit_Click" />
+            </MenuItem>
+            <MenuItem Header="_Edit" Style="{StaticResource TitleMenuItemStyle}">
+              <MenuItem Header="_Undo" InputGestureText="Ctrl+Z" Click="Undo_Click" />
+              <MenuItem Header="_Redo" InputGestureText="Ctrl+Y" Click="Redo_Click" />
+              <Separator />
+              <MenuItem Header="_Find" InputGestureText="Ctrl+F" Click="Enhanced_Find_Click" />
+            </MenuItem>
+            <MenuItem Header="_View" Style="{StaticResource TitleMenuItemStyle}">
+              <MenuItem Header="Document" Click="Enhanced_DocumentMode_Click" />
+              <MenuItem Header="Split" Click="Enhanced_SplitMode_Click" />
+              <MenuItem Header="Source" Click="Enhanced_SourceMode_Click" />
+              <Separator />
+              <MenuItem Header="Focus Mode" InputGestureText="F11" Click="Enhanced_FocusMode_Click" />
+            </MenuItem>
+          </Menu>
+          <ui:Button x:Name="ExitFocusButton"
+                     Visibility="Collapsed"
+                     Content="Exit Focus"
+                     Appearance="Primary"
+                     Height="32"
+                     Margin="6,5,0,5"
+                     Padding="12,0"
+                     ToolTip="Leave Focus mode (Esc)"
+                     Click="Enhanced_FocusMode_Click" />
         </StackPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="14,0,0,0">
-          <ui:Button x:Name="DocumentModeButton" Appearance="Primary" Content="Document" Click="DocumentMode_Click" Margin="0,0,4,0" />
-          <ui:Button x:Name="SplitModeButton" Content="Split" Click="SplitMode_Click" Margin="0,0,4,0" />
-          <ui:Button x:Name="SourceModeButton" Content="Source" Click="SourceMode_Click" />
+
+        <Border Grid.Column="1"
+                Background="Transparent"
+                MouseLeftButtonDown="TitleBarDrag_MouseLeftButtonDown" />
+
+        <StackPanel Grid.Column="2"
+                    Orientation="Horizontal"
+                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+          <Button Style="{StaticResource CaptionButtonStyle}"
+                  ToolTip="Minimize"
+                  Click="MinimizeWindow_Click">
+            <TextBlock Text="—" FontSize="13" FontWeight="SemiBold" />
+          </Button>
+          <Button x:Name="MaximizeButton"
+                  Style="{StaticResource CaptionButtonStyle}"
+                  ToolTip="Maximize"
+                  Click="MaximizeWindow_Click">
+            <TextBlock x:Name="MaximizeGlyph" Text="□" FontSize="13" />
+          </Button>
+          <Button Style="{StaticResource CloseCaptionButtonStyle}"
+                  ToolTip="Close"
+                  Click="CloseWindow_Click">
+            <TextBlock Text="×" FontSize="17" />
+          </Button>
         </StackPanel>
-        <CheckBox Grid.Column="2" x:Name="RichEditCheckBox" Content="Edit rendered document"
-                  VerticalAlignment="Center" Margin="16,0" Checked="RichEditChanged" Unchecked="RichEditChanged" />
-        <TextBox Grid.Column="3" x:Name="FindBox" Width="220" Height="32"
-                 HorizontalAlignment="Right" VerticalContentAlignment="Center" Margin="8,0"
-                 ToolTip="Find in document" TextChanged="FindBox_TextChanged" />
-        <ComboBox Grid.Column="4" x:Name="ThemeBox" MinWidth="126" Height="36" Margin="4,0"
-                  Padding="10,0,8,0"
-                  VerticalContentAlignment="Center"
-                  SelectionChanged="ThemeBox_SelectionChanged">
-          <ComboBox.Resources>
-            <Style TargetType="ComboBoxItem">
-              <Setter Property="MinHeight" Value="32" />
-              <Setter Property="VerticalContentAlignment" Value="Center" />
-              <Setter Property="Padding" Value="10,4" />
-            </Style>
-          </ComboBox.Resources>
-          <ComboBoxItem Content="System" Tag="system" IsSelected="True" />
-          <ComboBoxItem Content="Light" Tag="light" />
-          <ComboBoxItem Content="Dark" Tag="dark" />
-        </ComboBox>
-        <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
-          <TextBlock Text="Width" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                     VerticalAlignment="Center" Margin="0,0,7,0" />
-          <Slider x:Name="WidthSlider" Width="120" Minimum="560" Maximum="1600" Value="820"
-                  Style="{StaticResource ThemeAwareSlider}"
-                  TickFrequency="20" ValueChanged="WidthSlider_ValueChanged" />
-        </StackPanel>
-        <ui:Button Grid.Column="6" Content="Focus" Click="FocusMode_Click" />
       </Grid>
-    </Border>
 
-    <Grid>
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition x:Name="SidebarColumn" Width="250" />
-        <ColumnDefinition Width="5" />
-        <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="5" />
-        <ColumnDefinition x:Name="OutlineColumn" Width="230" />
-      </Grid.ColumnDefinitions>
-
-      <Border Grid.Column="0"
-              Background="{DynamicResource LayerFillColorDefaultBrush}"
+      <Border x:Name="Toolbar" DockPanel.Dock="Top"
               BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
-              BorderThickness="0,0,1,0">
-        <DockPanel>
-          <TextBlock DockPanel.Dock="Top" Text="FILES" Style="{StaticResource SectionHeading}" />
-          <ListBox x:Name="FileList" Style="{StaticResource SidebarList}" MouseDoubleClick="FileList_MouseDoubleClick">
-            <ListBox.ItemTemplate>
-              <DataTemplate>
-                <TextBlock Text="{Binding Path, Converter={StaticResource FileNameConverter}}"
-                           ToolTip="{Binding Path}"
-                           Padding="6,4"
-                           TextTrimming="CharacterEllipsis"
-                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-        </DockPanel>
-      </Border>
-      <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent" />
-
-      <Grid Grid.Column="2" Background="{DynamicResource ApplicationBackgroundBrush}">
-        <Grid.RowDefinitions>
-          <RowDefinition Height="Auto" />
-          <RowDefinition Height="*" />
-          <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-
-        <TabControl Grid.Row="0" x:Name="DocumentTabs" Height="38"
-                    ItemContainerStyle="{StaticResource ClosableTabItemStyle}"
-                    Background="{DynamicResource LayerFillColorDefaultBrush}"
-                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                    BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
-                    SelectionChanged="DocumentTabs_SelectionChanged" />
-
-        <Grid Grid.Row="1" x:Name="DocumentArea">
+              BorderThickness="0,0,0,1"
+              Background="{DynamicResource LayerFillColorDefaultBrush}">
+        <Grid Margin="10,7">
           <Grid.ColumnDefinitions>
-            <ColumnDefinition x:Name="SourceColumn" Width="0" />
-            <ColumnDefinition x:Name="SplitDividerColumn" Width="0" />
-            <ColumnDefinition x:Name="PreviewColumn" Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" MinWidth="230" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
           </Grid.ColumnDefinitions>
 
-          <TextBox Grid.Column="0" x:Name="SourceEditor"
-                   FontFamily="Cascadia Mono, Consolas" FontSize="14"
-                   AcceptsReturn="True" AcceptsTab="True" TextWrapping="Wrap"
-                   VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                   BorderThickness="0" Padding="18,16"
-                   Background="{DynamicResource ApplicationBackgroundBrush}"
-                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                   CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
-                   TextChanged="SourceEditor_TextChanged" />
-          <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"
-                        Background="{DynamicResource DividerStrokeColorDefaultBrush}" />
-          <wv2:WebView2 Grid.Column="2" x:Name="PreviewWebView"
-                        AllowExternalDrop="False" AllowDrop="True"
-                        DragOver="Window_DragOver" Drop="Window_Drop" />
+          <StackPanel Grid.Column="0" Orientation="Horizontal">
+            <ui:Button x:Name="DocumentModeButton" Appearance="Primary" Content="Document"
+                       Click="Enhanced_DocumentMode_Click" Margin="0,0,4,0" />
+            <ui:Button x:Name="SplitModeButton" Content="Split"
+                       Click="Enhanced_SplitMode_Click" Margin="0,0,4,0" />
+            <ui:Button x:Name="SourceModeButton" Content="Source"
+                       Click="Enhanced_SourceMode_Click" />
+          </StackPanel>
 
-          <Grid x:Name="EmptyState" Grid.ColumnSpan="3" Background="{DynamicResource ApplicationBackgroundBrush}">
-            <Border HorizontalAlignment="Center" VerticalAlignment="Center" Width="480" Padding="34"
-                    CornerRadius="18"
-                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-              <StackPanel>
-                <TextBlock Text="ReaderMD" FontSize="34" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                <TextBlock Text="Read and edit Markdown without leaving your desktop."
-                           FontSize="15" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                           TextAlignment="Center" HorizontalAlignment="Center" Margin="0,10,0,6" />
-                <TextBlock Text="Open a file, choose a folder, or drop Markdown files anywhere in this window."
-                           FontSize="13" Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                           TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" Margin="0,0,0,24" />
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                  <ui:Button Appearance="Primary" Content="Open Markdown..." Click="OpenFile_Click" Margin="0,0,8,0" />
-                  <ui:Button Content="Open Folder..." Click="OpenFolder_Click" />
-                </StackPanel>
-              </StackPanel>
-            </Border>
+          <CheckBox Grid.Column="1" x:Name="RichEditCheckBox" Content="Edit rendered"
+                    VerticalAlignment="Center" Margin="12,0"
+                    Checked="Enhanced_RichEditChanged" Unchecked="Enhanced_RichEditChanged" />
+
+          <ui:Button Grid.Column="2"
+                     x:Name="SaveButton"
+                     Content="Save"
+                     Appearance="Secondary"
+                     IsEnabled="False"
+                     Margin="0,0,8,0"
+                     Click="Enhanced_Save_Click" />
+
+          <Border Grid.Column="3"
+                  MinWidth="230" MaxWidth="530"
+                  HorizontalAlignment="Stretch"
+                  Padding="5"
+                  CornerRadius="7"
+                  Background="{DynamicResource ControlFillColorDefaultBrush}"
+                  BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                  BorderThickness="1">
+            <Grid>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+              </Grid.RowDefinitions>
+              <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="92" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ComboBox Grid.Column="0"
+                          x:Name="SearchModeBox"
+                          Height="32"
+                          Padding="8,0"
+                          VerticalContentAlignment="Center"
+                          SelectionChanged="Enhanced_SearchModeChanged">
+                  <ComboBoxItem Content="Find" IsSelected="True" />
+                  <ComboBoxItem Content="Replace" />
+                </ComboBox>
+                <TextBox Grid.Column="1"
+                         x:Name="FindBox"
+                         MinWidth="100"
+                         Height="32"
+                         Margin="5,0"
+                         Padding="7,0"
+                         VerticalContentAlignment="Center"
+                         ToolTip="Find in document"
+                         TextChanged="Enhanced_FindBox_TextChanged" />
+                <TextBlock Grid.Column="2"
+                           x:Name="SearchCountText"
+                           MinWidth="62"
+                           Margin="4,0,2,0"
+                           VerticalAlignment="Center"
+                           TextAlignment="Right"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+              </Grid>
+
+              <Grid Grid.Row="1" x:Name="ReplacePanel" Visibility="Collapsed" Margin="97,5,0,0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0"
+                         x:Name="ReplaceBox"
+                         MinWidth="90"
+                         Height="30"
+                         Padding="7,0"
+                         VerticalContentAlignment="Center"
+                         ToolTip="Replace with" />
+                <CheckBox Grid.Column="1"
+                          x:Name="MatchCaseCheckBox"
+                          Content="Aa"
+                          Margin="6,0,0,0"
+                          VerticalAlignment="Center"
+                          ToolTip="Match case"
+                          Checked="Enhanced_SearchOptionsChanged"
+                          Unchecked="Enhanced_SearchOptionsChanged" />
+                <CheckBox Grid.Column="2"
+                          x:Name="WholeWordCheckBox"
+                          Content="Word"
+                          Margin="6,0,0,0"
+                          VerticalAlignment="Center"
+                          ToolTip="Match whole word"
+                          Checked="Enhanced_SearchOptionsChanged"
+                          Unchecked="Enhanced_SearchOptionsChanged" />
+                <ui:Button Grid.Column="3"
+                           Content="Next"
+                           Margin="6,0,0,0"
+                           Padding="10,0"
+                           ToolTip="Replace next match"
+                           Click="Enhanced_ReplaceNext_Click" />
+                <ui:Button Grid.Column="4"
+                           Content="All"
+                           Appearance="Primary"
+                           Margin="4,0,0,0"
+                           Padding="10,0"
+                           ToolTip="Replace all matches"
+                           Click="Enhanced_ReplaceAll_Click" />
+              </Grid>
+            </Grid>
+          </Border>
+
+          <ComboBox Grid.Column="4" x:Name="ThemeBox" MinWidth="108" Height="36" Margin="8,0,4,0"
+                    Padding="10,0,8,0"
+                    VerticalContentAlignment="Center"
+                    SelectionChanged="Enhanced_ThemeBox_SelectionChanged">
+            <ComboBox.Resources>
+              <Style TargetType="ComboBoxItem">
+                <Setter Property="MinHeight" Value="32" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="Padding" Value="10,4" />
+              </Style>
+            </ComboBox.Resources>
+            <ComboBoxItem Content="System" Tag="system" IsSelected="True" />
+            <ComboBoxItem Content="Light" Tag="light" />
+            <ComboBoxItem Content="Dark" Tag="dark" />
+          </ComboBox>
+
+          <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0">
+            <TextBlock Text="Width" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       VerticalAlignment="Center" Margin="0,0,6,0" />
+            <Slider x:Name="WidthSlider" Width="92" Minimum="560" Maximum="1600" Value="820"
+                    Style="{StaticResource ThemeAwareSlider}"
+                    TickFrequency="20" ValueChanged="Enhanced_WidthSlider_ValueChanged" />
+          </StackPanel>
+
+          <ui:Button Grid.Column="6"
+                     x:Name="FocusToolbarButton"
+                     Content="Focus"
+                     Click="Enhanced_FocusMode_Click" />
+        </Grid>
+      </Border>
+
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition x:Name="SidebarColumn" Width="250" />
+          <ColumnDefinition Width="5" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="5" />
+          <ColumnDefinition x:Name="OutlineColumn" Width="230" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0"
+                Background="{DynamicResource LayerFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="0,0,1,0">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Top" Text="FILES" Style="{StaticResource SectionHeading}" />
+            <ListBox x:Name="FileList"
+                     Style="{StaticResource SidebarList}"
+                     MouseDoubleClick="FileList_MouseDoubleClick"
+                     PreviewMouseRightButtonDown="Enhanced_FileList_PreviewMouseRightButtonDown">
+              <ListBox.ContextMenu>
+                <ContextMenu Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                             Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+                  <MenuItem Header="Open source folder" Click="Enhanced_OpenSourceFolder_Click" />
+                </ContextMenu>
+              </ListBox.ContextMenu>
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Path, Converter={StaticResource FileNameConverter}}"
+                             ToolTip="{Binding Path}"
+                             Padding="6,4"
+                             TextTrimming="CharacterEllipsis"
+                             Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </DockPanel>
+        </Border>
+        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent" />
+
+        <Grid Grid.Column="2" Background="{DynamicResource ApplicationBackgroundBrush}">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+
+          <Grid Grid.Row="0"
+                x:Name="TabStrip"
+                Height="40"
+                Background="{DynamicResource LayerFillColorDefaultBrush}">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TabControl Grid.Column="0"
+                        x:Name="DocumentTabs"
+                        ItemContainerStyle="{StaticResource ClosableTabItemStyle}"
+                        Background="{DynamicResource LayerFillColorDefaultBrush}"
+                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                        BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                        SelectionChanged="Enhanced_DocumentTabs_SelectionChanged" />
+            <ui:Button Grid.Column="1"
+                       x:Name="CloseAllTabsButton"
+                       Visibility="Collapsed"
+                       Content="Close all"
+                       Margin="5,4,7,4"
+                       Padding="11,0"
+                       ToolTip="Close all open tabs"
+                       Click="Enhanced_CloseAllTabs_Click" />
           </Grid>
+
+          <Grid Grid.Row="1" x:Name="DocumentArea">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition x:Name="SourceColumn" Width="*" />
+              <ColumnDefinition x:Name="SplitDividerColumn" Width="0" />
+              <ColumnDefinition x:Name="PreviewColumn" Width="0" />
+            </Grid.ColumnDefinitions>
+
+            <wv2:WebView2 Grid.Column="0"
+                          x:Name="PreviewWebView"
+                          AllowExternalDrop="False"
+                          AllowDrop="True"
+                          DragOver="Window_DragOver"
+                          Drop="Window_Drop" />
+
+            <TextBox Grid.Column="0" Grid.ColumnSpan="3"
+                     x:Name="SourceEditor"
+                     Visibility="Collapsed"
+                     FontFamily="Cascadia Mono, Consolas" FontSize="14"
+                     AcceptsReturn="True" AcceptsTab="True" TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                     BorderThickness="0" Padding="18,16"
+                     Background="{DynamicResource ApplicationBackgroundBrush}"
+                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                     CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                     TextChanged="Enhanced_SourceEditor_TextChanged" />
+
+            <GridSplitter Grid.Column="1"
+                          Width="5"
+                          HorizontalAlignment="Stretch"
+                          Background="{DynamicResource DividerStrokeColorDefaultBrush}" />
+
+            <Grid Grid.Column="2"
+                  x:Name="SecondaryPane"
+                  Visibility="Collapsed"
+                  Background="{DynamicResource ApplicationBackgroundBrush}">
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+              </Grid.RowDefinitions>
+              <Border Grid.Row="0"
+                      Padding="8,5"
+                      Background="{DynamicResource LayerFillColorDefaultBrush}"
+                      BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                      BorderThickness="0,0,0,1">
+                <DockPanel>
+                  <TextBlock DockPanel.Dock="Left"
+                             Text="Second document"
+                             Margin="0,0,8,0"
+                             VerticalAlignment="Center"
+                             Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                  <ComboBox x:Name="SecondaryDocumentBox"
+                            Height="30"
+                            MinWidth="160"
+                            DisplayMemberPath="Title"
+                            VerticalContentAlignment="Center"
+                            SelectionChanged="Enhanced_SecondaryDocumentChanged" />
+                </DockPanel>
+              </Border>
+              <wv2:WebView2 Grid.Row="1"
+                            x:Name="SecondaryPreviewWebView"
+                            AllowExternalDrop="False"
+                            AllowDrop="True"
+                            DragOver="Window_DragOver"
+                            Drop="Window_Drop" />
+            </Grid>
+
+            <Grid x:Name="EmptyState" Grid.ColumnSpan="3" Background="{DynamicResource ApplicationBackgroundBrush}">
+              <Border HorizontalAlignment="Center" VerticalAlignment="Center" Width="480" Padding="34"
+                      CornerRadius="18"
+                      Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                      BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                <StackPanel>
+                  <TextBlock Text="ReaderMD" FontSize="34" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                  <TextBlock Text="Read and edit Markdown without leaving your desktop."
+                             FontSize="15" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                             TextAlignment="Center" HorizontalAlignment="Center" Margin="0,10,0,6" />
+                  <TextBlock Text="Open a file, choose a folder, or drop Markdown files anywhere in this window."
+                             FontSize="13" Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                             TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" Margin="0,0,0,24" />
+                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <ui:Button Appearance="Primary" Content="Open Markdown..." Click="OpenFile_Click" Margin="0,0,8,0" />
+                    <ui:Button Content="Open Folder..." Click="OpenFolder_Click" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </Grid>
+          </Grid>
+
+          <StatusBar Grid.Row="2"
+                     Background="{DynamicResource LayerFillColorDefaultBrush}"
+                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                     BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+            <StatusBarItem><TextBlock x:Name="PathStatus" Text="No document" TextTrimming="CharacterEllipsis" /></StatusBarItem>
+            <Separator />
+            <StatusBarItem><TextBlock x:Name="StatsStatus" /></StatusBarItem>
+            <Separator />
+            <StatusBarItem><TextBlock Text="Offline renderer" /></StatusBarItem>
+          </StatusBar>
         </Grid>
 
-        <StatusBar Grid.Row="2"
-                   Background="{DynamicResource LayerFillColorDefaultBrush}"
-                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                   BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
-          <StatusBarItem><TextBlock x:Name="PathStatus" Text="No document" TextTrimming="CharacterEllipsis" /></StatusBarItem>
-          <Separator />
-          <StatusBarItem><TextBlock x:Name="StatsStatus" /></StatusBarItem>
-          <Separator />
-          <StatusBarItem><TextBlock Text="Offline renderer" /></StatusBarItem>
-        </StatusBar>
+        <GridSplitter Grid.Column="3" Width="5" HorizontalAlignment="Stretch" Background="Transparent" />
+        <Border Grid.Column="4"
+                Background="{DynamicResource LayerFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="1,0,0,0">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Top" Text="OUTLINE" Style="{StaticResource SectionHeading}" />
+            <ListBox x:Name="OutlineList" Style="{StaticResource SidebarList}" SelectionChanged="OutlineList_SelectionChanged" />
+          </DockPanel>
+        </Border>
       </Grid>
+    </DockPanel>
 
-      <GridSplitter Grid.Column="3" Width="5" HorizontalAlignment="Stretch" Background="Transparent" />
-      <Border Grid.Column="4"
-              Background="{DynamicResource LayerFillColorDefaultBrush}"
-              BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
-              BorderThickness="1,0,0,0">
-        <DockPanel>
-          <TextBlock DockPanel.Dock="Top" Text="OUTLINE" Style="{StaticResource SectionHeading}" />
-          <ListBox x:Name="OutlineList" Style="{StaticResource SidebarList}" SelectionChanged="OutlineList_SelectionChanged" />
-        </DockPanel>
-      </Border>
-    </Grid>
-  </DockPanel>
+    <ui:ContentDialogHost x:Name="RootContentDialogHost"
+                          Panel.ZIndex="100" />
+  </Grid>
 </Window>

@@ -1,6 +1,13 @@
 (function () {
   "use strict";
 
+  window.readermdForceTheme = function (theme, systemDark) {
+    const isDark = theme === "dark" || (theme === "system" && systemDark === true);
+    const root = document.documentElement;
+    root.dataset.theme = isDark ? "dark" : "light";
+    root.style.colorScheme = isDark ? "dark" : "light";
+  };
+
   const originalMarkdownIt = window.markdownit;
   if (!originalMarkdownIt) return;
 

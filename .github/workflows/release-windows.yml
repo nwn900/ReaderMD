@@ -6,7 +6,7 @@ on:
       version:
         description: Release version without the v prefix
         required: true
-        default: '1.2.0'
+        default: '1.3.0'
   push:
     branches:
       - main
@@ -31,7 +31,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     env:
-      VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '1.2.0' }}
+      VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '1.3.0' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -69,9 +69,16 @@ jobs:
         run: |
           $installer = Join-Path $env:RUNNER_TEMP 'innosetup-7.1.0-x64.exe'
           $installDir = Join-Path $env:RUNNER_TEMP 'InnoSetup'
-          Invoke-WebRequest `
-            -Uri 'https://github.com/jrsoftware/issrc/releases/download/is-7_1_0/innosetup-7.1.0-x64.exe' `
-            -OutFile $installer
+          $uri = 'https://github.com/jrsoftware/issrc/releases/download/is-7_1_0/innosetup-7.1.0-x64.exe'
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            try {
+              Invoke-WebRequest -Uri $uri -OutFile $installer
+              break
+            } catch {
+              if ($attempt -eq 3) { throw }
+              Start-Sleep -Seconds (3 * $attempt)
+            }
+          }
           $process = Start-Process `
             -FilePath $installer `
             -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$installDir" `
@@ -142,13 +149,15 @@ jobs:
           ReaderMD $env:VERSION for Windows x64.
 
           Highlights:
-          - Integrated Windows title bar with File/Edit/View and standard window controls on one row.
-          - Improved dark-mode PDF export with full-page themed backgrounds and cleaner margins.
-          - Fixed theme selector sizing and theme-aware reading-width slider styling.
-          - Closable document tabs and cleaner folder navigation with filename-first labels and full-path tooltips.
-          - Better raw HTML compatibility, including common GitHub-style image markup, with sanitization.
-          - Elegant wrapping for long prose, links, source lines, and code blocks.
-          - Markdown file association is selected by default during setup without launching Windows Default Apps afterward.
+          - Fixed vertically clipped File, Edit, and View controls in the integrated title bar.
+          - Added Close all for multi-tab workspaces and a persistent Save button with dirty-state highlighting.
+          - Focus mode now exposes an Exit Focus control directly beside the View menu.
+          - Split mode now renders two ReaderMD document viewers side by side, with a picker for the second document.
+          - Theme switching is synchronized across both rendered document panes.
+          - Files now have a themed right-click action to reveal the selected document in its source folder.
+          - Unsaved-change confirmations now use in-app Fluent dialogs instead of Windows message boxes.
+          - Search now includes Find and Find & Replace modes, live match counts, case and whole-word options, and explicit replacement confirmation.
+          - Markdown file association remains selected by default during setup.
           - Native WPF application with the bundled offline Markdown renderer and self-contained .NET 8 deployment.
 
           The setup program installs or updates the Microsoft Edge WebView2 Evergreen Runtime when needed.
