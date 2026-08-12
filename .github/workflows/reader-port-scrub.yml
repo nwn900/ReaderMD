@@ -40,6 +40,7 @@ jobs:
               (old, new),
               (old.lower(), new.lower()),
               (old.upper(), new.upper()),
+              (old[0].lower() + old[1:], new[0].lower() + new[1:]),
           ]
 
           for path in [p for p in root.rglob("*") if p.is_file() and ".git" not in p.parts]:
