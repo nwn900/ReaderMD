@@ -40,7 +40,7 @@ jobs:
 
   dco:
     name: DCO sign-off
-    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -56,7 +56,7 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           missing=0
-          for commit in $(git rev-list "$BASE_SHA..$HEAD_SHA"); do
+          for commit in $(git rev-list --no-merges "$BASE_SHA..$HEAD_SHA"); do
             if ! git show -s --format=%B "$commit" | grep -Eq '^Signed-off-by: .+ <[^>]+>$'; then
               echo "::error::Commit ${commit:0:12} is missing a valid Signed-off-by line. Use git commit -s."
               missing=1
