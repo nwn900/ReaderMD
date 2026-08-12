@@ -1,5 +1,5 @@
 name: Windows Release
-# Release marker: ReaderMD 1.3.0
+# Release marker: ReaderMD 1.3.1
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
       version:
         description: Release version without the v prefix
         required: true
-        default: '1.3.0'
+        default: '1.3.1'
   push:
     branches:
       - main
@@ -32,7 +32,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     env:
-      VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '1.3.0' }}
+      VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '1.3.1' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -121,6 +121,15 @@ jobs:
             throw 'Installed ReaderMD.exe was not found.'
           }
 
+          $mdKey = Get-Item 'HKCU:\Software\Classes\.md' -ErrorAction Stop
+          if ($mdKey.GetValue('') -ne 'ReaderMD.Markdown') {
+            throw 'The installer did not reassert ReaderMD as the per-user .md ProgID.'
+          }
+          $openWithKey = Get-Item 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.md\OpenWithProgids' -ErrorAction Stop
+          if ($openWithKey.GetValueNames() -notcontains 'ReaderMD.Markdown') {
+            throw 'The installer did not register ReaderMD in Explorer Open With for .md.'
+          }
+
       - name: Generate checksum
         shell: pwsh
         run: |
@@ -149,17 +158,16 @@ jobs:
           $notes = @"
           ReaderMD $env:VERSION for Windows x64.
 
-          Highlights:
-          - Fixed vertically clipped File, Edit, and View controls in the integrated title bar.
-          - Added Close all for multi-tab workspaces and a persistent Save button with dirty-state highlighting.
-          - Focus mode now exposes an Exit Focus control directly beside the View menu.
-          - Split mode now renders two ReaderMD document viewers side by side, with a picker for the second document.
-          - Theme switching is synchronized across both rendered document panes.
-          - Files now have a themed right-click action to reveal the selected document in its source folder.
-          - Unsaved-change confirmations now use in-app Fluent dialogs instead of Windows message boxes.
-          - Search now includes Find and Find & Replace modes, live match counts, case and whole-word options, and explicit replacement confirmation.
-          - Markdown file association remains selected by default during setup.
+          Hotfixes:
+          - The empty-workspace welcome screen now remains visible after WebView2 starts instead of flashing and being replaced by a blank page.
+          - Rendered editing is explicitly activated/deactivated and the control is renamed to Toggle editing.
+          - File, Edit, and View are given a taller, vertically centered integrated title-bar row to eliminate text clipping.
+          - Markdown files and folders dropped over an already-open rendered document are intercepted and opened in ReaderMD; a newly dropped Markdown file opens as another tab.
+          - PDF export now initializes/checks the renderer, waits for asynchronous print preparation, preserves themed backgrounds, and reports failures instead of silently doing nothing.
+          - When the Markdown association task is selected, setup aggressively clears stale per-user UserChoice overrides, reasserts the ReaderMD ProgID, registers Explorer Open With entries, and broadcasts a shell association refresh.
           - Native WPF application with the bundled offline Markdown renderer and self-contained .NET 8 deployment.
+
+          Windows 8 and later intentionally protect default-app selection from supported programmatic APIs. The association option therefore uses an aggressive per-user reset/reassert path when explicitly selected by the user rather than opening Windows Settings.
 
           The setup program installs or updates the Microsoft Edge WebView2 Evergreen Runtime when needed.
           The installer is currently unsigned, so Windows may display a SmartScreen warning on first launch.
