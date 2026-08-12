@@ -39,6 +39,7 @@ ChangesAssociations=yes
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
+Name: "associate"; Description: "Open Markdown files with ReaderMD"; GroupDescription: "File associations:"; Flags: checkedonce
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
 
 [Files]
@@ -53,6 +54,16 @@ Name: "{autodesktop}\ReaderMD"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{a
 Root: HKCU; Subkey: "Software\Classes\{#AppProgId}"; ValueType: string; ValueName: ""; ValueData: "Markdown Document"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\{#AppProgId}\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#AppExeName},0"
 Root: HKCU; Subkey: "Software\Classes\{#AppProgId}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExeName}"" ""%1"""
+
+Root: HKCU; Subkey: "Software\Classes\.md"; ValueType: string; ValueName: ""; ValueData: "{#AppProgId}"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCU; Subkey: "Software\Classes\.markdown"; ValueType: string; ValueName: ""; ValueData: "{#AppProgId}"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCU; Subkey: "Software\Classes\.mdown"; ValueType: string; ValueName: ""; ValueData: "{#AppProgId}"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCU; Subkey: "Software\Classes\.mkd"; ValueType: string; ValueName: ""; ValueData: "{#AppProgId}"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCU; Subkey: "Software\Classes\.md\OpenWithProgids"; ValueType: none; ValueName: "{#AppProgId}"; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Classes\.markdown\OpenWithProgids"; ValueType: none; ValueName: "{#AppProgId}"; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Classes\.mdown\OpenWithProgids"; ValueType: none; ValueName: "{#AppProgId}"; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Classes\.mkd\OpenWithProgids"; ValueType: none; ValueName: "{#AppProgId}"; Flags: uninsdeletevalue
+
 Root: HKCU; Subkey: "Software\ReaderMD\Capabilities"; ValueType: string; ValueName: "ApplicationName"; ValueData: "ReaderMD"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\ReaderMD\Capabilities"; ValueType: string; ValueName: "ApplicationDescription"; ValueData: "ReaderMD Markdown reader and editor"
 Root: HKCU; Subkey: "Software\ReaderMD\Capabilities\FileAssociations"; ValueType: string; ValueName: ".md"; ValueData: "{#AppProgId}"
@@ -63,7 +74,6 @@ Root: HKCU; Subkey: "Software\RegisteredApplications"; ValueType: string; ValueN
 
 [Run]
 Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; StatusMsg: "Ensuring Microsoft Edge WebView2 Runtime is installed..."; Flags: runhidden waituntilterminated skipifdoesntexist; Check: ShouldInstallWebView2
-Filename: "ms-settings:defaultapps?registeredAppUser=ReaderMD"; Description: "Choose ReaderMD as the default app for Markdown files"; Flags: shellexec postinstall skipifsilent unchecked
 Filename: "{app}\{#AppExeName}"; Description: "Launch ReaderMD"; Flags: nowait postinstall skipifsilent
 
 [Code]
