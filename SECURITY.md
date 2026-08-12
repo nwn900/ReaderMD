@@ -1,6 +1,6 @@
 # Security policy
 
-PreviewMD opens documents that may come from untrusted sources. Security reports
+ReaderMD opens documents that may come from untrusted sources. Security reports
 are taken seriously, especially when they involve code execution, sandbox
 escape, unintended file access, unsafe link handling, privacy, the Quick Look
 extension, release integrity, or the landing-page subscriber database.
@@ -12,7 +12,7 @@ a public discussion.**
 
 Use GitHub's private vulnerability reporting for this repository. If that is not
 available, email [adam@jesion.pl](mailto:adam@jesion.pl) with the subject
-`[PreviewMD security]`.
+`[ReaderMD security]`.
 
 Please include, when possible:
 

@@ -1,6 +1,6 @@
-# Contributing to PreviewMD
+# Contributing to ReaderMD
 
-Thank you for spending your time on PreviewMD. Whether you bring a one-line
+Thank you for spending your time on ReaderMD. Whether you bring a one-line
 documentation fix, a pathological Markdown file, a UI refinement, or the first
 credible experiment on another operating system, you are welcome here.
 
@@ -53,10 +53,10 @@ The current application target requires macOS 14 or newer and Xcode with Swift
 6.1 support. It is a Swift Package Manager project with no `.xcodeproj`.
 
 ```bash
-git clone https://github.com/ashtree74/PreviewMD.git
-cd PreviewMD
+git clone https://github.com/ashtree74/ReaderMD.git
+cd ReaderMD
 swift test
-swift run PreviewMD
+swift run ReaderMD
 ```
 
 Useful checks:
@@ -75,7 +75,7 @@ requiring maintainer credentials.
 
 ## Project invariants
 
-PreviewMD has deliberate product behaviors around windows, tabs, folders,
+ReaderMD has deliberate product behaviors around windows, tabs, folders,
 focus mode, layout, offline rendering, Quick Look, and releases. Read
 [`AGENTS.md`](AGENTS.md) before changing application behavior. These invariants
 are constraints, not mysteries; if one seems wrong, propose changing it in an
@@ -93,7 +93,7 @@ In particular:
 ## Tests and reviewability
 
 Prefer a failing test before a bug fix when the behavior can be isolated.
-Tests live in `Tests/PreviewMDTests/`; site tests live in `site/test_server.py`.
+Tests live in `Tests/ReaderMDTests/`; site tests live in `site/test_server.py`.
 
 In a pull request, include:
 
@@ -115,7 +115,7 @@ When upgrading a vendored library:
 
 1. update its pinned browser distribution;
 2. update its version, copyright, and complete license text in
-   `Sources/PreviewMD/Acknowledgements.swift`;
+   `Sources/ReaderMD/Acknowledgements.swift`;
 3. update `THIRD_PARTY_NOTICES.md`;
 4. run `swift test` so the acknowledgement checks verify the shipped version.
 
@@ -128,13 +128,13 @@ Ports are encouraged, but a new native shell should begin as a thin experiment,
 not a rewrite of the working macOS app. Read [`docs/PORTING.md`](docs/PORTING.md)
 and open a port proposal using the GitHub issue template.
 
-The PreviewMD name and icon identify the official project. Prototypes may
-describe themselves as PreviewMD port experiments, but public distributions
+The ReaderMD name and icon identify the official project. Prototypes may
+describe themselves as ReaderMD port experiments, but public distributions
 must follow [`TRADEMARKS.md`](TRADEMARKS.md).
 
 ## Commit sign-off and the DCO
 
-PreviewMD uses the [Developer Certificate of Origin 1.1](DCO), not a copyright
+ReaderMD uses the [Developer Certificate of Origin 1.1](DCO), not a copyright
 assignment. You retain copyright in your contribution and certify that you have
 the right to submit it under the project's Apache-2.0 license.
 

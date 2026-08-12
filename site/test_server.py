@@ -15,9 +15,9 @@ from tempfile import TemporaryDirectory
 import server as landing
 
 
-class PreviewMDLandingContentTests(unittest.TestCase):
+class ReaderMDLandingContentTests(unittest.TestCase):
     analytics_id = "G-8YXDM1JJH2"
-    release_archive = "PreviewMD-1.7-11-macOS.dmg"
+    release_archive = "ReaderMD-1.7-11-macOS.dmg"
     site_dir = Path(__file__).resolve().parent
 
     def test_editing_is_presented_as_a_core_capability(self) -> None:
@@ -28,7 +28,7 @@ class PreviewMDLandingContentTests(unittest.TestCase):
         self.assertIn("direct editing", normalized)
         self.assertIn("the rendered document is an editor", normalized)
         self.assertNotIn("reader, not editor", normalized)
-        self.assertNotIn("new in previewmd", normalized)
+        self.assertNotIn("new in readermd", normalized)
 
     def test_portable_copy_and_semantic_docx_are_presented(self) -> None:
         html = (self.site_dir / "index.html").read_text(encoding="utf-8")
@@ -62,7 +62,7 @@ class PreviewMDLandingContentTests(unittest.TestCase):
             (self.site_dir.parent / "scripts" / "Info.plist").read_bytes()
         )
         release_links = set(
-            re.findall(r'href="(PreviewMD-[^"]+-macOS\.dmg)"', html)
+            re.findall(r'href="(ReaderMD-[^"]+-macOS\.dmg)"', html)
         )
 
         self.assertTrue((self.site_dir / self.release_archive).is_file())
@@ -75,16 +75,16 @@ class PreviewMDLandingContentTests(unittest.TestCase):
         self.assertEqual(app_info["CFBundleVersion"], "11")
         self.assertIn("v1.7 (build 11)", html)
         self.assertIn('main.js?v=db-11', html)
-        self.assertNotIn("PreviewMD-1.6-10-macOS.dmg", html)
-        self.assertNotIn("PreviewMD-1.6-10-macOS.dmg", javascript)
-        self.assertNotIn("PreviewMD-1.5-7-macOS.zip", html)
-        self.assertNotIn("PreviewMD-1.5-7-macOS.zip", javascript)
+        self.assertNotIn("ReaderMD-1.6-10-macOS.dmg", html)
+        self.assertNotIn("ReaderMD-1.6-10-macOS.dmg", javascript)
+        self.assertNotIn("ReaderMD-1.5-7-macOS.zip", html)
+        self.assertNotIn("ReaderMD-1.5-7-macOS.zip", javascript)
 
     def test_shared_analytics_respects_the_strict_csp(self) -> None:
         html = (self.site_dir / "index.html").read_text(encoding="utf-8")
         analytics = (self.site_dir / "analytics.js").read_text(encoding="utf-8")
         nginx = (
-            self.site_dir.parent / "deploy" / "nginx-previewmd.conf"
+            self.site_dir.parent / "deploy" / "nginx-readermd.conf"
         ).read_text(encoding="utf-8")
         inline_script_bodies = re.findall(
             r"<script(?:\s[^>]*)?>(.*?)</script>",
@@ -111,13 +111,13 @@ class PreviewMDLandingContentTests(unittest.TestCase):
         self.assertIn("https://*.analytics.google.com", nginx)
 
 
-class QuietRequestHandler(landing.PreviewMDRequestHandler):
+class QuietRequestHandler(landing.ReaderMDRequestHandler):
     def log_message(self, format: str, *args: object) -> None:
         pass
 
 
-class PreviewMDServerTests(unittest.TestCase):
-    archive_name = "PreviewMD-1.7-11-macOS.dmg"
+class ReaderMDServerTests(unittest.TestCase):
+    archive_name = "ReaderMD-1.7-11-macOS.dmg"
 
     def setUp(self) -> None:
         self.temporary_directory = TemporaryDirectory()
@@ -195,12 +195,12 @@ class PreviewMDServerTests(unittest.TestCase):
 
     def test_download_endpoint_rejects_unknown_or_unsafe_files(self) -> None:
         for file_name in (
-            "PreviewMD-missing-macOS.dmg",
-            "PreviewMD-missing-macOS.zip",
-            "../PreviewMD-1.7-11-macOS.dmg",
-            "../PreviewMD-1.7-11-macOS.zip",
-            "PreviewMD-1.7-11-macOS.pkg",
-            "not-previewmd.zip",
+            "ReaderMD-missing-macOS.dmg",
+            "ReaderMD-missing-macOS.zip",
+            "../ReaderMD-1.7-11-macOS.dmg",
+            "../ReaderMD-1.7-11-macOS.zip",
+            "ReaderMD-1.7-11-macOS.pkg",
+            "not-readermd.zip",
         ):
             status, payload = self.post_json(
                 "/api/download",

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="126" height="20" role="img" aria-label="Quick Look: Built in">
+  <title>Quick Look: Built in</title>
+  <mask id="shape"><rect width="126" height="20" rx="3" fill="#fff"/></mask>
+  <g mask="url(#shape)">
+    <rect width="75" height="20" fill="#555"/>
+    <rect x="75" width="51" height="20" fill="#ff9500"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana, Geneva, sans-serif" font-size="11">
+    <text x="37.5" y="14">Quick Look</text>
+    <text x="100.5" y="14">Built in</text>
+  </g>
+</svg>

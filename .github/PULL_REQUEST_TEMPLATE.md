@@ -25,7 +25,7 @@
 - [ ] Third-party code includes source, version, license, and notices.
 - [ ] No credentials, private documents, subscriber data, or local paths were added.
 - [ ] Every commit has a DCO `Signed-off-by` line (`git commit -s`).
-- [ ] Public use of the PreviewMD name/icon follows `TRADEMARKS.md`.
+- [ ] Public use of the ReaderMD name/icon follows `TRADEMARKS.md`.
 
 ## Follow-ups or limitations
 

@@ -1,7 +1,7 @@
 # Production deployment
 
 The landing page is published as one of the projects on
-<https://experiments.frontierslab.ai/previewmd/>, hosted on the OVH VPS
+<https://experiments.frontierslab.ai/readermd/>, hosted on the OVH VPS
 (`ovh-vps` in `~/.ssh/config`).
 
 Code reaches the server through GitHub only — nothing is copied by hand.
@@ -9,9 +9,9 @@ Code reaches the server through GitHub only — nothing is copied by hand.
 ## Layout on the server
 
 ```text
-/home/ubuntu/experiments/previewmd/                 # git clone
+/home/ubuntu/experiments/readermd/                 # git clone
 /home/ubuntu/experiments/.data/                     # SQLite, outside the tree
-/home/ubuntu/sites/experiments.frontierslab.ai/previewmd -> …/previewmd/site
+/home/ubuntu/sites/experiments.frontierslab.ai/readermd -> …/readermd/site
 ```
 
 Only `site/` is symlinked into the docroot, so the Swift sources, tests and
@@ -20,14 +20,14 @@ build scripts are never web-reachable.
 ## Releasing a new version
 
 1. Build and notarize the app (`./scripts/release-app.sh`, see `AGENTS.md`).
-2. Drop the new `PreviewMD-<version>-<build>-macOS.dmg` into `site/`, delete the old
+2. Drop the new `ReaderMD-<version>-<build>-macOS.dmg` into `site/`, delete the old
    one, and update `DOWNLOAD_FILE` in `site/main.js` plus every literal
    filename in `site/index.html`.
 3. Commit and push to `main`.
 4. Pull it onto the server:
 
    ```bash
-   ssh ovh-vps 'exp-deploy update previewmd'
+   ssh ovh-vps 'exp-deploy update readermd'
    ```
 
 `exp-deploy` runs `git pull --ff-only` and re-points the symlink. The download
@@ -40,25 +40,25 @@ used by the other experiments. A public clone no longer requires the key, but
 the restricted setup remains a reasonable deployment choice:
 
 ```bash
-ssh ovh-vps 'ssh-keygen -t ed25519 -N "" -C previewmd-deploy -f ~/.ssh/previewmd_deploy'
-# add ~/.ssh/previewmd_deploy.pub to the repo as a deploy key (read-only)
-gh repo deploy-key add previewmd_deploy.pub --repo ashtree74/PreviewMD --title previewmd-vps
+ssh ovh-vps 'ssh-keygen -t ed25519 -N "" -C readermd-deploy -f ~/.ssh/readermd_deploy'
+# add ~/.ssh/readermd_deploy.pub to the repo as a deploy key (read-only)
+gh repo deploy-key add readermd_deploy.pub --repo ashtree74/ReaderMD --title readermd-vps
 ```
 
 `~/.ssh/config` on the server carries the host alias:
 
 ```sshconfig
-Host github.com-previewmd
+Host github.com-readermd
     HostName github.com
     User git
-    IdentityFile ~/.ssh/previewmd_deploy
+    IdentityFile ~/.ssh/readermd_deploy
     IdentitiesOnly yes
 ```
 
 Then:
 
 ```bash
-ssh ovh-vps 'exp-deploy git@github.com-previewmd:ashtree74/PreviewMD.git previewmd --out site --no-install'
+ssh ovh-vps 'exp-deploy git@github.com-readermd:ashtree74/ReaderMD.git readermd --out site --no-install'
 ```
 
 ## Landing API
@@ -66,14 +66,14 @@ ssh ovh-vps 'exp-deploy git@github.com-previewmd:ashtree74/PreviewMD.git preview
 `site/server.py` runs as a systemd unit bound to `127.0.0.1:8419`; nginx
 proxies only the newsletter and download-count paths to it:
 
-- `POST /previewmd/api/subscribe`
-- `POST /previewmd/api/download`
+- `POST /readermd/api/subscribe`
+- `POST /readermd/api/download`
 
 | File | Installed to |
 | --- | --- |
-| `deploy/previewmd-signup.service` | `/etc/systemd/system/previewmd-signup.service` |
-| `deploy/nginx-previewmd.conf` | spliced into `/etc/nginx/sites-available/experiments.frontierslab.ai` |
-| rate-limit zone | `/etc/nginx/conf.d/previewmd-ratelimit.conf` |
+| `deploy/readermd-signup.service` | `/etc/systemd/system/readermd-signup.service` |
+| `deploy/nginx-readermd.conf` | spliced into `/etc/nginx/sites-available/experiments.frontierslab.ai` |
+| rate-limit zone | `/etc/nginx/conf.d/readermd-ratelimit.conf` |
 
 These are copied into place rather than `include`d from the working tree on
 purpose: an `include` would let anything that can write to the clone rewrite the
@@ -85,17 +85,17 @@ attributes. Keep it that way — see the ruler-stop rules in `site/styles.css` f
 the pattern to follow when something needs a computed position.
 
 ```bash
-sudo systemctl status previewmd-signup
-sudo journalctl -u previewmd-signup -n 50
+sudo systemctl status readermd-signup
+sudo journalctl -u readermd-signup -n 50
 ```
 
 Read the signup list and aggregate download counts:
 
 ```bash
-ssh ovh-vps "sqlite3 /home/ubuntu/experiments/.data/previewmd-subscribers.sqlite3 \
+ssh ovh-vps "sqlite3 /home/ubuntu/experiments/.data/readermd-subscribers.sqlite3 \
   'SELECT email, created_at FROM subscribers ORDER BY created_at DESC;'"
 
-ssh ovh-vps "sqlite3 /home/ubuntu/experiments/.data/previewmd-subscribers.sqlite3 \
+ssh ovh-vps "sqlite3 /home/ubuntu/experiments/.data/readermd-subscribers.sqlite3 \
   'SELECT file_name, click_count, updated_at FROM downloads ORDER BY updated_at DESC;'"
 ```
 
@@ -105,5 +105,5 @@ The unit is hardened (`ProtectSystem=strict`, empty `CapabilityBoundingSet`,
 `server.py`:
 
 ```bash
-ssh ovh-vps 'sudo systemctl restart previewmd-signup'
+ssh ovh-vps 'sudo systemctl restart readermd-signup'
 ```

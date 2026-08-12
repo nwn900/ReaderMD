@@ -1,0 +1,51 @@
+[Unit]
+Description=ReaderMD landing API
+Documentation=https://github.com/ashtree74/ReaderMD/blob/main/deploy/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/experiments/readermd/site
+ExecStart=/usr/bin/python3 /home/ubuntu/experiments/readermd/site/server.py
+
+# Loopback only — nginx is the sole way in, so the static file handler that
+# ships with the server is never reachable from the internet.
+Environment=PREVIEWMD_SITE_HOST=127.0.0.1
+Environment=PORT=8419
+# Outside the git working tree so `exp-deploy update` never touches it.
+Environment=PREVIEWMD_SUBSCRIBERS_DB=/home/ubuntu/experiments/.data/readermd-subscribers.sqlite3
+Environment=PYTHONUNBUFFERED=1
+
+Restart=on-failure
+RestartSec=5s
+
+# --- Hardening -------------------------------------------------------------
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/experiments/.data
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+CapabilityBoundingSet=
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+SystemCallArchitectures=native
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

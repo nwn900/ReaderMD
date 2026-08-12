@@ -2,15 +2,15 @@
 set -euo pipefail
 
 project_dir="$(cd "$(dirname "$0")/.." && pwd)"
-app_dir="$project_dir/dist/PreviewMD.app"
+app_dir="$project_dir/dist/ReaderMD.app"
 info_plist="$project_dir/scripts/Info.plist"
 signing_identity="${PREVIEWMD_SIGNING_IDENTITY:-Developer ID Application: Astrography Sp. z o.o. (4NZF9USX28)}"
-notary_profile="${PREVIEWMD_NOTARY_PROFILE:-PreviewMD-Notary}"
+notary_profile="${PREVIEWMD_NOTARY_PROFILE:-ReaderMD-Notary}"
 version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$info_plist")"
 build_number="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$info_plist")"
-notary_archive="$project_dir/dist/PreviewMD-$version-$build_number-notarization.zip"
-release_archive="$project_dir/dist/PreviewMD-$version-$build_number-macOS.zip"
-release_dmg="$project_dir/dist/PreviewMD-$version-$build_number-macOS.dmg"
+notary_archive="$project_dir/dist/ReaderMD-$version-$build_number-notarization.zip"
+release_archive="$project_dir/dist/ReaderMD-$version-$build_number-macOS.zip"
+release_dmg="$project_dir/dist/ReaderMD-$version-$build_number-macOS.dmg"
 
 cd "$project_dir"
 

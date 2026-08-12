@@ -1,6 +1,6 @@
 # Getting help
 
-PreviewMD is community-supported and currently maintained in personal time.
+ReaderMD is community-supported and currently maintained in personal time.
 There is no guaranteed response time, but clear reports and kind follow-ups make
 it much easier to help.
 

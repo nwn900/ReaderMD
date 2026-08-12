@@ -1,6 +1,6 @@
 cff-version: 1.2.0
-message: "If PreviewMD helps your work, please cite the project and its original author."
-title: PreviewMD
+message: "If ReaderMD helps your work, please cite the project and its original author."
+title: ReaderMD
 type: software
 authors:
   - family-names: Jesionkiewicz
@@ -8,8 +8,8 @@ authors:
     email: adam@jesion.pl
 version: "1.7"
 date-released: 2026-08-11
-repository-code: "https://github.com/ashtree74/PreviewMD"
-url: "https://github.com/ashtree74/PreviewMD"
+repository-code: "https://github.com/ashtree74/ReaderMD"
+url: "https://github.com/ashtree74/ReaderMD"
 license: Apache-2.0
 abstract: >-
   A native, offline-first Markdown reading and editing workspace, originally

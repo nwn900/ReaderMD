@@ -1,6 +1,6 @@
 name: Platform port proposal
 description: Start a thin, native experiment on another operating system.
-title: "[Port]: PreviewMD on "
+title: "[Port]: ReaderMD on "
 labels:
   - port
   - discussion
@@ -55,5 +55,5 @@ body:
       options:
         - label: I read docs/PORTING.md and will begin with a thin experiment rather than rewriting the macOS app.
           required: true
-        - label: I understand that public use of the PreviewMD name and icon follows TRADEMARKS.md.
+        - label: I understand that public use of the ReaderMD name and icon follows TRADEMARKS.md.
           required: true

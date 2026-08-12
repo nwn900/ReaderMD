@@ -1,4 +1,4 @@
-# PreviewMD roadmap
+# ReaderMD roadmap
 
 This is a direction, not a promise or a queue. The best roadmap item is often a
 small contribution that teaches the project something concrete.
@@ -26,7 +26,7 @@ plain-text source.
 - identify pure document/search logic that can become reusable modules;
 - prototype a headless renderer harness for cross-platform tests.
 
-## Explore: bring PreviewMD elsewhere
+## Explore: bring ReaderMD elsewhere
 
 - a native Windows shell with system file, window, and print integration;
 - a Linux desktop shell that respects the host environment;

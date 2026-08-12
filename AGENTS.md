@@ -1,8 +1,8 @@
-# PreviewMD Project Instructions
+# ReaderMD Project Instructions
 
 ## Product
 
-PreviewMD is a native, professional macOS Markdown reader created, owned, and
+ReaderMD is a native, professional macOS Markdown reader created, owned, and
 maintained independently by Adam Jesionkiewicz (`adam@jesion.pl`). It is
 licensed under Apache-2.0. Astrography Sp. z o.o. has no ownership or governance
 rights in the project; its Apple Developer account is currently used only to
@@ -12,15 +12,15 @@ else.
 - Keep the interface native, minimal, and consistent with current macOS design.
 - The application targets macOS 14 or newer.
 - Release builds must be Universal 2 (`arm64` and `x86_64`).
-- The bundle identifier is `pl.jesion.previewmd`.
-- The exported Markdown UTI is `pl.jesion.previewmd.markdown`.
+- The bundle identifier is `pl.jesion.readermd`.
+- The exported Markdown UTI is `pl.jesion.readermd.markdown`.
 - The About window must show the author, email, and copyright year 2026.
 - The source code is Apache-2.0 and external contributions use DCO 1.1. Keep
   `LICENSE`, `NOTICE`, `AUTHORS.md`, and the original-author attribution intact.
 - Every assembled `.app` must include the project `LICENSE`, `NOTICE`, and
   `THIRD_PARTY_NOTICES.md` under `Contents/Resources/Legal`; the About window
   must continue to identify Apache-2.0 and the original author.
-- The PreviewMD name and icon identify the official project. Forks and public
+- The ReaderMD name and icon identify the official project. Forks and public
   ports follow `TRADEMARKS.md`; a signing, hosting, or distribution provider
   does not gain ownership or project authority.
 - The About window must also carry the bundled renderers' full license texts
@@ -35,7 +35,7 @@ else.
 Preserve these behaviors unless the user explicitly requests a change:
 
 - A clean launch opens an empty state, not a default README or demo document.
-- The empty state uses the PreviewMD application icon.
+- The empty state uses the ReaderMD application icon.
 - The embedded showcase/demo must work on every supported Mac without relying
   on files from the development machine.
 - Closing the final document tab returns to the empty state.
@@ -71,19 +71,19 @@ Preserve these behaviors unless the user explicitly requests a change:
 - Tables, Mermaid diagrams, KaTeX, code highlighting, local images, and
   relative links must continue to render offline.
 - The application bundle includes a sandboxed Quick Look preview extension at
-  `Contents/PlugIns/PreviewMDQuickLook.appex`. It supports both
-  `pl.jesion.previewmd.markdown` and the common
+  `Contents/PlugIns/ReaderMDQuickLook.appex`. It supports both
+  `pl.jesion.readermd.markdown` and the common
   `net.daringfireball.markdown` UTI, renders with bundled resources, and must
   never require a separate plugin installation.
-- Copying PreviewMD to Applications and opening it once must be sufficient to
+- Copying ReaderMD to Applications and opening it once must be sufficient to
   register Quick Look. Do not require users to run `pluginkit`, `qlmanage`, or
   another command.
-- PreviewMD declares both Markdown UTIs as editable document types with the
+- ReaderMD declares both Markdown UTIs as editable document types with the
   `Default` handler rank. Settings provides an explicit action to make
-  PreviewMD the default Markdown app, which also controls Quick Look's Open
+  ReaderMD the default Markdown app, which also controls Quick Look's Open
   button. Never silently replace a user's existing default application.
 - Quick Look must replace inaccessible document-relative images with a clear
-  open-in-PreviewMD message, never a broken-image glyph. This Finder sandbox
+  open-in-ReaderMD message, never a broken-image glyph. This Finder sandbox
   limitation must not weaken local-image rendering inside the main app.
 - Focus mode (⇧⌘F) hides every piece of chrome — sidebar, inspector, tab bar,
   toolbar and status bar — leaving the document column and the reading-width
@@ -129,7 +129,7 @@ The form posts same-origin JSON (`{"email":"..."}`) to
 database location is:
 
 ```text
-.previewmd-data/subscribers.sqlite3
+.readermd-data/subscribers.sqlite3
 ```
 
 This directory is a sibling of `site/`, outside the server's public document
@@ -144,7 +144,7 @@ recorded in the same database as an aggregate count per release filename plus
 the UTC time of the latest click; do not store IP addresses or associate a
 click with a subscriber. Tracking is best-effort and must never gate the
 release download. Production hosting must provide a persistent filesystem or
-volume for `.previewmd-data/` and must back it up; static-only or ephemeral serverless
+volume for `.readermd-data/` and must back it up; static-only or ephemeral serverless
 hosting will not preserve this SQLite database across deployments.
 
 The landing server supports:
@@ -175,7 +175,7 @@ Do not replace the Universal 2 build with an architecture-specific binary.
 After changing build configuration, verify:
 
 ```bash
-lipo -info dist/PreviewMD.app/Contents/MacOS/PreviewMD
+lipo -info dist/ReaderMD.app/Contents/MacOS/ReaderMD
 ```
 
 The result must contain both `x86_64` and `arm64`.
@@ -184,7 +184,7 @@ The embedded Quick Look executable must also remain Universal 2:
 
 ```bash
 lipo -info \
-  dist/PreviewMD.app/Contents/PlugIns/PreviewMDQuickLook.appex/Contents/MacOS/PreviewMDQuickLook
+  dist/ReaderMD.app/Contents/PlugIns/ReaderMDQuickLook.appex/Contents/MacOS/ReaderMDQuickLook
 ```
 
 ## Maintainer signing and notarization
@@ -204,7 +204,7 @@ The Apple Developer Team ID is:
 The local `notarytool` keychain profile is:
 
 ```text
-PreviewMD-Notary
+ReaderMD-Notary
 ```
 
 Never store Apple Account passwords, app-specific passwords, private keys,
@@ -239,18 +239,18 @@ the landing page. Never distribute the temporary archive ending in
 Before handing off a release, confirm:
 
 ```bash
-codesign --verify --deep --strict --verbose=4 dist/PreviewMD.app
+codesign --verify --deep --strict --verbose=4 dist/ReaderMD.app
 codesign --verify --strict --verbose=4 \
-  dist/PreviewMD.app/Contents/PlugIns/PreviewMDQuickLook.appex
-xcrun stapler validate dist/PreviewMD.app
-spctl --assess --type execute --verbose=4 dist/PreviewMD.app
-codesign --verify --verbose=2 dist/PreviewMD-<version>-<build>-macOS.dmg
-xcrun stapler validate dist/PreviewMD-<version>-<build>-macOS.dmg
+  dist/ReaderMD.app/Contents/PlugIns/ReaderMDQuickLook.appex
+xcrun stapler validate dist/ReaderMD.app
+spctl --assess --type execute --verbose=4 dist/ReaderMD.app
+codesign --verify --verbose=2 dist/ReaderMD-<version>-<build>-macOS.dmg
+xcrun stapler validate dist/ReaderMD-<version>-<build>-macOS.dmg
 spctl --assess --type open --context context:primary-signature --verbose=4 \
-  dist/PreviewMD-<version>-<build>-macOS.dmg
+  dist/ReaderMD-<version>-<build>-macOS.dmg
 ```
 
-The most recently accepted release is PreviewMD `1.7 (11)`.
+The most recently accepted release is ReaderMD `1.7 (11)`.
 
 ## Versioning
 

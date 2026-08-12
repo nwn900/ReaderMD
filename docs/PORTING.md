@@ -1,4 +1,4 @@
-# Bringing PreviewMD to another platform
+# Bringing ReaderMD to another platform
 
 Yes, this is encouraged.
 
@@ -35,11 +35,11 @@ Native bridge and platform adapters
 Bundled HTML/CSS/JavaScript renderer
 ```
 
-The renderer lives in `Sources/PreviewMD/Resources/Renderer/`. It accepts
+The renderer lives in `Sources/ReaderMD/Resources/Renderer/`. It accepts
 document state from native code and emits narrow messages for user actions. It
 does not fetch rendering dependencies from the network.
 
-The current shell lives in `Sources/PreviewMD/` and uses AppKit, SwiftUI,
+The current shell lives in `Sources/ReaderMD/` and uses AppKit, SwiftUI,
 WebKit, PDFKit, Quick Look, and Uniform Type Identifiers. Those are macOS
 adapters, not requirements for every future implementation.
 
@@ -104,5 +104,5 @@ clipboard behavior, and document restoration. Platform-specific accessibility,
 installer, sandbox, and update tests are equally important.
 
 Prototype names should make their experimental status clear. Coordinate with
-the maintainer before distributing a build under the PreviewMD name or icon;
+the maintainer before distributing a build under the ReaderMD name or icon;
 see [the trademark policy](../TRADEMARKS.md).

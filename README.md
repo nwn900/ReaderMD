@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/AppIcon.svg" width="112" height="112" alt="PreviewMD app icon">
+  <img src="assets/AppIcon.svg" width="112" height="112" alt="ReaderMD app icon">
 </p>
 
-<h1 align="center">PreviewMD</h1>
+<h1 align="center">ReaderMD</h1>
 
 <p align="center">
   <strong>Markdown deserves a real reading app.</strong><br>
@@ -17,7 +17,7 @@
   <img alt="Rendering works offline" src="https://img.shields.io/badge/rendering-offline-28a36a.svg">
 </p>
 
-PreviewMD turns Markdown into a calm, native document experience: beautiful
+ReaderMD turns Markdown into a calm, native document experience: beautiful
 reading, direct editing, source and split views, tabs, folders, Quick Look,
 search, diagrams, math, code, and export — with no account and no network
 required for rendering.
@@ -30,8 +30,8 @@ interesting version of this idea is bigger than one app and one platform.
 surprising ideas are welcome.**
 
 <p align="center">
-  <a href="assets/screenshots/previewmd-reading-workspace.png">
-    <img src="assets/screenshots/previewmd-reading-workspace.png" width="1200" alt="PreviewMD on macOS displaying a polished Markdown document with tabs, search, badges, and a project table">
+  <a href="assets/screenshots/readermd-reading-workspace.png">
+    <img src="assets/screenshots/readermd-reading-workspace.png" width="1200" alt="ReaderMD on macOS displaying a polished Markdown document with tabs, search, badges, and a project table">
   </a>
 </p>
 
@@ -41,7 +41,7 @@ surprising ideas are welcome.**
 
 ## Why it is fun to work on
 
-PreviewMD sits at an unusually good intersection:
+ReaderMD sits at an unusually good intersection:
 
 - **native app craft** — real macOS windows, menus, tabs, Quick Look, printing,
   drag and drop, and accessibility;
@@ -76,8 +76,8 @@ Move between source, split, and document views without giving up typography,
 math, syntax highlighting, callouts, or diagrams.
 
 <p align="center">
-  <a href="assets/screenshots/previewmd-split-view.png">
-    <img src="assets/screenshots/previewmd-split-view.png" width="1200" alt="PreviewMD split view showing Markdown source beside rendered math, Swift code, a callout, and a sequence diagram">
+  <a href="assets/screenshots/readermd-split-view.png">
+    <img src="assets/screenshots/readermd-split-view.png" width="1200" alt="ReaderMD split view showing Markdown source beside rendered math, Swift code, a callout, and a sequence diagram">
   </a>
 </p>
 
@@ -91,9 +91,9 @@ You need macOS 14 or newer, Xcode with Swift 6.1 support, and the Xcode command
 line tools selected.
 
 ```bash
-git clone https://github.com/ashtree74/PreviewMD.git
-cd PreviewMD
-swift run PreviewMD
+git clone https://github.com/ashtree74/ReaderMD.git
+cd ReaderMD
+swift run ReaderMD
 ```
 
 Run the test suite:
@@ -107,7 +107,7 @@ Build the Universal 2 app bundle used for local testing:
 
 ```bash
 ./scripts/build-app.sh
-open dist/PreviewMD.app
+open dist/ReaderMD.app
 ```
 
 The local build is ad-hoc signed unless `PREVIEWMD_SIGNING_IDENTITY` is set.
@@ -117,8 +117,8 @@ development.
 ## Pick a place to start
 
 - Look for issues labeled
-  [`good first issue`](https://github.com/ashtree74/PreviewMD/labels/good%20first%20issue)
-  or [`help wanted`](https://github.com/ashtree74/PreviewMD/labels/help%20wanted).
+  [`good first issue`](https://github.com/ashtree74/ReaderMD/labels/good%20first%20issue)
+  or [`help wanted`](https://github.com/ashtree74/ReaderMD/labels/help%20wanted).
 - Reproduce a bug and turn it into a failing test.
 - Improve keyboard navigation, VoiceOver behavior, or reduced-motion support.
 - Bring a tricky real-world Markdown document and make its behavior excellent.
@@ -137,10 +137,10 @@ uses the lightweight [Developer Certificate of Origin](DCO), so commits need a
 ## How the project fits together
 
 ```text
-Sources/PreviewMD/             Native macOS application and document model
-Sources/PreviewMDQuickLook/    Bundled Finder Quick Look extension
-Sources/PreviewMD/Resources/   Offline document renderer and its assets
-Tests/PreviewMDTests/          Behavior and regression tests
+Sources/ReaderMD/             Native macOS application and document model
+Sources/ReaderMDQuickLook/    Bundled Finder Quick Look extension
+Sources/ReaderMD/Resources/   Offline document renderer and its assets
+Tests/ReaderMDTests/          Behavior and regression tests
 scripts/                       Universal 2 build, signing, and release tooling
 site/                          Landing page and tiny mailing-list service
 deploy/                        Example production deployment configuration
@@ -154,7 +154,7 @@ See [the porting guide](docs/PORTING.md) and the deeper developer notes in
 
 ## Project direction
 
-PreviewMD is intentionally founder-led, but contribution-friendly. Adam is the
+ReaderMD is intentionally founder-led, but contribution-friendly. Adam is the
 founder and lead maintainer; design and implementation happen in public through
 issues and pull requests. Trusted contributors can grow into reviewers and
 maintainers as the community grows.
@@ -165,7 +165,7 @@ Decision-making and maintainer roles are described in
 
 ## Releases and trust
 
-Anyone may build and distribute PreviewMD under Apache-2.0. The currently
+Anyone may build and distribute ReaderMD under Apache-2.0. The currently
 published macOS binaries are signed and notarized through the Apple Developer
 account of Astrography Sp. z o.o., which distributes them under the same
 Apache-2.0 license available to everyone.
@@ -176,10 +176,10 @@ builds. Forks and experiments are welcome; please follow
 
 ## License and authorship
 
-PreviewMD is licensed under the [Apache License 2.0](LICENSE).
+ReaderMD is licensed under the [Apache License 2.0](LICENSE).
 
-Copyright © 2026 [Adam Jesionkiewicz](AUTHORS.md) and PreviewMD contributors.
-PreviewMD was conceived, designed, and originally implemented by Adam
+Copyright © 2026 [Adam Jesionkiewicz](AUTHORS.md) and ReaderMD contributors.
+ReaderMD was conceived, designed, and originally implemented by Adam
 Jesionkiewicz. Accepted contributions remain credited through Git history and
 are provided under the same Apache-2.0 terms.
 
@@ -190,8 +190,8 @@ software and its licenses are documented in
 
 ## Community
 
-- Questions and ideas: [GitHub Discussions](https://github.com/ashtree74/PreviewMD/discussions)
-- Bugs and proposals: [GitHub Issues](https://github.com/ashtree74/PreviewMD/issues)
+- Questions and ideas: [GitHub Discussions](https://github.com/ashtree74/ReaderMD/discussions)
+- Bugs and proposals: [GitHub Issues](https://github.com/ashtree74/ReaderMD/issues)
 - Security reports: [SECURITY.md](SECURITY.md)
 - Expected behavior: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 

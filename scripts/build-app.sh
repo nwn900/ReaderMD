@@ -2,14 +2,14 @@
 set -euo pipefail
 
 project_dir="$(cd "$(dirname "$0")/.." && pwd)"
-app_dir="$project_dir/dist/PreviewMD.app"
+app_dir="$project_dir/dist/ReaderMD.app"
 contents_dir="$app_dir/Contents"
 legal_dir="$contents_dir/Resources/Legal"
 build_dir="$project_dir/.build/apple/Products/Release"
-quicklook_dir="$contents_dir/PlugIns/PreviewMDQuickLook.appex"
+quicklook_dir="$contents_dir/PlugIns/ReaderMDQuickLook.appex"
 quicklook_contents_dir="$quicklook_dir/Contents"
 quicklook_build_dir="$project_dir/.build/quicklook"
-quicklook_source="$project_dir/Sources/PreviewMDQuickLook/PreviewViewController.swift"
+quicklook_source="$project_dir/Sources/ReaderMDQuickLook/PreviewViewController.swift"
 iconset_dir="$project_dir/.build/AppIcon.iconset"
 master_icon="$project_dir/.build/AppIcon-1024.png"
 signing_identity="${PREVIEWMD_SIGNING_IDENTITY:-}"
@@ -35,8 +35,8 @@ mkdir -p \
   "$quicklook_contents_dir/Resources" \
   "$quicklook_build_dir"
 
-cp "$build_dir/PreviewMD" "$contents_dir/MacOS/PreviewMD"
-cp -R "$build_dir/PreviewMD_PreviewMD.bundle" "$contents_dir/Resources/PreviewMD_PreviewMD.bundle"
+cp "$build_dir/ReaderMD" "$contents_dir/MacOS/ReaderMD"
+cp -R "$build_dir/ReaderMD_ReaderMD.bundle" "$contents_dir/Resources/ReaderMD_ReaderMD.bundle"
 
 cp "scripts/Info.plist" "$contents_dir/Info.plist"
 cp "LICENSE" "$legal_dir/LICENSE"
@@ -47,14 +47,14 @@ for architecture in arm64 x86_64; do
   xcrun swiftc \
     -sdk "$SDKROOT" \
     -target "$architecture-apple-macos14.0" \
-    -module-name PreviewMDQuickLook \
+    -module-name ReaderMDQuickLook \
     -application-extension \
     -parse-as-library \
     -O \
     -module-cache-path "$project_dir/.build/ModuleCache" \
     "$quicklook_source" \
     -emit-executable \
-    -o "$quicklook_build_dir/PreviewMDQuickLook-$architecture" \
+    -o "$quicklook_build_dir/ReaderMDQuickLook-$architecture" \
     -framework AppKit \
     -framework Quartz \
     -framework WebKit \
@@ -63,10 +63,10 @@ for architecture in arm64 x86_64; do
 done
 
 lipo -create \
-  "$quicklook_build_dir/PreviewMDQuickLook-arm64" \
-  "$quicklook_build_dir/PreviewMDQuickLook-x86_64" \
-  -output "$quicklook_contents_dir/MacOS/PreviewMDQuickLook"
-chmod +x "$quicklook_contents_dir/MacOS/PreviewMDQuickLook"
+  "$quicklook_build_dir/ReaderMDQuickLook-arm64" \
+  "$quicklook_build_dir/ReaderMDQuickLook-x86_64" \
+  -output "$quicklook_contents_dir/MacOS/ReaderMDQuickLook"
+chmod +x "$quicklook_contents_dir/MacOS/ReaderMDQuickLook"
 
 cp "scripts/QuickLook-Info.plist" "$quicklook_contents_dir/Info.plist"
 version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$contents_dir/Info.plist")"
@@ -89,11 +89,11 @@ for renderer_file in \
   renderer.css \
   renderer.js; do
   cp \
-    "$project_dir/Sources/PreviewMD/Resources/Renderer/$renderer_file" \
+    "$project_dir/Sources/ReaderMD/Resources/Renderer/$renderer_file" \
     "$quicklook_contents_dir/Resources/Renderer/$renderer_file"
 done
 ditto \
-  "$project_dir/Sources/PreviewMD/Resources/Renderer/fonts" \
+  "$project_dir/Sources/ReaderMD/Resources/Renderer/fonts" \
   "$quicklook_contents_dir/Resources/Renderer/fonts"
 
 rm -rf "$iconset_dir"
@@ -106,7 +106,7 @@ for size in 16 32 128 256 512; do
 done
 swift "scripts/build-icns.swift" "$iconset_dir" "$contents_dir/Resources/AppIcon.icns"
 
-chmod +x "$contents_dir/MacOS/PreviewMD"
+chmod +x "$contents_dir/MacOS/ReaderMD"
 
 if [[ -n "$signing_identity" ]]; then
   codesign \

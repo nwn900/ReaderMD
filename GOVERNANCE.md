@@ -1,6 +1,6 @@
-# PreviewMD governance
+# ReaderMD governance
 
-PreviewMD uses a founder-led, contribution-friendly governance model. The goal
+ReaderMD uses a founder-led, contribution-friendly governance model. The goal
 is to make decisions clearly and in public while the project is small, then add
 structure only when the community needs it.
 
@@ -13,10 +13,10 @@ maintainer, and current project steward. Adam has final responsibility for:
 - the official repository and release channels;
 - accepting and reverting changes;
 - appointing maintainers;
-- the PreviewMD name, icon, and visual identity;
+- the ReaderMD name, icon, and visual identity;
 - deciding which builds and ports are official project releases.
 
-PreviewMD is Adam's independent personal project. No company owns or governs
+ReaderMD is Adam's independent personal project. No company owns or governs
 the project. A company or service used to sign, host, mirror, sponsor, or
 distribute a build does not gain project authority or intellectual-property
 rights by doing so.

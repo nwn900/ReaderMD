@@ -5,15 +5,15 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>PreviewMD Quick Look</string>
+    <string>ReaderMD Quick Look</string>
     <key>CFBundleExecutable</key>
-    <string>PreviewMDQuickLook</string>
+    <string>ReaderMDQuickLook</string>
     <key>CFBundleIdentifier</key>
-    <string>pl.jesion.previewmd.quicklook</string>
+    <string>pl.jesion.readermd.quicklook</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>PreviewMDQuickLook</string>
+    <string>ReaderMDQuickLook</string>
     <key>CFBundlePackageType</key>
     <string>XPC!</string>
     <key>CFBundleShortVersionString</key>
@@ -27,14 +27,14 @@
     <key>NSExtension</key>
     <dict>
         <key>NSExtensionPrincipalClass</key>
-        <string>PreviewMDQuickLook.PreviewViewController</string>
+        <string>ReaderMDQuickLook.PreviewViewController</string>
         <key>NSExtensionPointIdentifier</key>
         <string>com.apple.quicklook.preview</string>
         <key>NSExtensionAttributes</key>
         <dict>
             <key>QLSupportedContentTypes</key>
             <array>
-                <string>pl.jesion.previewmd.markdown</string>
+                <string>pl.jesion.readermd.markdown</string>
                 <string>net.daringfireball.markdown</string>
             </array>
             <key>QLSupportsSearchableItems</key>

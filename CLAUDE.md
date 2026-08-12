@@ -16,9 +16,9 @@ This is a Swift Package Manager project — there is no `.xcodeproj`. All comman
 run from the repo root.
 
 ```bash
-swift run PreviewMD          # build + launch the app for development
+swift run ReaderMD          # build + launch the app for development
 swift build                 # compile a debug build
-swift test                  # run the XCTest suite (Tests/PreviewMDTests)
+swift test                  # run the XCTest suite (Tests/ReaderMDTests)
 swift test --filter testCustomReadingWidthIsClamped   # run a single test
 ```
 
@@ -61,7 +61,7 @@ This is the part that requires reading multiple files together.
   and CSS from `Resources/Renderer` directly into `<script>`/`<style>` tags.
   Nothing is fetched over the network — this is the offline-rendering invariant.
 - All Swift→JS state travels as a single `RenderPayload` (Codable) encoded to JSON
-  and pushed via `evaluateJavaScript` into `window.previewmd*` functions defined
+  and pushed via `evaluateJavaScript` into `window.readermd*` functions defined
   in `renderer.js`. JS→Swift uses narrow `WKScriptMessageHandler` channels:
   `copyText` for code-block plain text and `copyRichText` for portable
   HTML/RTFD selections (and RTF when it is lossless), plus the
@@ -69,9 +69,9 @@ This is the part that requires reading multiple files together.
 - **Full vs incremental updates matter for performance.** The `Coordinator`
   compares payloads with `RenderPayload.requiresFullRender`: only a change to
   `markdown`, `theme`, or `systemDark` triggers a full re-render
-  (`window.previewmdRender`). Reading width, paper canvas, search text, and
-  outline target are applied incrementally (`previewmdSetLayout`,
-  `previewmdFind`, `previewmdScrollTo`) without re-parsing. `renderVersion`
+  (`window.readermdRender`). Reading width, paper canvas, search text, and
+  outline target are applied incrementally (`readermdSetLayout`,
+  `readermdFind`, `readermdScrollTo`) without re-parsing. `renderVersion`
   guards against stale async diagram renders. Preserve this split when editing.
 - The `WKWebView` `baseURL` is the **document's parent directory** (or the bundle
   resource dir for the showcase), which is what makes relative images and links
@@ -91,10 +91,10 @@ IDs to rendered `<h*>` elements in the same order. The inspector's outline butto
 set `state.outlineTarget = "heading-<n>"`, which the renderer scrolls to. If you
 change how either side numbers headings, change both or navigation breaks.
 
-### App lifecycle and file opening (`PreviewMDApp.swift`)
+### App lifecycle and file opening (`ReaderMDApp.swift`)
 
 `@main` defines one `Window` scene plus a `Settings` scene, with menu commands in
-`PreviewMDCommands`. `AppDelegate` handles Finder/Dock open events; because macOS
+`ReaderMDCommands`. `AppDelegate` handles Finder/Dock open events; because macOS
 can deliver `open(urls:)` before SwiftUI wires up `AppState`, it queues URLs in
 `pendingOpenURLs` and flushes them once `state` is set (see the corresponding
 test `testDockOpenRequestWaitsForAppState`). `applicationShouldTerminateAfterLastWindowClosed`
@@ -115,7 +115,7 @@ resource file), so the demo works on any Mac without dev-machine files.
 
 ## Testing notes
 
-Tests are in `Tests/PreviewMDTests/AppStateTests.swift`, wrapped in
+Tests are in `Tests/ReaderMDTests/AppStateTests.swift`, wrapped in
 `#if canImport(XCTest)`, and are `@MainActor`. They construct `AppState` with an
 isolated `UserDefaults` suite to avoid touching real preferences. They cover the
 core invariants (empty launch, closing the last tab, width clamping, embedded
