@@ -6,7 +6,7 @@ on:
       version:
         description: Release version without the v prefix
         required: true
-        default: '1.1.0'
+        default: '1.2.0'
   push:
     branches:
       - main
@@ -31,7 +31,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     env:
-      VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '1.1.0' }}
+      VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '1.2.0' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -141,11 +141,17 @@ jobs:
           $notes = @"
           ReaderMD $env:VERSION for Windows x64.
 
-          - Native WPF application with the bundled offline Markdown renderer.
-          - Self-contained .NET 8 deployment. No separate .NET installation is required.
-          - The setup program installs or updates the Microsoft Edge WebView2 Evergreen Runtime when needed.
-          - Includes an uninstall entry and Start menu shortcut.
+          Highlights:
+          - Integrated Windows title bar with File/Edit/View and standard window controls on one row.
+          - Improved dark-mode PDF export with full-page themed backgrounds and cleaner margins.
+          - Fixed theme selector sizing and theme-aware reading-width slider styling.
+          - Closable document tabs and cleaner folder navigation with filename-first labels and full-path tooltips.
+          - Better raw HTML compatibility, including common GitHub-style image markup, with sanitization.
+          - Elegant wrapping for long prose, links, source lines, and code blocks.
+          - Markdown file association is selected by default during setup without launching Windows Default Apps afterward.
+          - Native WPF application with the bundled offline Markdown renderer and self-contained .NET 8 deployment.
 
+          The setup program installs or updates the Microsoft Edge WebView2 Evergreen Runtime when needed.
           The installer is currently unsigned, so Windows may display a SmartScreen warning on first launch.
           "@
 
