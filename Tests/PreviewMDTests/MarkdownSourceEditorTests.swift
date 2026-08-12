@@ -147,10 +147,32 @@ final class MarkdownSourceEditorTests: XCTestCase {
             SplitEditorSelection(range: localSelection)
         )
 
-        scrollView.contentView.scroll(to: NSPoint(x: 0, y: 420))
+        let targetScrollLine = 30
+        let targetScrollRange = (source as NSString).range(
+            of: "Line \(targetScrollLine) "
+        )
+        let layoutManager = try XCTUnwrap(textView.layoutManager)
+        let targetGlyphIndex = layoutManager.glyphIndexForCharacter(
+            at: targetScrollRange.location
+        )
+        let targetLineRect = layoutManager.lineFragmentRect(
+            forGlyphAt: targetGlyphIndex,
+            effectiveRange: nil
+        )
+        let scrollAnchor = scrollView.contentView.bounds.height * 0.5
+        textView.scroll(
+            NSPoint(
+                x: 0,
+                y: targetLineRect.midY + textView.textContainerOrigin.y - scrollAnchor
+            )
+        )
         scrollView.reflectScrolledClipView(scrollView.contentView)
         RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
-        XCTAssertGreaterThan(preview.scrollPositions.last?.sourceLine ?? 0, 10)
+        XCTAssertEqual(
+            preview.scrollPositions.last?.sourceLine ?? .nan,
+            Double(targetScrollLine),
+            accuracy: 1
+        )
 
         let remoteSelection = (source as NSString).range(of: "Line 27")
         synchronizer.previewDidChangeSelection(
